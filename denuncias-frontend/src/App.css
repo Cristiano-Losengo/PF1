@@ -1,53 +1,43 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* Submenu posicionamento desktop */
+.navbar .dropdown-menu {
+  position: absolute;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* make parent li relative so submenu positions correctly */
+.dropdown-submenu {
+  position: relative;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+/* submenu opens to the right on desktop */
+.dropdown-submenu > .dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-left: 0.1rem;
+  margin-top: -0.25rem;
+  z-index: 1050;
+}
+
+/* when on small screens, keep submenus stacked and full width */
+@media (max-width: 991.98px) {
+  .navbar .dropdown-menu {
+    position: static;
+    float: none;
   }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+  .dropdown-submenu > .dropdown-menu {
+    left: 0;
+    top: 0;
+    margin-left: 0;
+    margin-top: 0;
   }
 }
 
-.card {
-  padding: 2em;
+/* minor style cleanups */
+.btn.btn-link.nav-link {
+  text-decoration: none;
+  color: inherit;
+  padding: 0.375rem 0.75rem;
 }
-
-.read-the-docs {
-  color: #888;
+.dropdown-item.btn {
+  width: 100%;
+  text-align: left;
 }
-
-/* Submenu funcionando no Bootstrap 5 */
-.dropdown-menu .dropdown-menu {
-  margin-left: 0.5rem; /* desloca um pouco para o lado */
-  margin-right: 0.5rem;
-}
-
-.dropdown-menu li:hover > .dropdown-menu {
-  display: block;
-}
-
