@@ -99,57 +99,8 @@ export default function Home() {
         </div>
       </main>
 
-      {/* ===== RODAPÉ ===== */}
-      <footer className="bg-dark text-white mt-auto">
-        <div className="container py-5">
-          <div className="row">
-            <div className="col-md-4 mb-3">
-              <h5 className="fw-bold">Plataforma Nacional</h5>
-              <p className="small text-secondary">
-                Uma iniciativa do Governo da República para reforçar a transparência
-                e promover a boa governação.
-              </p>
-            </div>
-            <div className="col-md-4 mb-3">
-              <h6 className="fw-bold">Links Rápidos</h6>
-              <ul className="list-unstyled small">
-                <li><a href="#" className="text-white text-decoration-none">Início</a></li>
-                <li><a href="#" className="text-white text-decoration-none">Saúde</a></li>
-                <li><a href="#" className="text-white text-decoration-none">Água</a></li>
-                <li><a href="#" className="text-white text-decoration-none">Educação</a></li>
-              </ul>
-            </div>
-            <div className="col-md-4 mb-3">
-              <h6 className="fw-bold">Contacto</h6>
-              <p className="small mb-1">Linha Verde: 111</p>
-              <p className="small mb-1">Email: denuncias@gov.ao</p>
-              <p className="small">Endereço: Largo da Independência, Luanda - Angola</p>
-            </div>
-          </div>
-          <div className="border-top border-secondary pt-3 mt-3 text-center small text-secondary">
-            {/* &copy; 2025 Governo da República - Plataforma Nacional de Denúncias. Todos os direitos reservados.
-          */}
-          </div>
-        </div>
-      </footer>
+    
 
-      {/* ===== ESTILOS EXTRA ===== */}
-      <style>
-        {`
-          .card-hover {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-          }
- 
-          .icon-circle {
-            width: 70px;
-            height: 70px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-          }
-        `}
-      </style>
     </div>
   );
 }

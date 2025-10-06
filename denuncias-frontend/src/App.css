@@ -41,3 +41,56 @@
   width: 100%;
   text-align: left;
 }
+
+footer a:hover {
+  color: #ffc107 !important; /* amarelo-dourado oficial */
+  text-decoration: underline;
+  transition: 0.3s ease;
+}
+footer h6 {
+  letter-spacing: 1px;
+}
+footer hr {
+  opacity: 0.2;
+}
+
+
+/* esquema institucional */
+.bg-primary {
+  background-color: #002147 !important; /* azul institucional */
+}
+.btn-warning {
+  background-color: #ffc107 !important; /* dourado */
+  color: #000000 !important;
+  border: none;
+}
+
+/* rodapé */
+footer a:hover {
+  color: #ffc107 !important;
+  text-decoration: underline;
+  transition: 0.2s ease;
+}
+footer h6 {
+  letter-spacing: 1px;
+}
+footer hr {
+  opacity: 0.18;
+}
+
+/* pequenas correções para dropdowns 'submenu' (bootstrap 5 não tem por defeito) */
+.dropdown-submenu > .dropdown-menu {
+  left: 0;
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+/* em ecrãs pequenos garantir que dropdowns ficam full-width */
+@media (max-width: 767.98px) {
+  .dropdown-menu {
+    position: static !important;
+    float: none;
+  }
+}
+
+

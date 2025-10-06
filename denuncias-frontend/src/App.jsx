@@ -1,8 +1,9 @@
+// src/App.js
 import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Navigate, Link, NavLink, useLocation } from 'react-router-dom';
 import {
   FaClipboard, FaListAlt, FaHome, FaTint, FaGraduationCap, FaUserMd,
-  FaSignOutAlt, FaHospital, FaBuilding, FaUser, FaBullhorn
+  FaSignOutAlt, FaHospital, FaBuilding, FaUser, FaBullhorn, FaTwitter, FaLinkedin, FaGithub
 } from 'react-icons/fa';
 
 import Home from './pages/Home';
@@ -20,14 +21,11 @@ import PerfilListar from './pages/Perfil/PerfilListar';
 import ContaCadastrar from './pages/Conta/ContaCadastrar';
 import ContaAtribuirContas from './pages/Conta/ContaAtribuirContas';
 
-
 function App() {
   const [loggedIn, setLoggedIn] = useState(true);
-
-  // mobile nav open (true = expanded)
   const [navOpen, setNavOpen] = useState(false);
 
-  // top-level dropdowns control (only one open at a time)
+  // top-level dropdowns (only one open at a time)
   const [openTop, setOpenTop] = useState({
     agua: false,
     saude: false,
@@ -44,30 +42,26 @@ function App() {
 
   const location = useLocation();
   const isLoginPage = location.pathname === '/login';
-
   const navRef = useRef(null);
 
-  // Toggle top-level, close others
   const toggleTop = (key) => {
     setOpenTop(prev => {
       const next = { agua: false, saude: false, educacao: false, seguranca: false };
       next[key] = !prev[key];
       return next;
     });
-    // when opening a top-level other than seguranca, ensure seg submenus are closed
     if (key !== 'seguranca') {
       setSegOpen({ funcionalidade: false, perfis: false, contas: false });
     }
   };
 
-  // Toggle submenu of seguranca
-const toggleSeg = (key) => {
-  setSegOpen(prev => {
-    const next = { funcionalidade: false, perfis: false, contas: false };
-    next[key] = !prev[key]; // se já estava aberto, fecha
-    return next;
-  });
-};
+  const toggleSeg = (key) => {
+    setSegOpen(prev => {
+      const next = { funcionalidade: false, perfis: false, contas: false };
+      next[key] = !prev[key];
+      return next;
+    });
+  };
 
   const closeAll = () => {
     setNavOpen(false);
@@ -75,57 +69,64 @@ const toggleSeg = (key) => {
     setSegOpen({ funcionalidade: false, perfis: false, contas: false });
   };
 
-  // close menus when user navigates to a new route
-  useEffect(() => {
-    closeAll();
-  }, [location.pathname]);
+  // close menus on route change
+  useEffect(() => { closeAll(); }, [location.pathname]);
 
   // click outside to close
   useEffect(() => {
     const handler = (e) => {
-      if (navRef.current && !navRef.current.contains(e.target)) {
-        closeAll();
-      }
+      if (navRef.current && !navRef.current.contains(e.target)) closeAll();
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // small helper to determine active top path
   const startsWith = (p) => location.pathname.startsWith(p);
 
   return (
     <div className="d-flex flex-column min-vh-100">
+      {/* TOP INSTITUTIONAL BANNER */}
+      {!isLoginPage && (
+  <div className="bg-dark text-light text-center py-1 small fw-semibold">
+</div>
+
+      )}
+
       <main className="flex-shrink-0">
         {/* NAVBAR */}
         {!isLoginPage && (
-          <nav ref={navRef} className="navbar navbar-expand-lg navbar-light bg-white border-bottom py-3 shadow-sm">
-            <div className="container px-5">
+          <nav ref={navRef} className="navbar navbar-expand-lg navbar-dark bg-black border-bottom py-3 shadow-sm">
+            <div className="container px-4">
               <Link className="navbar-brand d-flex align-items-center me-auto" to="/">
-                <FaBullhorn className="text-primary fs-3 me-2" />
-                <span className="fw-bold fs-5 text-primary">Plataforma de Denúncias</span>
+                {/* Coloca a imagem brasao-angola.png em public/brasao-angola.png,  
+                <img src="/brasao-angola2.png" alt="República de Angola" width="270" style={{ marginRight: 10 }} onError={(e)=>{ e.currentTarget.style.display='none'; }} />
+                              <span className="fw-bold fs-5 text-warning">Plataforma Nacional de Denúncias</span>
+
+
+bg-black*/}
+                                    <img src="/brasao-angola3.png" alt="República de Angola" width="270" style={{ marginRight: 10 }} onError={(e)=>{ e.currentTarget.style.display='none'; }} />
+
               </Link>
 
-              {/* mobile toggler (controlled) */}
               <button
                 className="navbar-toggler"
                 type="button"
-                aria-label="Toggle navigation"
-                onClick={() => setNavOpen(open => !open)}
+                aria-controls="navbarSupportedContent"
+                aria-expanded={navOpen}
+                aria-label="Alternar navegação"
+                onClick={() => setNavOpen(o => !o)}
               >
                 <span className="navbar-toggler-icon" />
               </button>
 
-              <div className={`collapse navbar-collapse justify-content-end ${navOpen ? 'show' : ''}`} id="navbarSupportedContent">
+              <div id="navbarSupportedContent" className={`collapse navbar-collapse justify-content-end ${navOpen ? 'show' : ''}`}>
                 <ul className="navbar-nav d-flex flex-row flex-wrap align-items-center gap-3">
 
                   {/* HOME */}
                   <li className="nav-item">
                     <NavLink
                       to="/"
-                      className={({ isActive }) =>
-                        `nav-link ${isActive ? 'text-primary fw-bold border-bottom border-3 border-primary' : 'border-primary'}`
-                      }
+                      className={({ isActive }) => `nav-link ${isActive ? 'text-warning fw-bold border-bottom border-3 border-warning' : 'text-light'}`}
                       onClick={closeAll}
                     >
                       <FaHome className="me-1" /> Home
@@ -135,15 +136,14 @@ const toggleSeg = (key) => {
                   {/* ÁGUA */}
                   <li className="nav-item dropdown">
                     <button
-                      className={`nav-link btn btn-link dropdown-toggle text-start ${startsWith('/agua') ? 'text-primary fw-bold border-bottom border-3 border-primary' : 'border-primary'}`}
-                      onClick={(e) => { e.preventDefault(); toggleTop('agua'); }}
+                      type="button"
+                      className={`nav-link btn btn-link dropdown-toggle text-start ${startsWith('/agua') ? 'fw-bold text-warning' : 'text-light'}`}
                       aria-expanded={openTop.agua}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTop('agua'); } }}
+                      onClick={(e) => { e.preventDefault(); toggleTop('agua'); }}
                     >
                       <FaTint className="me-1" /> Água
                     </button>
-
-                    <ul className={`dropdown-menu shadow-sm border-0 animate__animated animate__fadeIn ${openTop.agua ? 'show' : ''}`}>
+                    <ul className={`dropdown-menu shadow-sm border-0 ${openTop.agua ? 'show' : ''}`}>
                       <li>
                         <Link className="dropdown-item d-flex align-items-center" to="/agua/registrar" onClick={closeAll}>
                           <FaClipboard className="me-2 text-primary" /> Registrar Denúncia
@@ -160,15 +160,14 @@ const toggleSeg = (key) => {
                   {/* SAÚDE */}
                   <li className="nav-item dropdown">
                     <button
-                      className={`nav-link btn btn-link dropdown-toggle text-start ${startsWith('/saude') ? 'text-primary fw-bold border-bottom border-3 border-primary' : 'border-primary'}`}
-                      onClick={(e) => { e.preventDefault(); toggleTop('saude'); }}
+                      type="button"
+                      className={`nav-link btn btn-link dropdown-toggle text-start ${startsWith('/saude') ? 'fw-bold text-warning' : 'text-light'}`}
                       aria-expanded={openTop.saude}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTop('saude'); } }}
+                      onClick={(e) => { e.preventDefault(); toggleTop('saude'); }}
                     >
                       <FaUserMd className="me-1" /> Saúde
                     </button>
-
-                    <ul className={`dropdown-menu shadow-sm border-0 animate__animated animate__fadeIn ${openTop.saude ? 'show' : ''}`}>
+                    <ul className={`dropdown-menu shadow-sm border-0 ${openTop.saude ? 'show' : ''}`}>
                       <li>
                         <Link className="dropdown-item d-flex align-items-center" to="/saude/registrar" onClick={closeAll}>
                           <FaHospital className="me-2 text-primary" /> Registrar Denúncia
@@ -185,15 +184,14 @@ const toggleSeg = (key) => {
                   {/* EDUCAÇÃO */}
                   <li className="nav-item dropdown">
                     <button
-                      className={`nav-link btn btn-link dropdown-toggle text-start ${startsWith('/educacao') ? 'text-primary fw-bold border-bottom border-3 border-primary' : 'border-primary'}`}
-                      onClick={(e) => { e.preventDefault(); toggleTop('educacao'); }}
+                      type="button"
+                      className={`nav-link btn btn-link dropdown-toggle text-start ${startsWith('/educacao') ? 'fw-bold text-warning' : 'text-light'}`}
                       aria-expanded={openTop.educacao}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTop('educacao'); } }}
+                      onClick={(e) => { e.preventDefault(); toggleTop('educacao'); }}
                     >
                       <FaGraduationCap className="me-1" /> Educação
                     </button>
-
-                    <ul className={`dropdown-menu shadow-sm border-0 animate__animated animate__fadeIn ${openTop.educacao ? 'show' : ''}`}>
+                    <ul className={`dropdown-menu shadow-sm border-0 ${openTop.educacao ? 'show' : ''}`}>
                       <li>
                         <Link className="dropdown-item d-flex align-items-center" to="/educacao/registrar" onClick={closeAll}>
                           <FaBuilding className="me-2 text-danger" /> Registrar Denúncia
@@ -207,26 +205,25 @@ const toggleSeg = (key) => {
                     </ul>
                   </li>
 
-                  {/* SEGURANÇA (top-level) */}
+                  {/* SEGURANÇA */}
                   <li className="nav-item dropdown">
                     <button
-                      className={`nav-link btn btn-link dropdown-toggle text-start ${startsWith('/seguranca') ? 'text-primary fw-bold border-bottom border-3 border-primary' : 'border-primary'}`}
-                      onClick={(e) => { e.preventDefault(); toggleTop('seguranca'); }}
+                      type="button"
+                      className={`nav-link btn btn-link dropdown-toggle text-start ${startsWith('/seguranca') ? 'fw-bold text-warning' : 'text-light'}`}
                       aria-expanded={openTop.seguranca}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTop('seguranca'); } }}
+                      onClick={(e) => { e.preventDefault(); toggleTop('seguranca'); }}
                     >
-                      <FaGraduationCap className="me-1" /> Segurança
+                      <FaBuilding className="me-1" /> Segurança
                     </button>
 
-                    <ul className={`dropdown-menu shadow-sm border-0 animate__animated animate__fadeIn ${openTop.seguranca ? 'show' : ''}`}>
-
-                      {/* Funcionalidade (submenu) */}
+                    <ul className={`dropdown-menu shadow-sm border-0 ${openTop.seguranca ? 'show' : ''}`}>
+                      {/* Funcionalidade */}
                       <li className="dropdown-submenu">
                         <button
-                          className="dropdown-item dropdown-toggle d-flex align-items-center btn btn-link text-start"
+                          type="button"
+                          className="dropdown-item d-flex align-items-center btn btn-link text-start"
                           onClick={(e) => { e.preventDefault(); toggleSeg('funcionalidade'); }}
                           aria-expanded={segOpen.funcionalidade}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSeg('funcionalidade'); } }}
                         >
                           <FaBuilding className="me-2 text-danger" /> Funcionalidade
                         </button>
@@ -236,13 +233,13 @@ const toggleSeg = (key) => {
                         </ul>
                       </li>
 
-                      {/* Perfis (submenu) */}
+                      {/* Perfis */}
                       <li className="dropdown-submenu">
                         <button
-                          className="dropdown-item dropdown-toggle d-flex align-items-center btn btn-link text-start"
+                          type="button"
+                          className="dropdown-item d-flex align-items-center btn btn-link text-start"
                           onClick={(e) => { e.preventDefault(); toggleSeg('perfis'); }}
                           aria-expanded={segOpen.perfis}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSeg('perfis'); } }}
                         >
                           <FaListAlt className="me-2 text-success" /> Perfis
                         </button>
@@ -253,13 +250,13 @@ const toggleSeg = (key) => {
                         </ul>
                       </li>
 
-                      {/* Contas (submenu) */}
+                      {/* Contas */}
                       <li className="dropdown-submenu">
                         <button
-                          className="dropdown-item dropdown-toggle d-flex align-items-center btn btn-link text-start"
+                          type="button"
+                          className="dropdown-item d-flex align-items-center btn btn-link text-start"
                           onClick={(e) => { e.preventDefault(); toggleSeg('contas'); }}
                           aria-expanded={segOpen.contas}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSeg('contas'); } }}
                         >
                           <FaUser className="me-2 text-info" /> Contas
                         </button>
@@ -269,7 +266,6 @@ const toggleSeg = (key) => {
                           <li><Link className="dropdown-item" to="/seguranca/contas/atribuir" onClick={closeAll}>⚙️ Atribuir Contas</Link></li>
                         </ul>
                       </li>
-
                     </ul>
                   </li>
 
@@ -278,7 +274,7 @@ const toggleSeg = (key) => {
                 <div className="d-flex ms-3">
                   <Link
                     to="/login"
-                    className="btn btn-primary d-flex align-items-center"
+                    className="btn btn-warning d-flex align-items-center fw-semibold"
                     onClick={() => { setLoggedIn(false); closeAll(); }}
                   >
                     <FaSignOutAlt className="me-1" /> Logout
@@ -289,7 +285,7 @@ const toggleSeg = (key) => {
           </nav>
         )}
 
-        {/* ROTAS (mantive as suas rotas) */}
+        {/* ROTAS */}
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/agua/:tipo" element={loggedIn ? <Agua /> : <Navigate to="/login" />} />
@@ -298,23 +294,65 @@ const toggleSeg = (key) => {
           <Route path="/sobre" element={loggedIn ? <Sobre /> : <Navigate to="/login" />} />
           <Route path="/contacto" element={loggedIn ? <Contacto /> : <Navigate to="/login" />} />
           <Route path="/seguranca/*" element={loggedIn ? <Seguranca /> : <Navigate to="/login" />} />
+
           <Route path="/seguranca/funcionalidade/cadastrar" element={loggedIn ? <FuncionalidadeCadastrar /> : <Navigate to="/login" />} />
           <Route path="/seguranca/funcionalidade/listar" element={loggedIn ? <FuncionalidadeListar /> : <Navigate to="/login" />} />
           <Route path="/seguranca/perfis/cadastrar" element={loggedIn ? <PerfilCadastrar /> : <Navigate to="/login" />} />
           <Route path="/seguranca/perfis/listar" element={loggedIn ? <PerfilListar /> : <Navigate to="/login" />} />
           <Route path="/seguranca/contas/cadastrar" element={loggedIn ? <ContaCadastrar /> : <Navigate to="/login" />} />
           <Route path="/seguranca/contas/listar" element={loggedIn ? <ContaAtribuirContas /> : <Navigate to="/login" />} />
-          
-          
+
           <Route path="/login" element={<Login setLoggedIn={setLoggedIn} />} />
         </Routes>
       </main>
 
       {/* RODAPÉ */}
       {!isLoginPage && (
-        <footer className="bg-white py-4 border-top mt-auto">
-          <div className="container text-center">
-            <div className="mb-2 small text-muted">&copy; 2025 Governo da República - Plataforma Nacional de Denúncias. Todos os direitos reservados.</div>
+        <footer className="bg-black text-light mt-auto pt-5 pb-3 border-top shadow-sm">
+          <div className="container px-4">
+            <div className="row gy-4">
+              <div className="col-md-3 text-center text-md-start">
+                <div className="d-flex align-items-center justify-content-center justify-content-md-start mb-2">
+                  <img src="/brasao-angola.png" alt="Governo de Angola" width="40" style={{ marginRight: 10 }} onError={(e)=>{ e.currentTarget.style.display='none'; }} />
+                  <h5 className="fw-bold mb-0 text-uppercase">Plataforma Nacional de Denúncias</h5>
+                </div>
+                <p className="small text-muted mb-0">
+                  Sistema oficial do Governo da República de Angola para monitorar e responder às denúncias
+                  dos cidadãos sobre serviços públicos de <strong>Água</strong>, <strong>Saúde</strong> e <strong>Educação</strong>.
+                </p>
+              </div>
+
+              <div className="col-md-3 text-center text-md-start">
+                <h6 className="fw-bold text-uppercase mb-3">Institucional</h6>
+                <ul className="list-unstyled small">
+                  <li><Link className="text-light text-decoration-none" to="/sobre">Sobre a Plataforma</Link></li>
+                  <li><a href="#" className="text-light text-decoration-none">Política de Privacidade</a></li>
+                  <li><a href="#" className="text-light text-decoration-none">Termos de Uso</a></li>
+                </ul>
+              </div>
+
+              <div className="col-md-3 mb-3 text-center text-md-start">
+                <h6 className="fw-bold text-uppercase mb-3">Contacto</h6>
+                <p className="small mb-1"><strong>Linha Verde:</strong> 111</p>
+                <p className="small mb-1"><strong>Email:</strong> denuncias@gov.ao</p>
+                <p className="small mb-0"><strong>Endereço:</strong> Largo da Independência, Luanda - Angola</p>
+              </div>
+
+              <div className="col-md-3 text-center text-md-end">
+                <h6 className="fw-bold text-uppercase mb-3">Siga-nos</h6>
+                <div className="d-flex justify-content-center justify-content-md-end gap-3 fs-4">
+                  <a className="text-light" href="#" aria-label="Twitter"><FaTwitter /></a>
+                  <a className="text-light" href="#" aria-label="LinkedIn"><FaLinkedin /></a>
+                  <a className="text-light" href="#" aria-label="GitHub"><FaGithub /></a>
+                </div>
+              </div>
+            </div>
+
+            <hr className="border-secondary my-4" />
+            <div className="text-center small text-muted">
+              &copy; 2025 Governo da República de Angola — Ministério da Administração do Território e Reforma do Estado. <br />
+             Todos os direitos reservados.
+            </div>
           </div>
         </footer>
       )}
