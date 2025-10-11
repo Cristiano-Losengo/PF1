@@ -94,3 +94,22 @@ footer hr {
 }
 
 
+/* Tema PND */
+.bg-pnd { background-color: #0b2340; } /* azul-escuro */
+.text-pnd { color: #0b2340; }
+.btn-pnd { background-color: #0b2340; color: #fff; border: 0; }
+.btn-pnd-outline { background: transparent; color: #0b2340; border: 1px solid #0b2340; }
+.card-pnd { background: #f7f9fb; border: 1px solid #e6eef8; }
+.badge-pnd { background-color: #b8860b; color: white; } /* dourado / warning */
+.icon-circle { width: 56px; height: 56px; display: inline-flex; align-items:center; justify-content:center; border-radius: 50%; }
+.spinner-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(11,35,64,0.15);
+  z-index: 20;
+}
+/* pequenas melhorias */
+.table-hover tbody tr:hover { background: rgba(11,35,64,0.03); }

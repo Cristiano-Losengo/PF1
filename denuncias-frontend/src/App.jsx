@@ -25,7 +25,6 @@ function App() {
   const [loggedIn, setLoggedIn] = useState(true);
   const [navOpen, setNavOpen] = useState(false);
 
-  // top-level dropdowns (only one open at a time)
   const [openTop, setOpenTop] = useState({
     agua: false,
     saude: false,
@@ -33,7 +32,6 @@ function App() {
     seguranca: false,
   });
 
-  // submenus inside "Segurança"
   const [segOpen, setSegOpen] = useState({
     funcionalidade: false,
     perfis: false,
@@ -69,10 +67,8 @@ function App() {
     setSegOpen({ funcionalidade: false, perfis: false, contas: false });
   };
 
-  // close menus on route change
   useEffect(() => { closeAll(); }, [location.pathname]);
 
-  // click outside to close
   useEffect(() => {
     const handler = (e) => {
       if (navRef.current && !navRef.current.contains(e.target)) closeAll();
@@ -87,8 +83,8 @@ function App() {
     <div className="d-flex flex-column min-vh-100">
       {/* TOP INSTITUTIONAL BANNER */}
       {!isLoginPage && (
-  <div className="bg-dark text-light text-center py-1 small fw-semibold">
-</div>
+        <div className="bg-black  text-light text-center py-1 small fw-semibold">
+        </div>
 
       )}
 
@@ -100,14 +96,9 @@ function App() {
               <Link className="navbar-brand d-flex align-items-center me-auto" to="/">
                 {/* Coloca a imagem brasao-angola.png em public/brasao-angola.png,  
                 <img src="/brasao-angola2.png" alt="República de Angola" width="270" style={{ marginRight: 10 }} onError={(e)=>{ e.currentTarget.style.display='none'; }} />
-                              <span className="fw-bold fs-5 text-warning">Plataforma Nacional de Denúncias</span>
-
-
-bg-black*/}
-                                    <img src="/brasao-angola3.png" alt="República de Angola" width="270" style={{ marginRight: 10 }} onError={(e)=>{ e.currentTarget.style.display='none'; }} />
-
+        <span className="fw-bold fs-5 text-warning">Plataforma Nacional de Denúncias</span>bg-black ou dark*/}
+                <img src="/brasao-angola5.png" alt="República de Angola" width="200" style={{ marginRight: -5 }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
               </Link>
-
               <button
                 className="navbar-toggler"
                 type="button"
@@ -313,7 +304,7 @@ bg-black*/}
             <div className="row gy-4">
               <div className="col-md-3 text-center text-md-start">
                 <div className="d-flex align-items-center justify-content-center justify-content-md-start mb-2">
-                  <img src="/brasao-angola.png" alt="Governo de Angola" width="40" style={{ marginRight: 10 }} onError={(e)=>{ e.currentTarget.style.display='none'; }} />
+                  <img src="/brasao-angola.png" alt="Governo de Angola" width="40" style={{ marginRight: 10 }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                   <h5 className="fw-bold mb-0 text-uppercase">Plataforma Nacional de Denúncias</h5>
                 </div>
                 <p className="small text-muted mb-0">
@@ -351,7 +342,7 @@ bg-black*/}
             <hr className="border-secondary my-4" />
             <div className="text-center small text-muted">
               &copy; 2025 Governo da República de Angola — Ministério da Administração do Território e Reforma do Estado. <br />
-             Todos os direitos reservados.
+              Todos os direitos reservados.
             </div>
           </div>
         </footer>

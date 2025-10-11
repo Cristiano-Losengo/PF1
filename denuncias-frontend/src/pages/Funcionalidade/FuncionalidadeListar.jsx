@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
+import { FaTrash, FaSyncAlt } from "react-icons/fa";
 
 export default function FuncionalidadeListar() {
+  const BASE_URL = "http://localhost:8080/api/seguranca";
   const [funcionalidades, setFuncionalidades] = useState([]);
 
-  // Carregar lista
   const carregarFuncionalidades = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/seguranca/funcionalidade_listar");
+      const response = await fetch(`${BASE_URL}/funcionalidade_listar`);
       const data = await response.json();
       setFuncionalidades(data);
     } catch (error) {
@@ -18,13 +19,10 @@ export default function FuncionalidadeListar() {
     carregarFuncionalidades();
   }, []);
 
-  // Excluir
   const handleDelete = async (id) => {
-    if (!window.confirm("Tem certeza que deseja excluir?")) return;
+    if (!window.confirm("Tem certeza que deseja excluir esta funcionalidade?")) return;
     try {
-      await fetch(`http://localhost:8080/api/seguranca/funcionalidade/${id}`, {
-        method: "DELETE",
-      });
+      await fetch(`${BASE_URL}/funcionalidade/${id}`, { method: "DELETE" });
       carregarFuncionalidades();
     } catch (error) {
       console.error("Erro ao excluir:", error);
@@ -33,17 +31,21 @@ export default function FuncionalidadeListar() {
 
   return (
     <div className="container mt-4">
-      <h3>Lista de Funcionalidades</h3>
-      <table className="table table-bordered table-striped">
-        <thead className="table-dark">
+      <h3 className="text-primary">Funcionalidades do Sistema</h3>
+      <button className="btn btn-outline-primary mb-3" onClick={carregarFuncionalidades}>
+        <FaSyncAlt /> Atualizar
+      </button>
+
+      <table className="table table-hover table-bordered align-middle">
+        <thead className="table-dark text-center">
           <tr>
             <th>#</th>
             <th>Descrição</th>
             <th>Designação</th>
+            <th>Módulo</th>
             <th>Tipo</th>
+            <th>Nível</th>
             <th>URL</th>
-            <th>Criado em</th>
-            <th>Atualizado em</th>
             <th>Ações</th>
           </tr>
         </thead>
@@ -53,23 +55,23 @@ export default function FuncionalidadeListar() {
               <td>{i + 1}</td>
               <td>{f.descricao}</td>
               <td>{f.designacao}</td>
+              <td>{f.modulo}</td>
               <td>{f.tipoFuncionalidade}</td>
+              <td>{f.nivelAcesso}</td>
               <td>{f.url}</td>
-              <td>{new Date(f.createdAt).toLocaleString()}</td>
-              <td>{new Date(f.updatedAt).toLocaleString()}</td>
-              <td>
+              <td className="text-center">
                 <button
                   className="btn btn-sm btn-danger"
                   onClick={() => handleDelete(f.pkFuncionalidade)}
                 >
-                  Excluir
+                  <FaTrash /> Excluir
                 </button>
               </td>
             </tr>
           ))}
           {funcionalidades.length === 0 && (
             <tr>
-              <td colSpan={8} className="text-center">
+              <td colSpan={8} className="text-center text-muted">
                 Nenhuma funcionalidade cadastrada
               </td>
             </tr>
