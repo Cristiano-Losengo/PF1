@@ -25,11 +25,11 @@ public class EstatisticaService {
         return repository.findAll();
     }
 
-    public Optional<Estatistica> buscarPorId(Long id) {
+    public Optional<Estatistica> buscarPorId(Integer id) {
         return repository.findById(id);
     }
 
-    public void remover(Long id) {
+    public void remover(Integer id) {
         repository.deleteById(id);
     }
 }

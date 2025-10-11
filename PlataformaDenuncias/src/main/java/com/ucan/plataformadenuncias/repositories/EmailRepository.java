@@ -1,16 +1,14 @@
 package com.ucan.plataformadenuncias.repositories;
 
-
+import com.ucan.plataformadenuncias.entities.Email;
 import com.ucan.plataformadenuncias.entities.Pessoa;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+
 @Repository
-public interface PessoaRepository extends JpaRepository<Pessoa, Integer> {
+public interface EmailRepository extends JpaRepository<Email, Integer> {
 
-    public Pessoa findByIdentificacao(String identificacao);
-
-    public Pessoa findByPkPessoa(Integer pkPessoa);
+    public Email findByFkPessoa(Pessoa pessoaModel);
 
 }
-

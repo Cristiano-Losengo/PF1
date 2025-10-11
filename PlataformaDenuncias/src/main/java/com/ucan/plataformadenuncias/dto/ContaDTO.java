@@ -1,6 +1,5 @@
 package com.ucan.plataformadenuncias.dto;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+
 
 public class ContaDTO {
 

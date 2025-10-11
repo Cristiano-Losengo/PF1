@@ -1,7 +1,4 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Interface.java to edit this template
- */
+
 package com.ucan.plataformadenuncias.repositories;
 
 import com.ucan.plataformadenuncias.entities.Categoria;
@@ -13,5 +10,5 @@ import org.springframework.stereotype.Repository;
  * @author cristiano
  */
 @Repository
-public interface CategoriaRepository extends JpaRepository<Categoria, Long> {}
+public interface CategoriaRepository extends JpaRepository<Categoria, Integer> {}
 

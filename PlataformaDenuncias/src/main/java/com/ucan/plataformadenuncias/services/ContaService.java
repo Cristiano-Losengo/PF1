@@ -25,11 +25,11 @@ public class ContaService {
         return repository.findAll();
     }
 
-    public Optional<Conta> buscarPorId(Long id) {
+    public Optional<Conta> buscarPorId(Integer id) {
         return repository.findById(id);
     }
 
-    public void remover(Long id) {
+    public void remover(Integer id) {
         repository.deleteById(id);
     }
 

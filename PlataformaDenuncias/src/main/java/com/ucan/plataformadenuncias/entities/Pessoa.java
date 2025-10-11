@@ -65,7 +65,7 @@ public class Pessoa {
     
     @NotNull(message = "O tipo de sexo  é obrigatória")
     @Past(message = "O sexo deve ter no máximo 1 caracteres")
-    @Column(name = "sexo", nullable = false)
+    @Column(name = "sexo", nullable = true)
     private String sexo;
 
     @UpdateTimestamp
@@ -95,6 +95,16 @@ public class Pessoa {
         this.identificacao = identificacao;
         this.dataNascimento = dataNascimento;
         this.sexo = sexo;
-        
     }
+
+    public Pessoa(String nome,String identificacao, LocalDate dataNascimento ) {
+        this.nome = nome;
+        this.identificacao = identificacao;
+        this.dataNascimento = dataNascimento;
+    }
+
+    public Pessoa(Integer pkPessoa) {
+        this.pkPessoa = pkPessoa;
+    }
+
 }

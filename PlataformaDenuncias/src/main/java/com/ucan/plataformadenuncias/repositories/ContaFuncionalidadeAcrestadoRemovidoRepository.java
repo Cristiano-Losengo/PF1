@@ -9,6 +9,6 @@ import org.springframework.stereotype.Repository;
  * @author cristiano
  */
 @Repository
-public interface ContaFuncionalidadeAcrestadoRemovidoRepository extends JpaRepository<ContaFuncionalidadeAcrestadoRemovido, Long> {}
+public interface ContaFuncionalidadeAcrestadoRemovidoRepository extends JpaRepository<ContaFuncionalidadeAcrestadoRemovido, Integer> {}
     
 

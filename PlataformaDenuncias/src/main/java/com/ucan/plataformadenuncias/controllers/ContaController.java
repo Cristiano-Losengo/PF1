@@ -14,33 +14,24 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/contas")
+@CrossOrigin(origins = "*")
 public class ContaController {
 
     @Autowired
     private ContaService contaService;
 
-    @GetMapping
+    @GetMapping("/listarContas")
     public List<Conta> getAll() {
         return contaService.listarTodos();
     }
-
-  /*  @GetMapping("/{id}")
-    public Conta getById(@PathVariable Long id) {
-        return contaService.buscarPorId(id);
-    }*/
 
     @PostMapping
     public Conta create(@RequestBody Conta conta) {
         return contaService.salvar(conta);
     }
 
-    /*@PutMapping("/{id}")
-    public Conta update(@PathVariable Long id, @RequestBody Conta conta) {
-        return contaService.update(id, conta);
-    }*/
-
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    public void delete(@PathVariable Integer id) {
         contaService.remover(id);
     }
 }

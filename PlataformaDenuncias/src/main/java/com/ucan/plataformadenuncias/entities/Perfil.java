@@ -15,6 +15,8 @@ import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -38,11 +40,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 @Entity
 @Table(name = "perfil")
 public class Perfil {
-    
-  
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "pk_perfil")
     private Integer pkPerfil;
 
     @Column(name = "nome", nullable = false, length = 100)
@@ -59,10 +59,11 @@ public class Perfil {
     @JoinColumn(name = "fk_perfil")
     private Perfil fkPerfil;
 
-    // o perfil pode ter vários sub-perfis (lado inverso do relacionamento)
+    // Um perfil pode ter vários sub-perfis (lado inverso do relacionamento)
+/*
     @OneToMany(mappedBy = "fkPerfil", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Perfil> subPerfis = new ArrayList<>();
-
+*/
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -71,15 +72,36 @@ public class Perfil {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Perfil perfil = (Perfil) o;
+        return Objects.equals(pkPerfil, perfil.pkPerfil);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(pkPerfil);
+    }
+
     public Perfil(int pkPerfil, String nome, String detalhes, String url, Perfil fkPerfil,  LocalDateTime createdAt) {
         this.pkPerfil = pkPerfil;
         this.nome = nome;
         this.detalhes = detalhes;
         this.url = url;
-        this.subPerfis = subPerfis;
         this.createdAt = createdAt;
-    }  
-    
-    
-    
+    }
+
+    public Perfil(String nome, String detalhes, String url, Perfil fkPerfil, LocalDateTime createdAt) {
+        this.nome = nome;
+        this.detalhes = detalhes;
+        this.url = url;
+        this.fkPerfil = fkPerfil;
+        this.createdAt = createdAt;
+    }
+
+    public Perfil(Integer pkPerfil) {
+        this.pkPerfil = pkPerfil;
+    }
 }

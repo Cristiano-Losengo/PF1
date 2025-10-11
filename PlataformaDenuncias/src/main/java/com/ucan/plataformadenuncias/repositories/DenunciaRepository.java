@@ -10,4 +10,4 @@ import org.springframework.stereotype.Repository;
  * @author cristiano
  */
 @Repository
-public interface DenunciaRepository extends JpaRepository<Denuncia, Long> {}
+public interface DenunciaRepository extends JpaRepository<Denuncia, Integer> {}

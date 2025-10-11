@@ -26,11 +26,11 @@ public class ContaPerfilService {
         return repository.findAll();
     }
 
-    public Optional<ContaPerfil> buscarPorId(Long id) {
+    public Optional<ContaPerfil> buscarPorId(Integer id) {
         return repository.findById(id);
     }
 
-    public void remover(Long id) {
+    public void remover(Integer id) {
         repository.deleteById(id);
     }
 }

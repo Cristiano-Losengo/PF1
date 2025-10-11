@@ -22,7 +22,7 @@ public class PessoaService {
         return pessoaRepository.findAll();
     }
 
-    public Optional<Pessoa> buscarPorId(Long id) {
+    public Optional<Pessoa> buscarPorId(Integer id) {
         return pessoaRepository.findById(id);
     }
 
@@ -30,7 +30,7 @@ public class PessoaService {
         return pessoaRepository.save(pessoa);
     }
 
-    public void deletar(Long id) {
+    public void deletar(Integer id) {
         pessoaRepository.deleteById(id);
     }
 }

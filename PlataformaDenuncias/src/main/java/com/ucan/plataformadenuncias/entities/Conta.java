@@ -18,8 +18,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 
-
-
 @Entity
 @Getter
 @Setter
@@ -28,17 +26,17 @@ import org.hibernate.annotations.UpdateTimestamp;
 @AllArgsConstructor
 @Table(name = "conta")
 public class Conta {
-   
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "pk_conta")
     private Integer pkConta;
 
-    @Column(name = "username", unique = true, nullable = false, length = 50)
-    private String username;
+    @Column(name = "nome", unique = true, nullable = false, length = 50)
+    private String nome;
 
-    @Column(name = "senha", nullable = false, length = 50)
-    private String senha;
+    @Column(name = "detalhes", length = 50)
+    private String detalhes;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -61,12 +59,32 @@ public class Conta {
         return Objects.hash(pkConta);
     }
 
-    public Conta(String username, String senha,  LocalDateTime createdAt) {
-        this.username = username;
-        this.senha = senha;
+    public Conta(Integer pkConta, String username, LocalDateTime createdAt) {
+        this.pkConta = pkConta;
+        this.nome = username;
         this.createdAt = createdAt;
     }
-  
+
+    public Conta(String username, String detalhes, LocalDateTime createdAt) {
+        this.nome = username;
+        this.detalhes = detalhes;
+        this.createdAt = createdAt;
+    }
+
+    public Conta(Integer pkConta) {
+        this.pkConta = pkConta;
+    }
+
+    @Override
+    public String toString() {
+        return "ContaModel{" +
+                "pkConta=" + pkConta +
+                ", username='" + nome + '\'' +
+                ", detalhes='" + detalhes + '\'' +
+                ", createdAt=" + createdAt +
+                ", updatedAt=" + updatedAt +
+                '}';
+    }
   
   
   

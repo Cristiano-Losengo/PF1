@@ -13,5 +13,5 @@ import org.springframework.stereotype.Repository;
  * @author cristiano
  */
 @Repository
-public interface RespostaRepository extends JpaRepository<Resposta, Long> {}
+public interface RespostaRepository extends JpaRepository<Resposta, Integer> {}
 

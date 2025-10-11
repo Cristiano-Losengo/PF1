@@ -10,11 +10,10 @@ import org.springframework.stereotype.Repository;
  * @author cristiano
  */
 @Repository
-public interface LocalidadeRepository extends JpaRepository<Localidade, Long> {
+public interface LocalidadeRepository extends JpaRepository<Localidade, Integer> {
 
     public Localidade findByNome(String pai);
 
-       
     public Localidade findByNomeAndFkLocalidadePai_Nome(String nome, String paiNome);
 }
 

@@ -2,13 +2,12 @@ package com.ucan.plataformadenuncias.services;
 
 import com.ucan.plataformadenuncias.entities.ContaFuncionalidadeAcrestadoRemovido;
 import com.ucan.plataformadenuncias.repositories.ContaFuncionalidadeAcrestadoRemovidoRepository;
+
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-
 
 
 @Service
@@ -25,11 +24,11 @@ public class ContaFuncionalidadeAcrestadoRemovidoService {
         return repository.findAll();
     }
 
-    public Optional<ContaFuncionalidadeAcrestadoRemovido> buscarPorId(Long id) {
+    public Optional<ContaFuncionalidadeAcrestadoRemovido> buscarPorId(Integer id) {
         return repository.findById(id);
     }
 
-    public void remover(Long id) {
+    public void remover(Integer id) {
         repository.deleteById(id);
     }
 }

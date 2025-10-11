@@ -25,11 +25,11 @@ public class FuncionalidadeService {
         return repository.findAll();
     }
 
-    public Optional<Funcionalidade> buscarPorId(Long id) {
+    public Optional<Funcionalidade> buscarPorId(Integer id) {
         return repository.findById(id);
     }
 
-    public void remover(Long id) {
+    public void remover(Integer id) {
         repository.deleteById(id);
     }
 }

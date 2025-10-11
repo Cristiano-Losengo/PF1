@@ -22,7 +22,7 @@ public class RespostaService {
         return respostaRepository.findAll();
     }
 
-    public Optional<Resposta> buscarPorId(Long id) {
+    public Optional<Resposta> buscarPorId(Integer id) {
         return respostaRepository.findById(id);
     }
 
@@ -30,7 +30,7 @@ public class RespostaService {
         return respostaRepository.save(resposta);
     }
 
-    public void deletar(Long id) {
+    public void deletar(Integer id) {
         respostaRepository.deleteById(id);
     }
     

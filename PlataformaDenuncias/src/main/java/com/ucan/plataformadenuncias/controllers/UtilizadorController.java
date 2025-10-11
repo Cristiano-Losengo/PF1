@@ -1,52 +1,80 @@
-
 package com.ucan.plataformadenuncias.controllers;
 
+import com.ucan.plataformadenuncias.dto.UtilizadorDTO;
 import com.ucan.plataformadenuncias.entities.Utilizador;
-import com.ucan.plataformadenuncias.services.UtilizadorService;
+import com.ucan.plataformadenuncias.repositories.ContaRepository;
+import com.ucan.plataformadenuncias.repositories.PessoaRepository;
+import com.ucan.plataformadenuncias.repositories.UtilizadorRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
-/**
- *
- * @author cristiano
- */
 @RestController
-@RequestMapping("/api/utilizadores")
+@RequestMapping("/api/utilizador")
+@CrossOrigin(origins = "*")
 public class UtilizadorController {
+
     @Autowired
-    private UtilizadorService service;
+    private UtilizadorRepository utilizadorRepository;
 
-    @GetMapping
-    public List<Utilizador> getAll() {
-        return service.listarTodos();
+    @Autowired
+    private ContaRepository contaRepository;
+
+    @Autowired
+    private PessoaRepository pessoaRepository;
+
+    @GetMapping("/status")
+    public String verificarStatusServidor(@RequestParam String loginRequest) {
+        return "Servidor autenticação está operacional - " + java.time.LocalDateTime.now();
     }
 
-    @GetMapping("/{id}")
-    public Optional<Utilizador> getById(@PathVariable Long id) {
-        return service.buscarPorId(id);
+    @PostMapping("/atribuir_conta_utilizador")
+    public Utilizador login(@RequestBody UtilizadorDTO utilizadorDTO) {
+
+        Optional<Utilizador> utilizadorModel1 = utilizadorRepository.findById(utilizadorDTO.getPkUtilizador());
+
+        System.out.println(utilizadorDTO);
+/*
+        PessoaModel pessoaModel = pessoaRepository.findByPkPessoa(utilizadorDTO.getFkPessoa());
+        ContaModel contaModel = contaRepository.findByPkConta(utilizadorDTO.getFkConta());
+        UtilizadorModel utilizadorModel = utilizadorRepository.findByFkPessoa(pessoaModel);
+
+        utilizadorModel.setFkConta(contaModel);
+
+        return utilizadorRepository.save(utilizadorModel);
+
+ */
+
+        return null;
     }
 
-    @PostMapping
-    public Utilizador create(@RequestBody Utilizador entity) {
-        return service.salvar(entity);
+    @GetMapping("/listar_utilizadores")
+    public List<UtilizadorDTO> listarUtilizadores() {
+
+        List<UtilizadorDTO>  utilizadorDTOList = new ArrayList<>();
+
+        for ( Utilizador utilizadorModel : utilizadorRepository.findAll())
+        {
+            UtilizadorDTO utilizadorDTO =  new UtilizadorDTO();
+
+            utilizadorDTO.setPkUtilizador(utilizadorModel.getPkUtilizador());
+            utilizadorDTO.setNome(utilizadorModel.getFkPessoa().getNome());
+            utilizadorDTO.setNomeConta(utilizadorModel.getFkConta().getNome());
+
+            utilizadorDTO.setFkPessoa(utilizadorModel.getFkPessoa().getPkPessoa());
+            utilizadorDTO.setFkConta(utilizadorModel.getFkConta().getPkConta());
+
+            utilizadorDTO.setUsername(utilizadorModel.getUsername());
+            utilizadorDTO.setDetalhes(utilizadorModel.getDetalhe());
+
+            utilizadorDTOList.add(utilizadorDTO);
+        }
+
+        return utilizadorDTOList;
+
     }
 
-   /* @PutMapping("/{id}")
-    public Utilizador update(@PathVariable Long id, @RequestBody Utilizador entity) {
-        return service.update(id, entity);
-    }*/
-
-    @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        service.deletar(id);
-    }
 }

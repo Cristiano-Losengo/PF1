@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
  * @author cristiano
  */
 @Repository
-public interface HistoricoActividadeRepository extends JpaRepository<HistoricoActividade, Long>{
-    
+public interface HistoricoActividadeRepository extends JpaRepository<HistoricoActividade, Integer>{
+
+
 }

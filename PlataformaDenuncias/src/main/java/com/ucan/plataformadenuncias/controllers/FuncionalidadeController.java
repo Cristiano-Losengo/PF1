@@ -1,52 +1,80 @@
 package com.ucan.plataformadenuncias.controllers;
 
-import com.ucan.plataformadenuncias.entities.Funcionalidade;
-import com.ucan.plataformadenuncias.services.FuncionalidadeService;
-import java.util.List;
-import java.util.Optional;
+import com.ucan.plataformadenuncias.entities.FuncionalidadePerfil;
+import com.ucan.plataformadenuncias.entities.Pessoa;
+import com.ucan.plataformadenuncias.entities.Utilizador;
+import com.ucan.plataformadenuncias.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-/**
- *
- * @author cristiano
- */
+
+import java.util.List;
+
 @RestController
-@RequestMapping("/api/funcionalidades")
+@RequestMapping("/api/funcionalidades")  // Padronização comum para endpoints de autenticação
+@CrossOrigin(origins = "*")    // Permite acesso de qualquer origem (ajuste conforme necessidade)
 public class FuncionalidadeController {
+
     @Autowired
-    private FuncionalidadeService service;
+    private UtilizadorRepository utilizadorRepository;
 
-    @GetMapping
-    public List<Funcionalidade> getAll() {
-        return service.listarTodos();
-    }
+    @Autowired
+    private PessoaRepository pessoaRepository;
 
-    @GetMapping("/{id}")
-    public Optional<Funcionalidade> buscar(@PathVariable Long id) {
-        return service.buscarPorId(id);
+    @Autowired
+    private FuncionalidadePerfilRepository funcionalidadePerfilRepository;
+
+    @Autowired
+    private FuncionalidadeRepository funcionalidadeRepository;
+
+    @Autowired
+    private PerfilRepository perfilRepository;
+
+    @GetMapping("funcionalidade_listar")
+    public List<FuncionalidadePerfil> listarTodos() {
+        return funcionalidadePerfilRepository.findAll();
     }
 
     @PostMapping
-    public Funcionalidade create(@RequestBody Funcionalidade entity) {
-        return service.salvar(entity);
+    public Pessoa adicionar(@RequestBody Pessoa motorista) {
+
+        Pessoa pessoaModel = pessoaRepository.save(motorista);
+        Utilizador utilizadorModel = new Utilizador();
+
+    /*
+        usuario.setPessoaId(pessoaModel);
+        usuario.setPasswordHash(dto.getPassword());
+        usuario.setAtivo(true);
+        usuario.setCreatedAt(LocalDateTime.now());
+        usuario.setEmail(pessoaModel.getEmail());
+
+        usuarioRepository.save();
+    */
+        return pessoaModel;
     }
 
-   /* @PutMapping("/{id}")
-    public Funcionalidade update(@PathVariable Long id, @RequestBody Funcionalidade entity) {
-        return service.update(id, entity);
-    }*/
+    @GetMapping("/{id}")
+    public Utilizador buscarPorId(@PathVariable int id) {
+        return utilizadorRepository.findById(id).orElse(null);
+    }
+
+    @PostMapping("buscaPorIdentificacao")
+    public Pessoa buscarPorIdentificacao(@RequestParam String identificacao) {
+        return pessoaRepository.findByIdentificacao(identificacao);
+    }
+
+    @PutMapping("/{id}")
+    public Utilizador atualizar(@PathVariable int id, @RequestBody Pessoa motorista) {
+
+        motorista.setPkPessoa(id);
+        Pessoa pessoaModel = pessoaRepository.save(motorista);
+        Utilizador utilizadorModel = new Utilizador();
+
+        return utilizadorRepository.save(utilizadorModel);
+    }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        service.remover(id);
+    public void remover(@PathVariable int id) {
+        utilizadorRepository.deleteById(id);
     }
 }
-

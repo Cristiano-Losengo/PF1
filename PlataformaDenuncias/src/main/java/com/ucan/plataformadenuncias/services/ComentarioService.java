@@ -1,4 +1,5 @@
 package com.ucan.plataformadenuncias.services;
+
 import com.ucan.plataformadenuncias.entities.Comentario;
 import com.ucan.plataformadenuncias.repositories.ComentarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -6,8 +7,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-
-
 
 /**
  *
@@ -23,7 +22,7 @@ public class ComentarioService {
         return comentarioRepository.findAll();
     }
 
-    public Optional<Comentario> buscarPorId(Long id) {
+    public Optional<Comentario> buscarPorId(Integer id) {
         return comentarioRepository.findById(id);
     }
 
@@ -31,7 +30,7 @@ public class ComentarioService {
         return comentarioRepository.save(comentario);
     }
 
-    public void deletar(Long id) {
+    public void deletar(Integer id) {
         comentarioRepository.deleteById(id);
     }
     

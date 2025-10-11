@@ -1,4 +1,5 @@
 package com.ucan.plataformadenuncias.services;
+
 import com.ucan.plataformadenuncias.entities.Categoria;
 import com.ucan.plataformadenuncias.repositories.CategoriaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +22,7 @@ public class CategoriaService {
         return categoriaRepository.findAll();
     }
 
-    public Optional<Categoria> buscarPorId(Long id) {
+    public Optional<Categoria> buscarPorId(Integer id) {
         return categoriaRepository.findById(id);
     }
 
@@ -29,7 +30,7 @@ public class CategoriaService {
         return categoriaRepository.save(categoria);
     }
 
-    public void deletar(Long id) {
+    public void deletar(Integer id) {
         categoriaRepository.deleteById(id);
     }
     

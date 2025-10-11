@@ -25,11 +25,11 @@ public class PerfilService {
         return repository.findAll();
     }
 
-    public Optional<Perfil> buscarPorId(Long id) {
+    public Optional<Perfil> buscarPorId(Integer id) {
         return repository.findById(id);
     }
 
-    public void remover(Long id) {
+    public void remover(Integer id) {
         repository.deleteById(id);
     }
 }

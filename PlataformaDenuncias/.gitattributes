@@ -1,2 +1,19 @@
-/mvnw text eol=lf
-*.cmd text eol=crlf
+# Configuração recomendada para projetos multiplataforma
+*.java text=auto
+*.xml text=auto
+*.properties text=auto
+*.yml text=auto
+*.yaml text=auto
+*.json text=auto
+*.md text=auto
+*.txt text=auto
+
+# Forçar LF para arquivos específicos
+*.sh text eol=lf
+*.bat text eol=crlf
+
+# Arquivos binários não devem ser convertidos
+*.jpg binary
+*.png binary
+*.jar binary
+*.pdf binary

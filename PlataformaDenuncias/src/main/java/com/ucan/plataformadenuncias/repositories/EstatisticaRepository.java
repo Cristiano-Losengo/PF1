@@ -13,5 +13,5 @@ import org.springframework.stereotype.Repository;
  * @author cristiano
  */
 @Repository
-public interface EstatisticaRepository extends JpaRepository<Estatistica, Long> {}
+public interface EstatisticaRepository extends JpaRepository<Estatistica, Integer> {}
 
