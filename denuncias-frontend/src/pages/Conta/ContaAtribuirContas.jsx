@@ -18,7 +18,7 @@ export default function ContaAtribuirContas() {
 
     try {
       const response = await fetch(
-        "http://localhost:8080/api/seguranca/conta_listar"
+        "http://localhost:9090/api/seguranca/conta_listar"
       );
       const data = await response.json();
       setContas(data);
@@ -30,7 +30,7 @@ export default function ContaAtribuirContas() {
   const carregarUtilizadores = async () => {
     try {
       const response = await fetch(
-        "http://localhost:8080/api/utilizador/listar_utilizadores"
+        "http://localhost:9090/api/utilizador/listar_utilizadores"
       );
       const data = await response.json();
       setUtilizadores(data);
@@ -64,7 +64,7 @@ const handleChange = (e) => {
     e.preventDefault();
 
     try {
-      await fetch("http://localhost:8080/api/conta_perfis/cadastrar_conta_utilizador", {
+      await fetch("http://localhost:9090/api/conta_perfis/cadastrar_conta_utilizador", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -92,7 +92,7 @@ const handleChange = (e) => {
     if (!window.confirm("Tem certeza que deseja excluir esta conta?")) return;
     try {
       await fetch(
-        `http://localhost:8080/api/seguranca/conta_excluir/${id}`,
+        `http://localhost:9090/api/seguranca/conta_excluir/${id}`,
         { method: "DELETE" }
       );
       carregarContas();

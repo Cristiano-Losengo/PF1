@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { FaTrash, FaSyncAlt } from "react-icons/fa";
 
 export default function FuncionalidadeListar() {
-  const BASE_URL = "http://localhost:8080/api/seguranca";
+  const BASE_URL = "http://localhost:9090/api/seguranca";
   const [funcionalidades, setFuncionalidades] = useState([]);
 
   const carregarFuncionalidades = async () => {

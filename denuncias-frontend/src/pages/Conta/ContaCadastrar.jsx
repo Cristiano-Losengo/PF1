@@ -15,7 +15,7 @@ export default function ContaCadastrar() {
   const carregarContas = async () => {
     try {
       const response = await fetch(
-        "http://localhost:8080/api/seguranca/conta_listar"
+        "http://localhost:9090/api/seguranca/conta_listar"
       );
       const data = await response.json();
       setContas(data);
@@ -41,8 +41,8 @@ export default function ContaCadastrar() {
     try {
       const method = editando ? "PUT" : "POST";
       const url = editando
-        ? `http://localhost:8080/api/seguranca/conta_editar/${formData.pkConta}`
-        : "http://localhost:8080/api/seguranca/conta_cadastrar";
+        ? `http://localhost:9090/api/seguranca/conta_editar/${formData.pkConta}`
+        : "http://localhost:9090/api/seguranca/conta_cadastrar";
 
       await fetch(url, {
         method,
@@ -68,7 +68,7 @@ export default function ContaCadastrar() {
     if (!window.confirm("Tem certeza que deseja excluir esta conta?")) return;
     try {
       await fetch(
-        `http://localhost:8080/api/seguranca/conta_excluir/${id}`,
+        `http://localhost:9090/api/seguranca/conta_excluir/${id}`,
         { method: "DELETE" }
       );
       carregarContas();

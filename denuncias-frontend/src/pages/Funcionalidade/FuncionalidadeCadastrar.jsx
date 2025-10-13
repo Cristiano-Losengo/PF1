@@ -29,7 +29,7 @@ export default function FuncionalidadeCadastrar() {
     }
 
     try {
-      const response = await fetch("http://localhost:8080/api/seguranca/funcionalidade_cadastrar", {
+      const response = await fetch("http://localhost:9090/api/seguranca/funcionalidade_cadastrar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData)
@@ -118,6 +118,7 @@ export default function FuncionalidadeCadastrar() {
               required
             >
               <option value="">Selecione...</option>
+              <option value="AGUA">Água</option>
               <option value="DENUNCIA">Denúncia</option>
               <option value="SEGURANCA">Segurança</option>
               <option value="RELATORIO">Relatório</option>

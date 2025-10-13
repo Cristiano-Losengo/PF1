@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 export default function PerfilCadastrar() {
-  const BASE_URL = "http://localhost:8080/api/seguranca";
+  const BASE_URL = "http://localhost:9090/api/seguranca";
 
   const [perfis, setPerfis] = useState([]);
   const [mensagem, setMensagem] = useState(null);

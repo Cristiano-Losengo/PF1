@@ -6,7 +6,7 @@ export default function Home() {
   const [mensagem, setMensagem] = useState('');
 
   useEffect(() => {
-    axios.get('http://localhost:8080/api/denuncias/home')
+    axios.get('http://localhost:9000/api/denuncias/home')
       .then(res => setMensagem(res.data.mensagem))
       .catch(err => console.error('Erro:', err));
   }, []);

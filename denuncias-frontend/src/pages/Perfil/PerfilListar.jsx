@@ -6,7 +6,7 @@ export default function PerfilListar() {
   // Carregar lista
   const carregarPerfis = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/seguranca/perfil_listar");
+      const response = await fetch("http://localhost:9090/api/seguranca/perfil_listar");
       const data = await response.json();
       setPerfis(data);
     } catch (error) {
@@ -22,7 +22,7 @@ export default function PerfilListar() {
   const handleDelete = async (id) => {
     if (!window.confirm("Tem certeza que deseja excluir?")) return;
     try {
-      await fetch(`http://localhost:8080/api/seguranca/perfil_excluir/${id}`, {
+      await fetch(`http://localhost:9090/api/seguranca/perfil_excluir/${id}`, {
         method: "DELETE",
       });
       carregarPerfis();
