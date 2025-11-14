@@ -12,7 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/funcionalidades")  // Padronização comum para endpoints de autenticação
-@CrossOrigin(origins = "*")    // Permite acesso de qualquer origem (ajuste conforme necessidade)
+@CrossOrigin(origins = "*")    
 public class FuncionalidadeController {
 
     @Autowired

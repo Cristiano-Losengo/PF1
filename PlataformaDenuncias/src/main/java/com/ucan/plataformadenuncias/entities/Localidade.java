@@ -73,5 +73,7 @@ public class Localidade implements Serializable
         return "[pkLocalidade: " + pkLocalidade + 
             ", nome: " + nome + "]";
     }
+
+
     
 }
