@@ -6,6 +6,7 @@ import {
   FaSignOutAlt, FaHospital, FaBuilding, FaUser, FaBullhorn, FaTwitter, FaLinkedin, FaGithub
 } from 'react-icons/fa';
 
+import './App.css';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Agua from './pages/Agua';
@@ -96,7 +97,9 @@ function App() {
               <Link className="navbar-brand d-flex align-items-center me-auto" to="/">
                 {/* Coloca a imagem brasao-angola.png em public/brasao-angola.png,  
                 <img src="/brasao-angola2.png" alt="República de Angola" width="270" style={{ marginRight: 10 }} onError={(e)=>{ e.currentTarget.style.display='none'; }} />
-        <span className="fw-bold fs-5 text-warning">Plataforma Nacional de Denúncias</span>bg-black ou dark*/}
+        <span className="fw-bold fs-5 text-warning">Plataforma Nacional de Denúncias</span>bg-black ou dark
+        Governo da República de Angola — Ministério da Administração do Território e Reforma do Estado.
+        */}
                 <img src="/brasao-angola5.png" alt="República de Angola" width="200" style={{ marginRight: -5 }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
               </Link>
               <button
@@ -341,8 +344,8 @@ function App() {
 
             <hr className="border-secondary my-4" />
             <div className="text-center small text-muted">
-              &copy; 2025 Governo da República de Angola — Ministério da Administração do Território e Reforma do Estado. <br />
-              Todos os direitos reservados.
+              &copy; 2025 Todos os direitos reservados. <br />
+              
             </div>
           </div>
         </footer>

@@ -29,7 +29,7 @@ export default function FuncionalidadeCadastrar() {
     }
 
     try {
-      const response = await fetch("http://localhost:9090/api/seguranca/funcionalidade_cadastrar", {
+      const response = await fetch("http://localhost:8080/api/seguranca/funcionalidade_cadastrar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData)

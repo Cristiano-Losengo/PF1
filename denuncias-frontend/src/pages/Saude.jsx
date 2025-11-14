@@ -4,23 +4,22 @@ import {
   FaFileAlt, FaListAlt, FaPaperclip, FaHospital, FaComments, FaCheckCircle, FaHourglassHalf
 } from 'react-icons/fa';
 import { useParams } from 'react-router-dom';
-
 export default function Saude() {
   const { tipo } = useParams();
   const [anonimo, setAnonimo] = useState(false);
   const [formData, setFormData] = useState({
-    unidade: '',
-    municipio: '',
-    bairro: '',
-    rua: '',
-    local: '',
-    data: '',
-    subtipo: '',
-    descricao: '',
-    nome: '',
-    contacto: '',
-    anexo: null
-  });
+  unidade: 'centro-de-saude',   // ✅ Valor padrão
+  municipio: 'Cazenga',         // ✅ Valor padrão
+  bairro: 'Hoji-ya-Henda',      // ✅ Valor padrão
+  rua: '',
+  local: '',
+  data: '',
+  subtipo: 'nao-atendido',      // ✅ Valor padrão
+  descricao: '',
+  nome: '',
+  contacto: '',
+  anexo: null
+});
   const [errors, setErrors] = useState({});
 
   // Lista de municípios e bairros
@@ -117,7 +116,6 @@ export default function Saude() {
                   onChange={handleChange}
                   className={`form-select ${errors.unidade ? 'is-invalid' : ''}`}
                 >
-                  <option value="">Selecione...</option>
                   <option value="hospital-publico">Hospital Público</option>
                   <option value="centro-de-saude">Centro de Saúde</option>
                 </select>

@@ -7,15 +7,18 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
-import java.util.List;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
-import jakarta.validation.constraints.Size;
+import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 
 /**
@@ -23,27 +26,34 @@ import jakarta.validation.constraints.Size;
  * @author cristiano
  */
 @Entity
+@Getter
+@Setter
+@AllArgsConstructor
+
 @Table(name = "denuncia")
 public class Denuncia {
     @Id @GeneratedValue
     @Column(name = "pk_denuncia")
     private Integer pkDenuncia;
+    private String nome;
     private String descricao;
-   // private Data data;
-
+    private LocalDateTime dataRegistro = LocalDateTime.now();
+    private String subtipo; // Exemplo: "Falta de Água", "Água Suja"
+    private boolean anonima;
+ 
     @ManyToOne
     @JoinColumn(name = "fk_categoria")
     private Categoria categoria;
 
     @ManyToOne
-    @JoinColumn(name = "fk_localizacao")
+    @JoinColumn(name = "fk_localidades",  nullable = false)
     private Localidade localidade;
-  
-/*
-    @OneToMany(mappedBy = "denuncia")
-    @JoinColumn(name = "fk_cidadao")
-    private List<Comentario> comentarios;
-*/
+    
+    
+    
+    @ManyToOne
+    @JoinColumn(name = "utilizador", nullable = true)
+    private Utilizador utilizador;
     
     @OneToOne(mappedBy = "denuncia")
     private Resposta resposta;

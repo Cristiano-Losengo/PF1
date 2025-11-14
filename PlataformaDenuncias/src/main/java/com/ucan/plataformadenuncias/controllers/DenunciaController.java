@@ -22,21 +22,24 @@ import org.springframework.web.bind.annotation.RestController;
  */
 // ============== CONTROLLERS ===============
 
-/*@RestController
+@RestController
 @RequestMapping("/api/denuncias")
-@CrossOrigin(origins = "http://localhost:4200")
+//@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "http://localhost:5173")
+
+
 public class DenunciaController {
+
     @Autowired
-    private DenunciaService service;
+    private DenunciaService denunciaService;
 
     @GetMapping
-    public List<Denuncia> listar() {
-        return service.listarTodas();
+    public List<Denuncia> listarTodas() {
+        return denunciaService.listarTodas();
     }
 
     @PostMapping
-    public Denuncia criar(@RequestBody Denuncia denuncia) {
-        return service.salvar(denuncia);
+    public Denuncia registrar(@RequestBody Denuncia denuncia) {
+        return denunciaService.salvar(denuncia);
     }
 }
-*/

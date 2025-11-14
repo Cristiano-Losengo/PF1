@@ -13,7 +13,10 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
@@ -21,7 +24,9 @@ import lombok.Setter;
  * @author cristiano
  */
 @Entity
-@Table(name = "localidade")
+@Table(name = "localidades")
+
+
 @Getter
 @Setter
 public class Localidade implements Serializable

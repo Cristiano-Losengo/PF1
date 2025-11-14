@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   FaMapMarkerAlt, FaTint, FaExclamationCircle, FaCalendarAlt, FaFileAlt, FaUser,
   FaPhoneAlt, FaPaperclip, FaListAlt, FaComments, FaCheckCircle, FaHourglassHalf
@@ -9,20 +9,29 @@ export default function Agua() {
   const { tipo } = useParams();
   const [anonimo, setAnonimo] = useState(false);
   const [formData, setFormData] = useState({
-    local: '', municipio: '', bairro: '', rua: '', data: '', subtipo: '', descricao: '',
-    nome: '', contacto: '', anexo: null
+    local: '',
+    municipio: 'Luanda',       
+    bairro: 'Sambizanga',    
+    rua: '',
+    data: '',
+    subtipo: 'agua_inexistente', 
+    descricao: '',
+    nome: '',
+    contacto: '',
+    anexo: null
   });
-  const [errors, setErrors] = useState({});
 
- 
+  const [errors, setErrors] = useState({});
+  const [denuncias, setDenuncias] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // --- MUNICÍPIOS E BAIRROS ---
   const municipios = [
     "Belas", "Cacuaco", "Cazenga", "Ícolo_e_Bengo",
     "Luanda", "KilambaKiaxi", "Quiçama", "Talatona", "Viana"
   ];
 
-  
-
- const bairrosPorMunicipio = {
+  const bairrosPorMunicipio = {
     Luanda: ["Ingombota", "Maianga", "Sambizanga", "Rangel", "Kinaxixi", "Mutamba"],
     Viana: ["Zango 1", "Zango 2", "Zango 3", "Zango 4", "Estalagem", "Vila de Viana", "Capalanga"],
     Cazenga: ["Hoji-ya-Henda", "Mabor", "Tala Hady", "Cazenga Popular"],
@@ -30,39 +39,45 @@ export default function Agua() {
     Cacuaco: ["Sequele", "Ngola Kiluanje", "Kikolo", "Mulenvos"],
     Talatona: ["Patriota", "Futungo", "Cidade Universitária", "Morro Bento II"],
     KilambaKiaxi: ["Golfe 1", "Golfe 2", "Palanca", "Sapú", "Terra Nova"],
-    Ícolo_e_Bengo: ["Catete", "Cabiri", "Cassoneca", "Bom Jesus"],
-    Quicama: ["Mumbondo", "Demba Chio", "Muxima"]
+    "Ícolo_e_Bengo": ["Catete", "Cabiri", "Cassoneca", "Bom Jesus"],
+    Quiçama: ["Mumbondo", "Demba Chio", "Muxima"]
   };
 
+  // --- BUSCAR DENÚNCIAS AO INICIAR ---
+  useEffect(() => {
+    fetchDenuncias();
+  }, []);
 
-  const denunciasMock = [
-    {
-      id: 1,
-      subtipo: "Água inexistente",
-      descricao: "Estamos há 5 dias sem água no bairro Kifica.",
-      status: "Pendente",
-      comentario: "Sua denúncia foi encaminhada à administração municipal."
-    },
-    {
-      id: 2,
-      subtipo: "Água suja",
-      descricao: "A água da torneira sai com cheiro forte e amarelada.",
-      status: "Resolvido",
-      comentario: "A empresa de distribuição realizou limpeza no reservatório."
+  const fetchDenuncias = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("http://localhost:8080/api/denuncias");
+      if (!res.ok) throw new Error('Erro ao buscar denúncias');
+      const data = await res.json();
+      setDenuncias(data || []);
+    } catch (err) {
+      console.error('fetchDenuncias:', err);
+    } finally {
+      setLoading(false);
     }
-  ];
-
-  const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: files ? files[0] : value
-    }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  // --- MANIPULAÇÃO DOS CAMPOS DO FORMULÁRIO ---
+  const handleChange = (e) => {
+    const { name, value, files, type, checked } = e.target;
 
+    if (type === 'file') {
+      setFormData(prev => ({ ...prev, [name]: files?.[0] || null }));
+    } else if (type === 'checkbox') {
+      if (name === 'anonimo') setAnonimo(checked);
+      setFormData(prev => ({ ...prev, [name]: checked }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  // --- VALIDAÇÃO DOS CAMPOS ---
+  const validate = () => {
     const newErrors = {};
     if (!formData.local.trim()) newErrors.local = 'Informe o local da ocorrência.';
     if (!formData.municipio.trim()) newErrors.municipio = 'Informe o município.';
@@ -75,22 +90,77 @@ export default function Agua() {
       if (!formData.nome.trim()) newErrors.nome = 'Informe o nome.';
       if (!formData.contacto.trim()) newErrors.contacto = 'Informe o contacto.';
     }
+    return newErrors;
+  };
 
+  // --- ENVIO DA DENÚNCIA ---
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const newErrors = validate();
     setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
 
-    if (Object.keys(newErrors).length === 0) {
-      alert("Formulário enviado com sucesso!");
+    const payload = {
+      nome: anonimo ? null : formData.nome,
+      contacto: anonimo ? null : formData.contacto,
+      descricao: formData.descricao,
+      anonima: anonimo,
+      dataOcorrencia: formData.data, 
+      subtipo: formData.subtipo,
+      localidade: {
+        municipio: formData.municipio,
+        bairro: formData.bairro,
+        rua: formData.rua,
+        local: formData.local
+      }
+    };
+
+    try {
+      const res = await fetch("http://localhost:8080/api/denuncias", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const nova = await res.json();
+        setDenuncias(prev => [...prev, nova]);
+        setFormData({
+          local: '', municipio: '', bairro: '', rua: '', data: '', subtipo: '', descricao: '',
+          nome: '', contacto: '', anexo: null
+        });
+        setAnonimo(false);
+        setErrors({});
+        alert("✅ Denúncia registrada com sucesso!");
+      } else {
+        const text = await res.text();
+        console.error('Erro no POST:', res.status, text);
+        alert("❌ Erro ao enviar denúncia.");
+      }
+    } catch (err) {
+      console.error('handleSubmit:', err);
+      alert("⚠️ Falha ao conectar com o servidor!");
     }
   };
 
+  // --- EXIBIR STATUS VISUAL ---
+  const renderStatusBadge = (d) => {
+    const status = d.status || (d.resposta ? 'Resolvido' : 'Pendente');
+    if (status === 'Resolvido' || status === 'Concluído') {
+      return <span className="badge bg-success"><FaCheckCircle className="me-1" /> {status}</span>;
+    }
+    return <span className="badge bg-warning text-dark"><FaHourglassHalf className="me-1" /> {status}</span>;
+  };
+
+  // --- INTERFACE ---
   return (
     <div className="page">
       <main>
         <div className="container py-4">
 
-          {/* Registrar denúncia */}
+          {/* FORMULÁRIO DE DENÚNCIA */}
           {tipo === "registrar" && (
-            <form className="container mt-5" onSubmit={handleSubmit} style={{ maxWidth: "700px" }}>
+            <form className="container mt-5" onSubmit={handleSubmit} style={{ maxWidth: "800px" }}>
               <h2 className="mb-4">
                 <FaTint className="me-2 text-primary" /> Registrar Ocorrência - Setor de Água
               </h2>
@@ -124,10 +194,10 @@ export default function Agua() {
                   onChange={handleChange}
                   className={`form-select ${errors.municipio ? 'is-invalid' : ''}`}
                 >
-                  <option value="">Selecione...</option>
                   {municipios.map((m) => (
                     <option key={m} value={m}>{m}</option>
                   ))}
+
                 </select>
                 {errors.municipio && <div className="invalid-feedback">{errors.municipio}</div>}
               </div>
@@ -155,23 +225,21 @@ export default function Agua() {
               )}
 
               {/* RUA */}
-              {formData.bairro && (
-                <div className="mb-3">
-                  <label htmlFor="rua" className="form-label">
-                    <FaMapMarkerAlt className="me-2" /> Nome da Rua / Número
-                  </label>
-                  <input
-                    type="text"
-                    id="rua"
-                    name="rua"
-                    value={formData.rua}
-                    onChange={handleChange}
-                    className={`form-control ${errors.rua ? 'is-invalid' : ''}`}
-                    placeholder="Ex: Rua 12, nº 45"
-                  />
-                  {errors.rua && <div className="invalid-feedback">{errors.rua}</div>}
-                </div>
-              )}
+              <div className="mb-3">
+                <label htmlFor="rua" className="form-label">
+                  <FaMapMarkerAlt className="me-2" /> Nome da Rua / Número
+                </label>
+                <input
+                  type="text"
+                  id="rua"
+                  name="rua"
+                  value={formData.rua}
+                  onChange={handleChange}
+                  className={`form-control ${errors.rua ? 'is-invalid' : ''}`}
+                  placeholder="Ex: Rua 12, nº 45"
+                />
+                {errors.rua && <div className="invalid-feedback">{errors.rua}</div>}
+              </div>
 
               {/* DATA */}
               <div className="mb-3">
@@ -229,39 +297,38 @@ export default function Agua() {
                 {errors.descricao && <div className="invalid-feedback">{errors.descricao}</div>}
               </div>
 
-              {/* NOME */}
+              {/* IDENTIFICAÇÃO */}
               {!anonimo && (
-                <div className="mb-3">
-                  <label htmlFor="nome" className="form-label">
-                    <FaUser className="me-2" /> Nome do Denunciante
-                  </label>
-                  <input
-                    type="text"
-                    id="nome"
-                    name="nome"
-                    value={formData.nome}
-                    onChange={handleChange}
-                    className={`form-control ${errors.nome ? 'is-invalid' : ''}`}
-                  />
-                  {errors.nome && <div className="invalid-feedback">{errors.nome}</div>}
-                </div>
-              )}
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <label htmlFor="nome" className="form-label">
+                      <FaUser className="me-2" /> Nome do Denunciante
+                    </label>
+                    <input
+                      type="text"
+                      id="nome"
+                      name="nome"
+                      value={formData.nome}
+                      onChange={handleChange}
+                      className={`form-control ${errors.nome ? 'is-invalid' : ''}`}
+                    />
+                    {errors.nome && <div className="invalid-feedback">{errors.nome}</div>}
+                  </div>
 
-              {/* CONTACTO */}
-              {!anonimo && (
-                <div className="mb-3">
-                  <label htmlFor="contacto" className="form-label">
-                    <FaPhoneAlt className="me-2" /> Contacto
-                  </label>
-                  <input
-                    type="text"
-                    id="contacto"
-                    name="contacto"
-                    value={formData.contacto}
-                    onChange={handleChange}
-                    className={`form-control ${errors.contacto ? 'is-invalid' : ''}`}
-                  />
-                  {errors.contacto && <div className="invalid-feedback">{errors.contacto}</div>}
+                  <div className="col-md-6 mb-3">
+                    <label htmlFor="contacto" className="form-label">
+                      <FaPhoneAlt className="me-2" /> Contacto
+                    </label>
+                    <input
+                      type="text"
+                      id="contacto"
+                      name="contacto"
+                      value={formData.contacto}
+                      onChange={handleChange}
+                      className={`form-control ${errors.contacto ? 'is-invalid' : ''}`}
+                    />
+                    {errors.contacto && <div className="invalid-feedback">{errors.contacto}</div>}
+                  </div>
                 </div>
               )}
 
@@ -271,6 +338,7 @@ export default function Agua() {
                   <FaPaperclip className="me-2" /> Anexo (opcional)
                 </label>
                 <input type="file" id="anexo" name="anexo" onChange={handleChange} className="form-control" />
+                {formData.anexo && <small className="text-muted">Arquivo selecionado: {formData.anexo.name}</small>}
               </div>
 
               {/* ANÔNIMO */}
@@ -278,28 +346,29 @@ export default function Agua() {
                 <input
                   type="checkbox"
                   id="anonimo"
+                  name="anonimo"
                   className="form-check-input"
                   checked={anonimo}
-                  onChange={(e) => setAnonimo(e.target.checked)}
+                  onChange={handleChange}
                 />
-                <label htmlFor="anonimo" className="form-check-label">
-                  Deseja permanecer anônimo?
-                </label>
+                <label htmlFor="anonimo" className="form-check-label">Deseja permanecer anônimo?</label>
               </div>
 
               <button type="submit" className="btn btn-primary w-100">Cadastrar Denúncia</button>
             </form>
           )}
 
-          {/* Minhas denúncias */}
+          {/* LISTAGEM DE DENÚNCIAS */}
           {tipo === "minhas" && (
             <div className="container mt-5">
               <h2 className="mb-4 text-success">
                 <FaListAlt className="me-2" /> Minhas Denúncias - Setor de Água
               </h2>
 
-              {denunciasMock.length === 0 ? (
-                <p className="text-muted">Você ainda não realizou nenhuma denúncia.</p>
+              {loading ? (
+                <p>Carregando denúncias...</p>
+              ) : denuncias.length === 0 ? (
+                <p className="text-muted">Ainda não existem denúncias registadas.</p>
               ) : (
                 <div className="table-responsive">
                   <table className="table table-bordered table-striped">
@@ -307,27 +376,25 @@ export default function Agua() {
                       <tr>
                         <th><FaExclamationCircle className="me-2 text-danger" /> Problema</th>
                         <th><FaFileAlt className="me-2 text-primary" /> Descrição</th>
+                        <th><FaMapMarkerAlt className="me-2" /> Local</th>
+                        <th><FaCalendarAlt className="me-2" /> Data</th>
                         <th><FaCheckCircle className="me-2 text-success" /> Status</th>
-                        <th><FaComments className="me-2 text-info" /> Comentário</th>
+                        <th><FaComments className="me-2 text-info" /> Comentário / Resposta</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {denunciasMock.map((denuncia) => (
-                        <tr key={denuncia.id}>
-                          <td>{denuncia.subtipo}</td>
-                          <td>{denuncia.descricao}</td>
+                      {denuncias.map((d) => (
+                        <tr key={d.id || d.pkDenuncia}>
+                          <td>{d.subtipo}</td>
+                          <td style={{ maxWidth: 300 }}>{d.descricao}</td>
                           <td>
-                            {denuncia.status === "Resolvido" ? (
-                              <span className="badge bg-success">
-                                <FaCheckCircle className="me-1" /> {denuncia.status}
-                              </span>
-                            ) : (
-                              <span className="badge bg-warning text-dark">
-                                <FaHourglassHalf className="me-1" /> {denuncia.status}
-                              </span>
-                            )}
+                            {d.localidade
+                              ? `${d.localidade.bairro || ''}${d.localidade.rua ? ' — ' + d.localidade.rua : ''} (${d.localidade.municipio || ''})`
+                              : '—'}
                           </td>
-                          <td><em>{denuncia.comentario}</em></td>
+                          <td>{d.dataOcorrencia || d.data || ''}</td>
+                          <td>{renderStatusBadge(d)}</td>
+                          <td><em>{d.resposta?.comentario || d.comentario || '-'}</em></td>
                         </tr>
                       ))}
                     </tbody>
