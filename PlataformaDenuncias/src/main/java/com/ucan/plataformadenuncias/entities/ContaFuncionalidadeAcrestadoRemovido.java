@@ -1,7 +1,8 @@
 
 package com.ucan.plataformadenuncias.entities;
 
-import com.ucan.plataformadenuncias.config.Constantes;
+import com.ucan.plataformadenuncias.config.Defs;
+import com.ucan.plataformadenuncias.config.FuncionsHelper;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -33,7 +34,7 @@ public class ContaFuncionalidadeAcrestadoRemovido {
     private Perfil fkPerfil;
 
     @Column(name = "tipo_acao")
-    private int tipoAcao = Constantes.INSERIR;
+    private int tipoAcao = Defs.INSERIR;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

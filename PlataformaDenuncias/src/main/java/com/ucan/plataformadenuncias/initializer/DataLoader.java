@@ -1,8 +1,8 @@
 package com.ucan.plataformadenuncias.initializer;
 
-import com.ucan.plataformadenuncias.config.Constantes;
+import com.ucan.plataformadenuncias.config.Defs;
+import com.ucan.plataformadenuncias.config.FuncionsHelper;
 import com.ucan.plataformadenuncias.entities.*;
-import com.ucan.plataformadenuncias.enumerable.TipoFuncionalidadeEnum;
 import com.ucan.plataformadenuncias.repositories.*;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -65,8 +65,8 @@ public class DataLoader implements CommandLineRunner {
 
         if (contaRepository.count() == 0) {
 
-            contaRepository.save(new Conta(1, Constantes.CONTA_ROOT, LocalDateTime.now()));
-            contaRepository.save(new Conta(2, Constantes.CONTA_DEFAULT, LocalDateTime.now()));
+            contaRepository.save(new Conta(1, Defs.CONTA_ROOT, LocalDateTime.now()));
+            contaRepository.save(new Conta(2, Defs.CONTA_DEFAULT, LocalDateTime.now()));
 
             System.out.println("Utilizadores iniciais carregados.");
 
@@ -123,12 +123,12 @@ public class DataLoader implements CommandLineRunner {
         if (funcionalidadeRepository.count() == 0) {
 
             // sao as opcoes que o sistema permite fazer
-
-            funcionalidadeRepository.save(new Funcionalidade("Cadastrar", "", "", TipoFuncionalidadeEnum.FORM, LocalDateTime.now()));
-            funcionalidadeRepository.save(new Funcionalidade("Visualizar", "", "", TipoFuncionalidadeEnum.FORM, LocalDateTime.now()));
-            funcionalidadeRepository.save(new Funcionalidade("Confirmar Pagamento", "", "", TipoFuncionalidadeEnum.FORM, LocalDateTime.now()));
-            funcionalidadeRepository.save(new Funcionalidade("Enviar Notificação", "", "", TipoFuncionalidadeEnum.FORM, LocalDateTime.now()));
-
+/*
+            funcionalidadeRepository.save(new Funcionalidade("Cadastrar", "", "", TipoFuncionalidadeEnum.FORM));
+            funcionalidadeRepository.save(new Funcionalidade("Visualizar", "", "", TipoFuncionalidadeEnum.FORM));
+            funcionalidadeRepository.save(new Funcionalidade("Confirmar Pagamento", "", "", TipoFuncionalidadeEnum.FORM));
+            funcionalidadeRepository.save(new Funcionalidade("Enviar Notificação", "", "", TipoFuncionalidadeEnum.FORM));
+*/
             System.out.println("Funcionalidades iniciais carregados.");
         } else {
             System.out.println("Autorities. Nenhum dado inicial carregado.");
@@ -143,7 +143,7 @@ public class DataLoader implements CommandLineRunner {
 
             Funcionalidade funcionalidadeCadastrar = funcionalidadeRepository.findByPkFuncionalidade(1);
             Funcionalidade funcionalidadeListar = funcionalidadeRepository.findByPkFuncionalidade(2);
-
+/*
             funcionalidadePerfilRepository.save(new FuncionalidadePerfil(funcionalidadeCadastrar, perfilFuncionalidade, "", "", LocalDateTime.now()));
             funcionalidadePerfilRepository.save(new FuncionalidadePerfil(funcionalidadeListar, perfilFuncionalidade, "", "", LocalDateTime.now()));
             funcionalidadePerfilRepository.save(new FuncionalidadePerfil(funcionalidadeListar, perfilFuncionalidade, "", "", LocalDateTime.now()));
@@ -156,7 +156,7 @@ public class DataLoader implements CommandLineRunner {
 
             funcionalidadePerfilRepository.save(new FuncionalidadePerfil(funcionalidadeCadastrar, perfilConta, "", "", LocalDateTime.now()));
             funcionalidadePerfilRepository.save(new FuncionalidadePerfil(funcionalidadeListar, perfilConta, "", "", LocalDateTime.now()));
-
+*/
             System.out.println("FuncionalidadesPerfis iniciais carregados.");
         } else {
             System.out.println("Autorities. Nenhum dado inicial carregado.");

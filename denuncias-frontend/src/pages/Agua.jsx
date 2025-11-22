@@ -51,7 +51,7 @@ export default function Agua() {
   const fetchDenuncias = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:8080/api/denuncias");
+      const res = await fetch("http://localhost:9090/api/denuncias");
       if (!res.ok) throw new Error('Erro ao buscar denúncias');
       const data = await res.json();
       setDenuncias(data || []);
@@ -116,7 +116,7 @@ export default function Agua() {
     };
 
     try {
-      const res = await fetch("http://localhost:8080/api/denuncias", {
+      const res = await fetch("http://localhost:9090/api/denuncias", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)

@@ -72,7 +72,7 @@ public class SegurancaController {
             System.out.println("HOJE");
             System.out.println(funcionalidadePerfilModel.getFkPerfil().getFkPerfil());
             funcionalidadePerfilDTO.setPaiFuncionalidade(funcionalidadePerfilModel.getFkPerfil().getFkPerfil().getNome());
-            funcionalidadePerfilDTO.setTipoFuncionalidade(String.valueOf(funcionalidadePerfilModel.getFkFuncionalidade().getTipoFuncionalidade()));
+         //   funcionalidadePerfilDTO.setTipoFuncionalidade(String.valueOf(funcionalidadePerfilModel.getFkFuncionalidade()));
 
             listFuncionalidadePerfil.add(funcionalidadePerfilDTO);
 

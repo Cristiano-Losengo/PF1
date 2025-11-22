@@ -37,15 +37,14 @@ public class UtilizadorController {
         Optional<Utilizador> utilizadorModel1 = utilizadorRepository.findById(utilizadorDTO.getPkUtilizador());
 
         System.out.println(utilizadorDTO);
+
 /*
         PessoaModel pessoaModel = pessoaRepository.findByPkPessoa(utilizadorDTO.getFkPessoa());
         ContaModel contaModel = contaRepository.findByPkConta(utilizadorDTO.getFkConta());
         UtilizadorModel utilizadorModel = utilizadorRepository.findByFkPessoa(pessoaModel);
-
         utilizadorModel.setFkConta(contaModel);
 
         return utilizadorRepository.save(utilizadorModel);
-
  */
 
         return null;
@@ -63,13 +62,10 @@ public class UtilizadorController {
             utilizadorDTO.setPkUtilizador(utilizadorModel.getPkUtilizador());
             utilizadorDTO.setNome(utilizadorModel.getFkPessoa().getNome());
             utilizadorDTO.setNomeConta(utilizadorModel.getFkConta().getNome());
-
             utilizadorDTO.setFkPessoa(utilizadorModel.getFkPessoa().getPkPessoa());
             utilizadorDTO.setFkConta(utilizadorModel.getFkConta().getPkConta());
-
             utilizadorDTO.setUsername(utilizadorModel.getUsername());
             utilizadorDTO.setDetalhes(utilizadorModel.getDetalhe());
-
             utilizadorDTOList.add(utilizadorDTO);
         }
 

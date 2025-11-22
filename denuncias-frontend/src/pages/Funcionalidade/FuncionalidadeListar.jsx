@@ -1,13 +1,14 @@
-import { useEffect, useState } from "react";
-import { FaTrash, FaSyncAlt } from "react-icons/fa";
+import { useState, useEffect } from "react";
 
 export default function FuncionalidadeListar() {
-  const BASE_URL = "http://localhost:9090/api/seguranca";
   const [funcionalidades, setFuncionalidades] = useState([]);
+  const [openRows, setOpenRows] = useState({});
 
   const carregarFuncionalidades = async () => {
     try {
-      const response = await fetch(`${BASE_URL}/funcionalidade_listar`);
+      const response = await fetch(
+          "http://localhost:9898/api/seguranca/funcionalidade_perfil_listar"
+      );
       const data = await response.json();
       setFuncionalidades(data);
     } catch (error) {
@@ -19,65 +20,121 @@ export default function FuncionalidadeListar() {
     carregarFuncionalidades();
   }, []);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Tem certeza que deseja excluir esta funcionalidade?")) return;
-    try {
-      await fetch(`${BASE_URL}/funcionalidade/${id}`, { method: "DELETE" });
-      carregarFuncionalidades();
-    } catch (error) {
-      console.error("Erro ao excluir:", error);
-    }
+  const toggleRow = (key) => {
+    setOpenRows((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
   };
 
-  return (
-    <div className="container mt-4">
-      <h3 className="text-primary">Funcionalidades do Sistema</h3>
-      <button className="btn btn-outline-primary mb-3" onClick={carregarFuncionalidades}>
-        <FaSyncAlt /> Atualizar
-      </button>
+  const agrupado = funcionalidades.reduce((acc, item) => {
+    if (!acc[item.paiFuncionalidade]) {
+      acc[item.paiFuncionalidade] = {};
+    }
+    if (!acc[item.paiFuncionalidade][item.nomePerfil]) {
+      acc[item.paiFuncionalidade][item.nomePerfil] = [];
+    }
+    acc[item.paiFuncionalidade][item.nomePerfil].push(item);
+    return acc;
+  }, {});
 
-      <table className="table table-hover table-bordered align-middle">
-        <thead className="table-dark text-center">
+  return (
+      <div className="container mt-4">
+
+        <table className="table table-bordered table-striped align-middle">
+          <thead className="table-dark">
           <tr>
-            <th>#</th>
-            <th>Descrição</th>
-            <th>Designação</th>
-            <th>Módulo</th>
+            <th style={{ width: "50px" }}>#</th>
+            <th style={{ width: "50px" }}>✔</th>
+            <th>Nome</th>
             <th>Tipo</th>
-            <th>Nível</th>
-            <th>URL</th>
-            <th>Ações</th>
+            <th>Pai</th>
           </tr>
-        </thead>
-        <tbody>
-          {funcionalidades.map((f, i) => (
-            <tr key={f.pkFuncionalidade}>
-              <td>{i + 1}</td>
-              <td>{f.descricao}</td>
-              <td>{f.designacao}</td>
-              <td>{f.modulo}</td>
-              <td>{f.tipoFuncionalidade}</td>
-              <td>{f.nivelAcesso}</td>
-              <td>{f.url}</td>
-              <td className="text-center">
-                <button
-                  className="btn btn-sm btn-danger"
-                  onClick={() => handleDelete(f.pkFuncionalidade)}
-                >
-                  <FaTrash /> Excluir
-                </button>
-              </td>
-            </tr>
-          ))}
-          {funcionalidades.length === 0 && (
-            <tr>
-              <td colSpan={8} className="text-center text-muted">
-                Nenhuma funcionalidade cadastrada
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+
+          <tbody>
+
+          {/* NÍVEL 1 - PAI */}
+          {Object.entries(agrupado).map(([pai, perfis], indexPai) => {
+            const isOpenPai = openRows[pai] || false;
+
+            return (
+                <>
+                  <tr key={pai} className="table-primary">
+                    <td>{indexPai + 1}</td>
+                    <td><input type="checkbox" /></td>
+
+                    {/* Tabulação Pai */}
+                    <td style={{ paddingLeft: "0px" }}>
+                      <button
+                          className="btn btn-sm btn-link p-0 me-2"
+                          onClick={() => toggleRow(pai)}
+                      >
+                        {isOpenPai ? "▼" : "▶"}
+                      </button>
+
+                      <b>{pai}</b>
+                    </td>
+
+                    <td colSpan={2}></td>
+                  </tr>
+
+                  {/* NÍVEL 2 - PERFIL */}
+                  {isOpenPai &&
+                  Object.entries(perfis).map(([perfil, funcs]) => {
+                    const keyPerfil = `${pai}-${perfil}`;
+                    const isOpenPerfil = openRows[keyPerfil] || false;
+
+                    return (
+                        <>
+                          <tr key={keyPerfil} className="table-info">
+                            <td></td>
+                            <td><input type="checkbox" /></td>
+
+                            {/* Tabulação Perfil */}
+                            <td style={{ paddingLeft: "20px" }}>
+                              <button
+                                  className="btn btn-sm btn-link p-0 me-2"
+                                  onClick={() => toggleRow(keyPerfil)}
+                              >
+                                {isOpenPerfil ? "▼" : "▶"}
+                              </button>
+
+                              {perfil}
+                            </td>
+
+                            <td colSpan={2}></td>
+                          </tr>
+
+                          {/* NÍVEL 3 - FUNCIONALIDADE */}
+                          {isOpenPerfil &&
+                          funcs.map((f, idx) => (
+                              <tr
+                                  key={`${f.fkFuncionalidade}-${f.fkPerfil}-${idx}`}
+                                  className="table-secondary"
+                              >
+                                <td></td>
+                                <td><input type="checkbox" /></td>
+
+                                {/* Tabulação Funcionalidade */}
+                                <td style={{ paddingLeft: "40px" }}>
+                                  {f.nomeFuncionalidade}
+                                </td>
+
+                                <td>{f.tipoFuncionalidade}</td>
+                                <td>{f.paiFuncionalidade}</td>
+                              </tr>
+                          ))}
+                        </>
+                    );
+                  })}
+
+                </>
+            );
+          })}
+
+          </tbody>
+        </table>
+      </div>
   );
 }

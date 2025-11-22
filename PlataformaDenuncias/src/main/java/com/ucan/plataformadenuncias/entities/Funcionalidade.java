@@ -1,12 +1,7 @@
 package com.ucan.plataformadenuncias.entities;
 
-import com.ucan.plataformadenuncias.enumerable.TipoFuncionalidadeEnum;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,19 +27,29 @@ import org.hibernate.annotations.UpdateTimestamp;
 public class Funcionalidade {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer pkFuncionalidade;
 
-    @Column(name = "descricao", nullable = false, length = 100)
+    @Column(name = "descricao", length = 100)
     private String descricao;
 
     @Column(name = "designacao", length = 100)
     private String designacao;
 
-    @Column(name = "tipo_funcionalidade", length = 100)
-    private TipoFuncionalidadeEnum tipoFuncionalidade;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_tipo_funcionalidade")
+    private TipoFuncionalidade fkTipoFuncionalidade;
 
-    @Column(name = "url", nullable = false,  length = 100)
+    @Column(name = "grupo")
+    private Integer grupo;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_funcionalidade")
+    private Funcionalidade fkFuncionalidade;
+
+    @Column(name = "funcionalidades_partilhadas", length = 250)
+    private String funcionalidadesPartilhadas;
+
+    @Column(name = "url", length = 100)
     private String url;
 
     @CreationTimestamp
@@ -55,20 +60,25 @@ public class Funcionalidade {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    public Funcionalidade(String descricao, String designacao, String url, TipoFuncionalidadeEnum tipoFuncionalidadeEnum, LocalDateTime createdAt) {
-        this.descricao = descricao;
-        this.designacao = designacao;
-        this.url = url;
-        this.tipoFuncionalidade = tipoFuncionalidadeEnum;
-        this.createdAt = createdAt;
+    public Funcionalidade(Integer pkFuncionalidade) {
+        this.pkFuncionalidade = pkFuncionalidade;
     }
 
-    public Funcionalidade(Integer pkFuncionalidade, String descricao, String designacao, String url, LocalDateTime createdAt) {
-        this.pkFuncionalidade = pkFuncionalidade;
+    public Funcionalidade(String descricao, String designacao, TipoFuncionalidade fkTipoFuncionalidade, Funcionalidade fk_funcionalidade, String funcionalidadesPartilhadas, String url) {
         this.descricao = descricao;
         this.designacao = designacao;
+        this.fkTipoFuncionalidade = fkTipoFuncionalidade;
+        this.fkFuncionalidade = fk_funcionalidade;
+        this.funcionalidadesPartilhadas = funcionalidadesPartilhadas;
         this.url = url;
-        this.createdAt = createdAt;
+    }
+
+    public Funcionalidade(String descricao, String designacao, TipoFuncionalidade fkTipoFuncionalidade, Funcionalidade fk_funcionalidade,  String url) {
+        this.descricao = descricao;
+        this.designacao = designacao;
+        this.fkTipoFuncionalidade = fkTipoFuncionalidade;
+        this.fkFuncionalidade = fk_funcionalidade;
+        this.url = url;
     }
 
 }
