@@ -163,7 +163,7 @@ public class DataLoader implements CommandLineRunner {
             System.out.println("Autorities. Nenhum dado inicial carregado.");
         }
     */
-        
+
     }
 
 }
