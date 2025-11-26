@@ -1,21 +1,20 @@
 package com.ucan.plataformadenuncias.dto;
 
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
 public class ContaPerfilDTO {
 
-    //Pessoa campos
+    private int tipoConta;
+    private String nomeCompleto;
+    private String email;
+    private String senha;
+    private int fkPessoa;
     private int fkConta;
     private int fkPerfil;
-    private boolean status = true;
+    private boolean estado = true;
 
-    public int getFkConta() {
-        return fkConta;
-    }
-
-    public int getFkPerfil() {
-        return fkPerfil;
-    }
-
-    public boolean isStatus() {
-        return status;
-    }
 }

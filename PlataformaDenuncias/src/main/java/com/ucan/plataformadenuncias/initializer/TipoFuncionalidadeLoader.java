@@ -4,6 +4,7 @@ import com.ucan.plataformadenuncias.entities.Funcionalidade;
 import com.ucan.plataformadenuncias.entities.TipoFuncionalidade;
 import com.ucan.plataformadenuncias.repositories.FuncionalidadeRepository;
 import com.ucan.plataformadenuncias.repositories.TipoFuncionalidadeRepository;
+import com.ucan.plataformadenuncias.services.VersaoService;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -49,13 +50,8 @@ public class TipoFuncionalidadeLoader {
 
                 TipoFuncionalidade tipoFuncionalidade = new TipoFuncionalidade();
 
-           //     String auxPkFuncionalidade = FuncionsHelper.getCellAsString(row.getCell(0));
-
-                tipoFuncionalidade.setPkTipoFuncionalidade(
-                        Integer.parseInt(FuncionsHelper.getCellAsString(row.getCell(0)))
-                );
-
-                tipoFuncionalidade.setDesignacao(FuncionsHelper.getCellAsString(row.getCell(1)));
+                tipoFuncionalidade.setPkTipoFuncionalidade((int)row.getCell(0).getNumericCellValue() );
+                tipoFuncionalidade.setDesignacao(row.getCell(1).getStringCellValue());
 
                 tipoFuncionalidadeRepository.save(tipoFuncionalidade);
 
@@ -70,6 +66,7 @@ public class TipoFuncionalidadeLoader {
             e.printStackTrace();
             return null;
         }
+
     }
 
     /**
@@ -78,7 +75,7 @@ public class TipoFuncionalidadeLoader {
      * @param funcionalidadeRepository
      * @return
      */
-    public static Object insertFuncionalidadeIntoTable(MultipartFile file, FuncionalidadeRepository funcionalidadeRepository)
+    public static Object insertFuncionalidadeIntoTable(MultipartFile file, FuncionalidadeRepository funcionalidadeRepository, VersaoService versaoService)
     {
         System.out.println(file);
 
@@ -95,6 +92,9 @@ public class TipoFuncionalidadeLoader {
             System.out.println("nome : " + FuncionsHelper.getCellAsString(sheet.getRow(0).getCell(1)));
             System.out.println("descricao :" + FuncionsHelper.getCellAsString(sheet.getRow(1).getCell(1)));
             System.out.println("data: " + FuncionsHelper.getCellAsString(sheet.getRow(2).getCell(1)));
+
+            String [] arrayVersao = sheet.getRow(2).getCell(1).getStringCellValue().split("-");
+
             System.out.println("=== FÍM CABEÇALHO ===");
 
             System.out.println("=== LENDO FICHEIRO EXCEL ===");
@@ -110,12 +110,14 @@ public class TipoFuncionalidadeLoader {
 
                 Funcionalidade funcionalidade = new Funcionalidade();
 
-                funcionalidade.setPkFuncionalidade( (int)row.getCell(0).getNumericCellValue() );
+                funcionalidade.setPkFuncionalidade( (int)row.getCell(0).getNumericCellValue());
                 funcionalidade.setDesignacao( row.getCell(1).getStringCellValue());
                 funcionalidade.setDescricao(row.getCell(2).getStringCellValue());
                 funcionalidade.setFkTipoFuncionalidade(new TipoFuncionalidade((int)row.getCell(3).getNumericCellValue()));
                 funcionalidade.setGrupo( (int)row.getCell(4).getNumericCellValue());
-                funcionalidade.setFkFuncionalidade( new Funcionalidade( (int) row.getCell(5).getNumericCellValue()));
+
+                if( row.getCell(5).getNumericCellValue() != 0)
+                    funcionalidade.setFkFuncionalidade( new Funcionalidade(  (int)row.getCell(5).getNumericCellValue()));
                 funcionalidade.setFuncionalidadesPartilhadas( row.getCell(6).getStringCellValue());
                 funcionalidade.setUrl(FuncionsHelper.getCellAsString(row.getCell(7)));
 

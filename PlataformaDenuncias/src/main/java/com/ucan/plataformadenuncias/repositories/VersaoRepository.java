@@ -7,6 +7,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface VersaoRepository extends JpaRepository<Versao, String> {
 
-
+    public Versao findByTable(String table);
 
 }

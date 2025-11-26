@@ -39,7 +39,7 @@ public class LoginController {
         utilizadorDTO.setEmail(utilizadorModel.getEmail());
         utilizadorDTO.setUsername(utilizadorModel.getUsername());
         utilizadorDTO.setNome(utilizadorModel.getFkPessoa().getNome());
-        utilizadorDTO.setNivelAcesso(utilizadorModel.getFkConta().getNome());
+        utilizadorDTO.setNivelAcesso(utilizadorModel.getFkConta().getNomeCompleto());
         utilizadorDTO.setDataNascimento(utilizadorModel.getFkPessoa().getDataNascimento());
         utilizadorDTO.setIdentificacao(utilizadorModel.getFkPessoa().getIdentificacao());
 

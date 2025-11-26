@@ -1,140 +1,91 @@
-import { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import 'bootstrap/dist/css/bootstrap.min.css';
 
-export default function FuncionalidadeListar() {
-  const [funcionalidades, setFuncionalidades] = useState([]);
-  const [openRows, setOpenRows] = useState({});
+export default function FuncionalidadesTree() {
+    const [data, setData] = useState([]);
+    const [abertos, setAbertos] = useState(new Set());
+    const [loading, setLoading] = useState(true);
 
-  const carregarFuncionalidades = async () => {
-    try {
-      const response = await fetch(
-          "http://localhost:9898/api/seguranca/funcionalidade_perfil_listar"
-      );
-      const data = await response.json();
-      setFuncionalidades(data);
-    } catch (error) {
-      console.error("Erro ao carregar funcionalidades:", error);
-    }
-  };
+    const toggle = (id) => {
+        const nova = new Set(abertos);
+        nova.has(id) ? nova.delete(id) : nova.add(id);
+        setAbertos(nova);
+    };
 
-  useEffect(() => {
-    carregarFuncionalidades();
-  }, []);
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const resp = await fetch("http://localhost:9090/api/seguranca/funcionalidade_listar");
+                const json = await resp.json();
+                setData(json);
+            } catch (e) {
+                console.error("Erro ao carregar:", e);
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, []);
 
-  const toggleRow = (key) => {
-    setOpenRows((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  };
+    if (loading) return <div className="p-3">A carregar...</div>;
 
-  const agrupado = funcionalidades.reduce((acc, item) => {
-    if (!acc[item.paiFuncionalidade]) {
-      acc[item.paiFuncionalidade] = {};
-    }
-    if (!acc[item.paiFuncionalidade][item.nomePerfil]) {
-      acc[item.paiFuncionalidade][item.nomePerfil] = [];
-    }
-    acc[item.paiFuncionalidade][item.nomePerfil].push(item);
-    return acc;
-  }, {});
+    // Organizar os dados em formato de árvore
+    const map = {};
+    data.forEach(item => map[item.pkFuncionalidade] = { ...item, filhos: [] });
 
-  return (
-      <div className="container mt-4">
+    const raiz = [];
 
-        <table className="table table-bordered table-striped align-middle">
-          <thead className="table-dark">
-          <tr>
-            <th style={{ width: "50px" }}>#</th>
-            <th style={{ width: "50px" }}>✔</th>
-            <th>Nome</th>
-            <th>Tipo</th>
-            <th>Pai</th>
-          </tr>
-          </thead>
+    data.forEach(item => {
+        if (item.fkFuncionalidade === null) {
+            raiz.push(map[item.pkFuncionalidade]);
+        } else if (map[item.fkFuncionalidade]) {
+            map[item.fkFuncionalidade].filhos.push(map[item.pkFuncionalidade]);
+        }
+    });
 
-          <tbody>
+    // Render recursivo
+    const renderNode = (node) => {
+        const temFilhos = node.filhos && node.filhos.length > 0;
+        const aberto = abertos.has(node.pkFuncionalidade);
 
-          {/* NÍVEL 1 - PAI */}
-          {Object.entries(agrupado).map(([pai, perfis], indexPai) => {
-            const isOpenPai = openRows[pai] || false;
+        return (
+            <li key={node.pkFuncionalidade} className="list-group-item">
 
-            return (
-                <>
-                  <tr key={pai} className="table-primary">
-                    <td>{indexPai + 1}</td>
-                    <td><input type="checkbox" /></td>
+                <div className="d-flex align-items-center justify-content-between">
 
-                    {/* Tabulação Pai */}
-                    <td style={{ paddingLeft: "0px" }}>
-                      <button
-                          className="btn btn-sm btn-link p-0 me-2"
-                          onClick={() => toggleRow(pai)}
-                      >
-                        {isOpenPai ? "▼" : "▶"}
-                      </button>
+                    <span>
+                        <strong>{node.designacao}</strong>
+                        <div style={{ fontSize: "12px", color: "#555" }}>
+                            {node.descricao}
+                        </div>
+                    </span>
 
-                      <b>{pai}</b>
-                    </td>
+                    {temFilhos && (
+                        <button
+                            className="btn btn-sm btn-primary"
+                            onClick={() => toggle(node.pkFuncionalidade)}
+                        >
+                            {aberto ? "−" : "+"}
+                        </button>
+                    )}
+                </div>
 
-                    <td colSpan={2}></td>
-                  </tr>
+                {temFilhos && aberto && (
+                    <ul className="list-group mt-2 ms-4">
+                        {node.filhos.map(renderNode)}
+                    </ul>
+                )}
 
-                  {/* NÍVEL 2 - PERFIL */}
-                  {isOpenPai &&
-                  Object.entries(perfis).map(([perfil, funcs]) => {
-                    const keyPerfil = `${pai}-${perfil}`;
-                    const isOpenPerfil = openRows[keyPerfil] || false;
+            </li>
+        );
+    };
 
-                    return (
-                        <>
-                          <tr key={keyPerfil} className="table-info">
-                            <td></td>
-                            <td><input type="checkbox" /></td>
-
-                            {/* Tabulação Perfil */}
-                            <td style={{ paddingLeft: "20px" }}>
-                              <button
-                                  className="btn btn-sm btn-link p-0 me-2"
-                                  onClick={() => toggleRow(keyPerfil)}
-                              >
-                                {isOpenPerfil ? "▼" : "▶"}
-                              </button>
-
-                              {perfil}
-                            </td>
-
-                            <td colSpan={2}></td>
-                          </tr>
-
-                          {/* NÍVEL 3 - FUNCIONALIDADE */}
-                          {isOpenPerfil &&
-                          funcs.map((f, idx) => (
-                              <tr
-                                  key={`${f.fkFuncionalidade}-${f.fkPerfil}-${idx}`}
-                                  className="table-secondary"
-                              >
-                                <td></td>
-                                <td><input type="checkbox" /></td>
-
-                                {/* Tabulação Funcionalidade */}
-                                <td style={{ paddingLeft: "40px" }}>
-                                  {f.nomeFuncionalidade}
-                                </td>
-
-                                <td>{f.tipoFuncionalidade}</td>
-                                <td>{f.paiFuncionalidade}</td>
-                              </tr>
-                          ))}
-                        </>
-                    );
-                  })}
-
-                </>
-            );
-          })}
-
-          </tbody>
-        </table>
-      </div>
-  );
+    return (
+        <div className="container mt-4">
+            <h3 className="mb-3">Funcionalidades</h3>
+            <ul className="list-group">
+                {raiz.map(renderNode)}
+            </ul>
+        </div>
+    );
 }

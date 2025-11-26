@@ -3,11 +3,14 @@ import { useState, useEffect } from "react";
 export default function ContaCadastrar() {
   const [contas, setContas] = useState([]);
   const [formData, setFormData] = useState({
-    pkConta: null,
-    nome: "",
-    detalhes: "",
-    createdAt: "",
-    updatedAt: ""
+      pkConta: null,
+      tipoConta: "",
+      nomeCompleto: "",
+      email: "",
+      senha: "",
+      fkPerfil: "",
+      createdAt: "",
+      updatedAt: ""
   });
   const [editando, setEditando] = useState(false);
 
@@ -81,8 +84,11 @@ export default function ContaCadastrar() {
   const resetForm = () => {
     setFormData({
       pkConta: null,
+      tipoConta: "",
       nome: "",
-      detalhes: "",
+      email: "",
+      senha: "",
+      fkPerfil: "",
       createdAt: "",
       updatedAt: ""
     });
@@ -163,52 +169,7 @@ export default function ContaCadastrar() {
           </div>
         </form>
       </div>
-
-      {/* Tabela */}
-      <table className="table table-bordered table-striped">
-        <thead className="table-dark">
-          <tr>
-            <th>#</th>
-            <th>Nome</th>
-            <th>Detalhes</th>
-            <th>Criado em</th>
-            <th>Atualizado em</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {contas.map((conta, i) => (
-            <tr key={conta.pkConta}>
-              <td>{i + 1}</td>
-              <td>{conta.nome}</td>
-              <td>{conta.detalhes || "-"}</td>
-              <td>{new Date(conta.createdAt).toLocaleString()}</td>
-              <td>{conta.updatedAt ? new Date(conta.updatedAt).toLocaleString() : "-"}</td>
-              <td>
-                <button
-                  className="btn btn-sm btn-warning me-2"
-                  onClick={() => handleEdit(conta)}
-                >
-                  Editar
-                </button>
-                <button
-                  className="btn btn-sm btn-danger"
-                  onClick={() => handleDelete(conta.pkConta)}
-                >
-                  Excluir
-                </button>
-              </td>
-            </tr>
-          ))}
-          {contas.length === 0 && (
-            <tr>
-              <td colSpan={6} className="text-center">
-                Nenhuma conta cadastrada
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+    
     </div>
   );
 }

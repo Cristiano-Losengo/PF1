@@ -45,25 +45,20 @@ public class Perfil {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer pkPerfil;
 
-    @Column(name = "nome", nullable = false, length = 100)
-    private String nome;
+    @Column(name = "designacao", nullable = false, length = 100)
+    private String designacao;
 
-    @Column(name = "detalhes", length = 100)
-    private String detalhes;
+    @Column(name = "descricao", length = 100)
+    private String descricao;
 
-    @Column(name = "url", length = 100)
-    private String url;
+    @Column(name = "estado")
+    private Integer estado;
 
     // Muitos perfis podem ter o mesmo perfil "pai"
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_perfil")
     private Perfil fkPerfil;
 
-    // Um perfil pode ter vários sub-perfis (lado inverso do relacionamento)
-/*
-    @OneToMany(mappedBy = "fkPerfil", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Perfil> subPerfis = new ArrayList<>();
-*/
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -85,23 +80,15 @@ public class Perfil {
         return Objects.hash(pkPerfil);
     }
 
-    public Perfil(int pkPerfil, String nome, String detalhes, String url, Perfil fkPerfil,  LocalDateTime createdAt) {
-        this.pkPerfil = pkPerfil;
-        this.nome = nome;
-        this.detalhes = detalhes;
-        this.url = url;
-        this.createdAt = createdAt;
-    }
-
-    public Perfil(String nome, String detalhes, String url, Perfil fkPerfil, LocalDateTime createdAt) {
-        this.nome = nome;
-        this.detalhes = detalhes;
-        this.url = url;
-        this.fkPerfil = fkPerfil;
-        this.createdAt = createdAt;
-    }
-
     public Perfil(Integer pkPerfil) {
         this.pkPerfil = pkPerfil;
+    }
+
+    public Perfil(String designacao, String descricao, Integer estado, Perfil fkPerfil, LocalDateTime createdAt) {
+        this.designacao = designacao;
+        this.descricao = descricao;
+        this.estado = estado;
+        this.fkPerfil = fkPerfil;
+        this.createdAt = createdAt;
     }
 }

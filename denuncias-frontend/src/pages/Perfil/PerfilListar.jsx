@@ -51,8 +51,8 @@ export default function PerfilListar() {
           {perfis.map((perfil, i) => (
             <tr key={perfil.pkPerfil}>
               <td>{i + 1}</td>
-              <td>{perfil.nome}</td>
-              <td>{perfil.detalhes}</td>
+              <td>{perfil.designacao}</td>
+              <td>{perfil.descricao}</td>
               <td>{perfil.url}</td>
               <td>
                 {perfil.fkPerfil

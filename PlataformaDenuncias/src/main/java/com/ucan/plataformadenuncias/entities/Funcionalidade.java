@@ -18,7 +18,6 @@ import org.hibernate.annotations.UpdateTimestamp;
  */
 @Getter
 @Setter
-@ToString
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -51,6 +50,9 @@ public class Funcionalidade {
 
     @Column(name = "url", length = 100)
     private String url;
+
+    @Column(name = "versao", length = 100)
+    private String versao;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

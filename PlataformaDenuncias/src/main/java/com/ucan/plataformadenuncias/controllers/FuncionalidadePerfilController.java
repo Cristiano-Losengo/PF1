@@ -56,6 +56,7 @@ public class FuncionalidadePerfilController {
         service.remover(id);
     }
 
+    /*
     @PostMapping("/funcionalidade_importar")
     public ResponseEntity<?> importar(@RequestParam("file") MultipartFile file) {
 
@@ -75,5 +76,6 @@ public class FuncionalidadePerfilController {
         return ResponseEntity.ok("Ficheiro recebido com sucesso!");
 
     }
+    */
 
 }

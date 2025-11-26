@@ -46,6 +46,7 @@ public class DataLoader implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
+    /*
         if (pessoaRepository.count() == 0) {
             pessoaRepository.save(new Pessoa("Witney Houston", "123AAA", LocalDate.now()));
             pessoaRepository.save(new Pessoa("Paul Washer", "123BBB", LocalDate.now()));
@@ -105,9 +106,9 @@ public class DataLoader implements CommandLineRunner {
             perfilRepository.save(new Perfil("Gestão de Multas", "Administração", null, null, LocalDateTime.now()));
             perfilRepository.save(new Perfil("Gestão de Notificações", "Administração", null, null, LocalDateTime.now()));
             perfilRepository.save(new Perfil("Segurança", "Administração", null, null, LocalDateTime.now()));
-// Salva e pega o objeto de Segurança
+    // Salva e pega o objeto de Segurança
 
-// Submenus vinculados ao perfil Segurança
+    // Submenus vinculados ao perfil Segurança
             //PerfilModel perfilModelSeguranca =  perfilRepository.findAll().get(5);
             System.out.println("Ja chegamos!");
             //       System.out.println(perfilModelSeguranca);
@@ -123,12 +124,12 @@ public class DataLoader implements CommandLineRunner {
         if (funcionalidadeRepository.count() == 0) {
 
             // sao as opcoes que o sistema permite fazer
-/*
+
             funcionalidadeRepository.save(new Funcionalidade("Cadastrar", "", "", TipoFuncionalidadeEnum.FORM));
             funcionalidadeRepository.save(new Funcionalidade("Visualizar", "", "", TipoFuncionalidadeEnum.FORM));
             funcionalidadeRepository.save(new Funcionalidade("Confirmar Pagamento", "", "", TipoFuncionalidadeEnum.FORM));
             funcionalidadeRepository.save(new Funcionalidade("Enviar Notificação", "", "", TipoFuncionalidadeEnum.FORM));
-*/
+
             System.out.println("Funcionalidades iniciais carregados.");
         } else {
             System.out.println("Autorities. Nenhum dado inicial carregado.");
@@ -143,7 +144,7 @@ public class DataLoader implements CommandLineRunner {
 
             Funcionalidade funcionalidadeCadastrar = funcionalidadeRepository.findByPkFuncionalidade(1);
             Funcionalidade funcionalidadeListar = funcionalidadeRepository.findByPkFuncionalidade(2);
-/*
+
             funcionalidadePerfilRepository.save(new FuncionalidadePerfil(funcionalidadeCadastrar, perfilFuncionalidade, "", "", LocalDateTime.now()));
             funcionalidadePerfilRepository.save(new FuncionalidadePerfil(funcionalidadeListar, perfilFuncionalidade, "", "", LocalDateTime.now()));
             funcionalidadePerfilRepository.save(new FuncionalidadePerfil(funcionalidadeListar, perfilFuncionalidade, "", "", LocalDateTime.now()));
@@ -156,12 +157,13 @@ public class DataLoader implements CommandLineRunner {
 
             funcionalidadePerfilRepository.save(new FuncionalidadePerfil(funcionalidadeCadastrar, perfilConta, "", "", LocalDateTime.now()));
             funcionalidadePerfilRepository.save(new FuncionalidadePerfil(funcionalidadeListar, perfilConta, "", "", LocalDateTime.now()));
-*/
+
             System.out.println("FuncionalidadesPerfis iniciais carregados.");
         } else {
             System.out.println("Autorities. Nenhum dado inicial carregado.");
         }
-
+    */
+        
     }
 
 }

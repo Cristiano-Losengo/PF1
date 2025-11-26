@@ -1,34 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function PerfilCadastrar() {
   const BASE_URL = "http://localhost:9090/api/seguranca";
 
-  const [perfis, setPerfis] = useState([]);
   const [mensagem, setMensagem] = useState(null);
 
   const [formData, setFormData] = useState({
-    pkPerfil: null,
-    nome: "",
-    detalhes: "",
-    nivelAcesso: "Municipal",
-    url: "",
-    fkPerfil: null
+    designacao: "",
+    estado: "1",
+    descricao: "",
   });
-
-  // Carregar perfis para o select "Perfil Pai"
-  const carregarPerfis = async () => {
-    try {
-      const response = await fetch(`${BASE_URL}/perfil_listar`);
-      const data = await response.json();
-      setPerfis(data);
-    } catch (error) {
-      console.error("Erro ao carregar perfis:", error);
-    }
-  };
-
-  useEffect(() => {
-    carregarPerfis();
-  }, []);
 
   // Handle input
   const handleChange = (e) => {
@@ -41,18 +22,17 @@ export default function PerfilCadastrar() {
     e.preventDefault();
 
     try {
-      const response = await fetch(`${BASE_URL}/perfil_cadastrar`, {
+      const response = await fetch('http://localhost:9090/api/seguranca/perfil_cadastrar', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
       if (response.ok) {
-        setMensagem({ tipo: "success", texto: "Perfil cadastrado com sucesso!" });
+        setMensagem({ tipo: "success", texto: "Salvo com sucesso!" });
         resetForm();
-        carregarPerfis();
       } else {
-        setMensagem({ tipo: "danger", texto: "Erro ao cadastrar perfil." });
+        setMensagem({ tipo: "danger", texto: "Erro ao salvar." });
       }
     } catch (error) {
       setMensagem({ tipo: "danger", texto: "Erro de comunicação com o servidor." });
@@ -62,123 +42,83 @@ export default function PerfilCadastrar() {
 
   const resetForm = () => {
     setFormData({
-      pkPerfil: null,
-      nome: "",
-      detalhes: "",
-      nivelAcesso: "Municipal",
-      url: "",
-      fkPerfil: null
+      designacao: "",
+      estado: "activo",
+      descricao: "",
     });
   };
 
   return (
-    <div className="container mt-4">
-      <h3 className="text-primary">Cadastrar Perfil</h3>
-      {mensagem && (
-        <div className={`alert alert-${mensagem.tipo} mt-3`} role="alert">
-          {mensagem.texto}
-        </div>
-      )}
+    <div className="container mt-5 d-flex justify-content-center">
+      <div className="card p-4 shadow w-50">
 
-      <form onSubmit={handleSubmit} className="mt-3">
-        <div className="mb-3 row">
-          <label htmlFor="nome" className="col-sm-2 col-form-label">
-            Nome do Perfil
-          </label>
-          <div className="col-sm-4">
+        <h3 className="text-center text-primary">Cadastrar Dados</h3>
+
+        {mensagem && (
+          <div className={`alert alert-${mensagem.tipo} mt-3 text-center`} role="alert">
+            {mensagem.texto}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="mt-3">
+
+          {/* designacao */}
+          <div className="mb-3">
+            <label htmlFor="designacao" className="form-label fw-bold">designacao</label>
             <input
               type="text"
-              className="form-control"
-              id="nome"
-              name="nome"
-              value={formData.nome}
+              className="form-control text-center"
+              id="designacao"
+              name="designacao"
+              value={formData.designacao}
               onChange={handleChange}
-              placeholder="Ex: Administrador Municipal"
+              placeholder="Digite o designacao"
               required
             />
           </div>
 
-          <label htmlFor="fkPerfil" className="col-sm-2 col-form-label">
-            Perfil Pai
-          </label>
-          <div className="col-sm-4">
+          {/* Estado */}
+          <div className="mb-3">
+            <label htmlFor="estado" className="form-label fw-bold">Estado</label>
             <select
-              className="form-select"
-              id="fkPerfil"
-              name="fkPerfil"
-              value={formData.fkPerfil || ""}
+              className="form-select text-center"
+              id="estado"
+              name="estado"
+              value={formData.estado}
               onChange={handleChange}
+              required
             >
-              <option value="">Nenhum</option>
-              {perfis.map((perfil) => (
-                <option key={perfil.pkPerfil} value={perfil.pkPerfil}>
-                  {perfil.nome}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="mb-3 row">
-          <label htmlFor="nivelAcesso" className="col-sm-2 col-form-label">
-            Nível de Acesso
-          </label>
-          <div className="col-sm-4">
-            <select
-              className="form-select"
-              id="nivelAcesso"
-              name="nivelAcesso"
-              value={formData.nivelAcesso}
-              onChange={handleChange}
-            >
-              <option value="Municipal">Municipal</option>
-              <option value="Provincial">Provincial</option>
-              <option value="Central">Central</option>
+              <option value="1" >activo</option>
+              <option value="0">desactivo</option>
             </select>
           </div>
 
-          <label htmlFor="url" className="col-sm-2 col-form-label">
-            URL
-          </label>
-          <div className="col-sm-4">
-            <input
-              type="text"
-              className="form-control"
-              id="url"
-              name="url"
-              value={formData.url || ""}
-              onChange={handleChange}
-              placeholder="/admin/perfis"
-            />
-          </div>
-        </div>
-
-        <div className="mb-3 row">
-          <label htmlFor="detalhes" className="col-sm-2 col-form-label">
-            Detalhes
-          </label>
-          <div className="col-sm-10">
+          {/* Descrição */}
+          <div className="mb-3">
+            <label htmlFor="descricao" className="form-label fw-bold">Descrição</label>
             <textarea
-              className="form-control"
-              id="detalhes"
-              name="detalhes"
-              value={formData.detalhes}
+              className="form-control text-center"
+              id="descricao"
+              name="descricao"
+              value={formData.descricao}
               onChange={handleChange}
-              placeholder="Ex: Permite gerir denúncias e utilizadores no nível municipal."
+              placeholder="Descreva aqui"
               rows="2"
             ></textarea>
           </div>
-        </div>
 
-        <div className="mt-3">
-          <button type="submit" className="btn btn-success me-2">
-            Cadastrar
-          </button>
-          <button type="button" className="btn btn-secondary" onClick={resetForm}>
-            Limpar
-          </button>
-        </div>
-      </form>
+          {/* Botões */}
+          <div className="text-center mt-4">
+            <button type="submit" className="btn btn-success me-2 px-4">
+              Salvar
+            </button>
+            <button type="button" className="btn btn-secondary px-4" onClick={resetForm}>
+              Limpar
+            </button>
+          </div>
+
+        </form>
+      </div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import com.ucan.plataformadenuncias.repositories.VersaoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.temporal.TemporalField;
 import java.util.Date;
 import java.util.Optional;
 
@@ -19,22 +20,21 @@ public class VersaoService {
     {
         //Optional<Versao> versaoOptional = this.versaoRepository.findbyDesignaçao(tabelaNome);
 
-        Optional<Versao> versaoOptional = this.versaoRepository.findById(tabelaNome);
-        if (versaoOptional.isEmpty())
+        Versao versaoOptional = this.versaoRepository.findByTable(tabelaNome);
+
+        if (versaoOptional == null)
         {
             return 1;
         }
         else
         {
-            Date dataVersao = versaoOptional.get().getData();
-
+            Date dataVersao = versaoOptional.getData();
             return DataUtils.compare(d, dataVersao);
         }
     }
 
     public Versao updatedataVersao(String tabelaNome, Date d)
     {
-
         Optional<Versao> versaoOptional = this.versaoRepository.findById(tabelaNome);
         Versao versao = null;
         if (versaoOptional.isEmpty())

@@ -1,11 +1,16 @@
 package com.ucan.plataformadenuncias.controllers;
 
 import com.ucan.plataformadenuncias.dto.ContaPerfilDTO;
+import com.ucan.plataformadenuncias.dto.FuncionalidadeDTO;
 import com.ucan.plataformadenuncias.dto.FuncionalidadePerfilDTO;
 import com.ucan.plataformadenuncias.entities.*;
+import com.ucan.plataformadenuncias.initializer.TipoFuncionalidadeLoader;
 import com.ucan.plataformadenuncias.repositories.*;
+import com.ucan.plataformadenuncias.services.VersaoService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,14 +35,46 @@ public class SegurancaController {
     @Autowired
     private FuncionalidadePerfilRepository funcionalidadePerfilRepository;
 
+    @Autowired
+    private TipoFuncionalidadeRepository tipoFuncionalidadeRepository;
+
+    @Autowired
+    private VersaoService versaoService;
+
     @GetMapping("/")
     public String index() {
         return "Segurança ON";
     }
 
-    @GetMapping("funcionalidade_listar")
-    public List<Funcionalidade> listarFuncionalidade() {
-        return funcionalidadeRepository.findAll();
+    @GetMapping("/funcionalidade_listar")
+    public List<FuncionalidadeDTO> listarFuncionalidade() {
+
+        System.out.println(funcionalidadeRepository.findAll());
+
+        List<FuncionalidadeDTO> listaFuncionalidade = new ArrayList<>();
+
+        for (Funcionalidade funcionalidade : funcionalidadeRepository.findAll() )
+        {
+            FuncionalidadeDTO funcionalidadeDTO = new FuncionalidadeDTO();
+            funcionalidadeDTO.setPkFuncionalidade(funcionalidade.getPkFuncionalidade());
+            funcionalidadeDTO.setDesignacao(funcionalidade.getDesignacao());
+            funcionalidadeDTO.setDescricao(funcionalidade.getDescricao());
+            funcionalidadeDTO.setCreatedAt(funcionalidade.getCreatedAt());
+            funcionalidadeDTO.setUpdatedAt(funcionalidade.getUpdatedAt());
+            funcionalidadeDTO.setUrl(funcionalidade.getUrl());
+            funcionalidadeDTO.setFkTipoFuncionalidade(funcionalidade.getFkTipoFuncionalidade().getPkTipoFuncionalidade());
+            funcionalidadeDTO.setDesignacaoTipoFuncionalidade(funcionalidade.getFkTipoFuncionalidade().getDesignacao());
+
+            if(funcionalidade.getFkFuncionalidade() != null)
+            {
+                funcionalidadeDTO.setFkFuncionalidade(funcionalidade.getFkFuncionalidade().getPkFuncionalidade());
+            }
+
+            listaFuncionalidade.add(funcionalidadeDTO);
+        }
+
+        return listaFuncionalidade;
+
     }
 
     @GetMapping("conta_listar")
@@ -63,7 +100,7 @@ public class SegurancaController {
         for (FuncionalidadePerfil funcionalidadePerfilModel : funcionalidadePerfilRepository.findAll()) {
 
             FuncionalidadePerfilDTO funcionalidadePerfilDTO = new FuncionalidadePerfilDTO();
-            funcionalidadePerfilDTO.setNomePerfil(funcionalidadePerfilModel.getFkPerfil().getNome());
+            funcionalidadePerfilDTO.setNomePerfil(funcionalidadePerfilModel.getFkPerfil().getDesignacao());
             funcionalidadePerfilDTO.setNomeFuncionalidade(funcionalidadePerfilModel.getFkFuncionalidade().getDescricao());
 
             funcionalidadePerfilDTO.setFkPerfil(funcionalidadePerfilModel.getFkPerfil().getPkPerfil());
@@ -71,7 +108,7 @@ public class SegurancaController {
 
             System.out.println("HOJE");
             System.out.println(funcionalidadePerfilModel.getFkPerfil().getFkPerfil());
-            funcionalidadePerfilDTO.setPaiFuncionalidade(funcionalidadePerfilModel.getFkPerfil().getFkPerfil().getNome());
+            funcionalidadePerfilDTO.setPaiFuncionalidade(funcionalidadePerfilModel.getFkPerfil().getFkPerfil().getDesignacao());
          //   funcionalidadePerfilDTO.setTipoFuncionalidade(String.valueOf(funcionalidadePerfilModel.getFkFuncionalidade()));
 
             listFuncionalidadePerfil.add(funcionalidadePerfilDTO);
@@ -105,6 +142,10 @@ public class SegurancaController {
 
         perfilModel.setPkPerfil(contaPerfilDTO.getFkPerfil());
         contaModel.setPkConta(contaPerfilDTO.getFkConta());
+        contaModel.setNomeCompleto(contaPerfilDTO.getNomeCompleto());
+        contaModel.setEmail(contaPerfilDTO.getEmail());
+        contaModel.setSenha(contaModel.getSenha());
+        contaModel.setTipoConta(contaPerfilDTO.getTipoConta());
 
         contaPerfilModel.setFkPerfil(perfilModel);
         contaPerfilModel.setFkConta(contaModel);
@@ -112,7 +153,6 @@ public class SegurancaController {
         ContaPerfil contaPerfilModelAux = contaPerfilRepository.save(contaPerfilModel);
 
         return contaPerfilModelAux;
-
     }
 
     @PostMapping("/funcionalidade_cadastrar")
@@ -141,10 +181,29 @@ public class SegurancaController {
 
     @PutMapping("/funcionalidade_editar/{id}")
     public Funcionalidade editarFuncionalidade(@PathVariable int id, @RequestBody Funcionalidade funcionalidade) {
-
         funcionalidade.setPkFuncionalidade(id);
-
         return funcionalidadeRepository.save(funcionalidade);
+    }
+
+    @PostMapping("/funcionalidade_importar")
+    public ResponseEntity<?> importar(@RequestParam("file") MultipartFile file) {
+
+        System.out.println(file);
+
+        try {
+
+            TipoFuncionalidadeLoader.insertTipoFuncionalidadeIntoTable(file, tipoFuncionalidadeRepository);
+
+            Thread.sleep(5000);
+
+            TipoFuncionalidadeLoader.insertFuncionalidadeIntoTable(file, funcionalidadeRepository, versaoService);
+
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        return ResponseEntity.ok("Ficheiro recebido com sucesso!");
+
     }
 
 }

@@ -32,11 +32,22 @@ public class Conta {
     @Column(name = "pk_conta")
     private Integer pkConta;
 
-    @Column(name = "nome", unique = true, nullable = false, length = 50)
-    private String nome;
+    @Column(name = "tipo_conta")
+    private int tipoConta;
 
-    @Column(name = "detalhes", length = 50)
-    private String detalhes;
+    @Column(name = "nome_completo", length = 50)
+    private String nomeCompleto;
+
+    @Column(name = "email", unique = true, nullable = false, length = 50)
+    private String email;
+
+    @Column(name = "senha", nullable = false, length = 50)
+    private String senha;
+
+    /*
+    @Column(name = "fk_pessoa", nullable = false)
+    private Pessoa fkPessoa;
+    */
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -53,40 +64,5 @@ public class Conta {
         Conta conta = (Conta) o;
         return Objects.equals(pkConta, conta.pkConta);
     }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(pkConta);
-    }
-
-    public Conta(Integer pkConta, String username, LocalDateTime createdAt) {
-        this.pkConta = pkConta;
-        this.nome = username;
-        this.createdAt = createdAt;
-    }
-
-    public Conta(String username, String detalhes, LocalDateTime createdAt) {
-        this.nome = username;
-        this.detalhes = detalhes;
-        this.createdAt = createdAt;
-    }
-
-    public Conta(Integer pkConta) {
-        this.pkConta = pkConta;
-    }
-
-    @Override
-    public String toString() {
-        return "ContaModel{" +
-                "pkConta=" + pkConta +
-                ", username='" + nome + '\'' +
-                ", detalhes='" + detalhes + '\'' +
-                ", createdAt=" + createdAt +
-                ", updatedAt=" + updatedAt +
-                '}';
-    }
-  
-  
-  
 
 }
