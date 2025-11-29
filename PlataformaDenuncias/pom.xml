@@ -15,7 +15,7 @@
     <groupId>ao</groupId>
     <artifactId>ucan</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>sistema-trasnparente-multa</name>
+    <name>PlataformaDenuncias</name>
     <description>Sistema de monitoramento da multas</description>
 
     <properties>

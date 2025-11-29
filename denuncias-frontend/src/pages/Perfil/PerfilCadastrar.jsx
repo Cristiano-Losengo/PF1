@@ -52,7 +52,7 @@ export default function PerfilCadastrar() {
     <div className="container mt-5 d-flex justify-content-center">
       <div className="card p-4 shadow w-50">
 
-        <h3 className="text-center text-primary">Cadastrar Dados</h3>
+        <h3 className="mb-4">Cadastrar Dados do Perfil</h3>
 
         {mensagem && (
           <div className={`alert alert-${mensagem.tipo} mt-3 text-center`} role="alert">

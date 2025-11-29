@@ -29,7 +29,6 @@ export default function FuncionalidadesTree() {
 
     if (loading) return <div className="p-3">A carregar...</div>;
 
-    // Organizar os dados em formato de árvore
     const map = {};
     data.forEach(item => map[item.pkFuncionalidade] = { ...item, filhos: [] });
 
@@ -43,7 +42,7 @@ export default function FuncionalidadesTree() {
         }
     });
 
-    // Render recursivo
+
     const renderNode = (node) => {
         const temFilhos = node.filhos && node.filhos.length > 0;
         const aberto = abertos.has(node.pkFuncionalidade);
@@ -69,7 +68,6 @@ export default function FuncionalidadesTree() {
                         </button>
                     )}
                 </div>
-
                 {temFilhos && aberto && (
                     <ul className="list-group mt-2 ms-4">
                         {node.filhos.map(renderNode)}
@@ -82,7 +80,7 @@ export default function FuncionalidadesTree() {
 
     return (
         <div className="container mt-4">
-            <h3 className="mb-3">Funcionalidades</h3>
+            <h3 className="mb-4">Lista de Funcionalidades</h3>
             <ul className="list-group">
                 {raiz.map(renderNode)}
             </ul>

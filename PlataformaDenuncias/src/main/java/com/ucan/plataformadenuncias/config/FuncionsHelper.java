@@ -5,47 +5,69 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
 
 public class FuncionsHelper {
-
-    /**
-     *
-     * @param cell
-     * @return
-     */
+    
     public static String getCellAsString(Cell cell) {
-        if (cell == null) return null;
-
-        CellType type = cell.getCellType();
-
-        if (type == CellType.FORMULA) {
-            type = cell.getCachedFormulaResultType();
+        if (cell == null) {
+            return "";
         }
-
-        switch (type) {
-
+        
+        CellType cellType = cell.getCellType();
+        
+        // Se for fórmula, obtém o tipo do resultado
+        if (cellType == CellType.FORMULA) {
+            cellType = cell.getCachedFormulaResultType();
+        }
+        
+        switch (cellType) {
             case STRING:
-                return cell.getStringCellValue();
-
+                return cell.getStringCellValue().trim();
             case NUMERIC:
                 if (DateUtil.isCellDateFormatted(cell)) {
                     return cell.getDateCellValue().toString();
+                } else {
+                    double value = cell.getNumericCellValue();
+                    if (value == Math.floor(value) && !Double.isInfinite(value)) {
+                        return String.valueOf((int) value);
+                    } else {
+                        return String.valueOf(value);
+                    }
                 }
-                double num = cell.getNumericCellValue();
-                if (num == (long) num) {
-                    return String.valueOf((long) num);
-                }
-                return String.valueOf(num);
-
             case BOOLEAN:
                 return String.valueOf(cell.getBooleanCellValue());
-
             case BLANK:
-                return null;
-
+                return "";
             default:
-                return null;
+                return cell.toString().trim();
         }
-
     }
-
-
+    
+    /**
+     * Método auxiliar para obter o valor numérico de uma célula, tratando fórmulas
+     */
+    public static Double getCellAsDouble(Cell cell) {
+        if (cell == null) {
+            return null;
+        }
+        
+        try {
+            CellType cellType = cell.getCellType();
+            
+            if (cellType == CellType.FORMULA) {
+                cellType = cell.getCachedFormulaResultType();
+            }
+            
+            if (cellType == CellType.NUMERIC) {
+                return cell.getNumericCellValue();
+            } else if (cellType == CellType.STRING) {
+                String stringValue = cell.getStringCellValue().trim();
+                if (!stringValue.isEmpty()) {
+                    return Double.parseDouble(stringValue);
+                }
+            }
+        } catch (Exception e) {
+            // Ignora erro e retorna null
+        }
+        
+        return null;
+    }
 }

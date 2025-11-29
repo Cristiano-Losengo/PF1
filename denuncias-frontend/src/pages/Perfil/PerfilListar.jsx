@@ -33,7 +33,7 @@ export default function PerfilListar() {
 
   return (
     <div className="container mt-4">
-      <h3>Lista de Perfis</h3>
+      <h3 className="mb-4"> Lista de Perfis</h3>
       <table className="table table-bordered table-striped">
         <thead className="table-dark">
           <tr>

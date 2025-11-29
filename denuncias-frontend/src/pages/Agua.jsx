@@ -161,9 +161,9 @@ export default function Agua() {
           {/* FORMULÁRIO DE DENÚNCIA */}
           {tipo === "registrar" && (
             <form className="container mt-5" onSubmit={handleSubmit} style={{ maxWidth: "800px" }}>
-              <h2 className="mb-4">
+              <h3 className="mb-4">
                 <FaTint className="me-2 text-primary" /> Registrar Ocorrência - Setor de Água
-              </h2>
+              </h3>
 
               {/* LOCAL */}
               <div className="mb-3">

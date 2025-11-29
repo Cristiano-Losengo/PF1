@@ -13,11 +13,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/seguranca")  // Padronização comum para endpoints de autenticação
-@CrossOrigin(origins = "*")    // Permite acesso de qualquer origem (ajuste conforme necessidade)
+@RequestMapping("/api/seguranca")  
+@CrossOrigin(origins = "*")    
 public class SegurancaController {
 
     @Autowired
@@ -186,24 +188,42 @@ public class SegurancaController {
     }
 
     @PostMapping("/funcionalidade_importar")
-    public ResponseEntity<?> importar(@RequestParam("file") MultipartFile file) {
-
-        System.out.println(file);
-
-        try {
-
-            TipoFuncionalidadeLoader.insertTipoFuncionalidadeIntoTable(file, tipoFuncionalidadeRepository);
-
-            Thread.sleep(5000);
-
-            TipoFuncionalidadeLoader.insertFuncionalidadeIntoTable(file, funcionalidadeRepository, versaoService);
-
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+public ResponseEntity<?> importar(@RequestParam("file") MultipartFile file) {
+    try {
+        Map<String, Object> resultado = new HashMap<>();
+        
+        // Validação do tipo de funcionalidade primeiro
+        List<String> errosTipo = TipoFuncionalidadeLoader.insertTipoFuncionalidadeIntoTable(
+            file, tipoFuncionalidadeRepository);
+        
+        if (!errosTipo.isEmpty()) {
+            resultado.put("erros", errosTipo);
+            resultado.put("sucesso", false);
+            return ResponseEntity.badRequest().body(resultado);
         }
 
-        return ResponseEntity.ok("Ficheiro recebido com sucesso!");
+        Thread.sleep(2000);
 
+        // Validação das funcionalidades
+        List<String> errosFunc = TipoFuncionalidadeLoader.insertFuncionalidadeIntoTable(
+            file, funcionalidadeRepository, versaoService);
+        
+        if (!errosFunc.isEmpty()) {
+            resultado.put("erros", errosFunc);
+            resultado.put("sucesso", false);
+            return ResponseEntity.badRequest().body(resultado);
+        }
+
+        resultado.put("mensagem", "Ficheiro importado com sucesso!");
+        resultado.put("sucesso", true);
+        return ResponseEntity.ok(resultado);
+
+    } catch (Exception e) {
+        Map<String, Object> erro = new HashMap<>();
+        erro.put("erro", "Erro durante a importação: " + e.getMessage());
+        erro.put("sucesso", false);
+        return ResponseEntity.badRequest().body(erro);
     }
+}
 
 }
