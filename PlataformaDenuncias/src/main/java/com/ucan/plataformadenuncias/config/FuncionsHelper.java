@@ -13,7 +13,7 @@ public class FuncionsHelper {
         
         CellType cellType = cell.getCellType();
         
-        // Se for fórmula, obtém o tipo do resultado
+    
         if (cellType == CellType.FORMULA) {
             cellType = cell.getCachedFormulaResultType();
         }
@@ -65,7 +65,7 @@ public class FuncionsHelper {
                 }
             }
         } catch (Exception e) {
-            // Ignora erro e retorna null
+           
         }
         
         return null;

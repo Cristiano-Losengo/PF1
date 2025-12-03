@@ -6,9 +6,13 @@ import com.ucan.plataformadenuncias.repositories.VersaoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.temporal.TemporalField;
 import java.util.Date;
 import java.util.Optional;
+
+/**
+ *
+ * @author cristiano
+ */
 
 @Service
 public class VersaoService {
@@ -16,37 +20,36 @@ public class VersaoService {
     @Autowired
     private VersaoRepository versaoRepository;
 
-    public int comparaDataVersao(String tabelaNome, Date d)
-    {
-        //Optional<Versao> versaoOptional = this.versaoRepository.findbyDesignaçao(tabelaNome);
-
-        Versao versaoOptional = this.versaoRepository.findByTable(tabelaNome);
-
-        if (versaoOptional == null)
-        {
-            return 1;
-        }
-        else
-        {
-            Date dataVersao = versaoOptional.getData();
-            return DataUtils.compare(d, dataVersao);
+    public int comparaDataVersao(String tabelaNome, Date dataArquivo) {
+        Optional<Versao> versaoOptional = versaoRepository.findByNomeTabela(tabelaNome);
+        
+        if (versaoOptional.isEmpty()) {
+            return 1; // Não existe versão anterior, arquivo é considerado novo
+        } else {
+            Versao versao = versaoOptional.get();
+            Date dataBanco = versao.getData();
+            return DataUtils.compare(dataArquivo, dataBanco);
         }
     }
 
-    public Versao updatedataVersao(String tabelaNome, Date d)
-    {
-        Optional<Versao> versaoOptional = this.versaoRepository.findById(tabelaNome);
-        Versao versao = null;
-        if (versaoOptional.isEmpty())
-        {
-            versao = new Versao(tabelaNome, d);
-        }
-        else
-        {
+    public Versao atualizarDataVersao(String tabelaNome, Date dataArquivo, String descricao) {
+        Optional<Versao> versaoOptional = versaoRepository.findByNomeTabela(tabelaNome);
+        Versao versao;
+        
+        if (versaoOptional.isEmpty()) {
+            versao = new Versao(tabelaNome, dataArquivo, descricao);
+        } else {
             versao = versaoOptional.get();
-            versao.setData(d);
+            versao.setData(dataArquivo);
+            if (descricao != null) {
+                versao.setDescricao(descricao);
+            }
         }
-        return this.versaoRepository.save(versao);
+        
+        return versaoRepository.save(versao);
     }
-
+    
+    public Versao obterVersao(String tabelaNome) {
+        return versaoRepository.findByNomeTabela(tabelaNome).orElse(null);
+    }
 }

@@ -1,5 +1,6 @@
 package com.ucan.plataformadenuncias.controllers;
 
+import com.ucan.plataformadenuncias.config.Defs;
 import com.ucan.plataformadenuncias.dto.ContaPerfilDTO;
 import com.ucan.plataformadenuncias.dto.FuncionalidadeDTO;
 import com.ucan.plataformadenuncias.dto.FuncionalidadePerfilDTO;
@@ -7,6 +8,7 @@ import com.ucan.plataformadenuncias.entities.*;
 import com.ucan.plataformadenuncias.initializer.TipoFuncionalidadeLoader;
 import com.ucan.plataformadenuncias.repositories.*;
 import com.ucan.plataformadenuncias.services.VersaoService;
+import java.text.SimpleDateFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -187,43 +189,106 @@ public class SegurancaController {
         return funcionalidadeRepository.save(funcionalidade);
     }
 
-    @PostMapping("/funcionalidade_importar")
+   @PostMapping("/funcionalidade_importar")
 public ResponseEntity<?> importar(@RequestParam("file") MultipartFile file) {
+    System.out.println("=== INICIANDO IMPORTAÇÃO ===");
+    
     try {
         Map<String, Object> resultado = new HashMap<>();
         
-        // Validação do tipo de funcionalidade primeiro
+        // PRIMEIRO: Processar tipos de funcionalidade com controle de versão
         List<String> errosTipo = TipoFuncionalidadeLoader.insertTipoFuncionalidadeIntoTable(
-            file, tipoFuncionalidadeRepository);
+            file, tipoFuncionalidadeRepository, versaoService);
+        
+        System.out.println("Erros encontrados em tipos: " + errosTipo.size());
         
         if (!errosTipo.isEmpty()) {
             resultado.put("erros", errosTipo);
             resultado.put("sucesso", false);
+            resultado.put("tipo", "validacao_tipos");
+            
+            // Adicionar informação de versão atual
+            Versao versaoTipos = versaoService.obterVersao(Defs.TIPO_FUNCIONALIDADE);
+            if (versaoTipos != null) {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+                resultado.put("versao_atual_tipos", sdf.format(versaoTipos.getData()));
+            }
+            
             return ResponseEntity.badRequest().body(resultado);
         }
 
-        Thread.sleep(2000);
+        Thread.sleep(1000);
 
-        // Validação das funcionalidades
+        // SEGUNDO: Processar funcionalidades com controle de versão
         List<String> errosFunc = TipoFuncionalidadeLoader.insertFuncionalidadeIntoTable(
             file, funcionalidadeRepository, versaoService);
+        
+        System.out.println("Erros encontrados em funcionalidades: " + errosFunc.size());
         
         if (!errosFunc.isEmpty()) {
             resultado.put("erros", errosFunc);
             resultado.put("sucesso", false);
+            resultado.put("tipo", "validacao_funcionalidades");
+            
+            // Adicionar informação de versão atual
+            Versao versaoFunc = versaoService.obterVersao(Defs.FUNCIONALIDADE);
+            if (versaoFunc != null) {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+                resultado.put("versao_atual_funcionalidades", sdf.format(versaoFunc.getData()));
+            }
+            
             return ResponseEntity.badRequest().body(resultado);
         }
 
-        resultado.put("mensagem", "Ficheiro importado com sucesso!");
+        // Obter informações das versões atualizadas
+        Versao versaoTiposAtual = versaoService.obterVersao(Defs.TIPO_FUNCIONALIDADE);
+        Versao versaoFuncAtual = versaoService.obterVersao(Defs.FUNCIONALIDADE);
+        
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+        String mensagem = "✅ Ficheiro importado com sucesso!";
+        
+        if (versaoTiposAtual != null) {
+            mensagem += "\n📅 Versão tipos de funcionalidade: " + sdf.format(versaoTiposAtual.getData());
+        }
+        if (versaoFuncAtual != null) {
+            mensagem += "\n📅 Versão funcionalidades: " + sdf.format(versaoFuncAtual.getData());
+        }
+        
+        resultado.put("mensagem", mensagem);
         resultado.put("sucesso", true);
+        
         return ResponseEntity.ok(resultado);
 
     } catch (Exception e) {
         Map<String, Object> erro = new HashMap<>();
-        erro.put("erro", "Erro durante a importação: " + e.getMessage());
+        erro.put("erro", "❌ Erro durante a importação: " + e.getMessage());
         erro.put("sucesso", false);
         return ResponseEntity.badRequest().body(erro);
     }
+}
+
+@GetMapping("/versoes_atuais")
+public ResponseEntity<?> obterVersoesAtuais() {
+    Map<String, Object> resultado = new HashMap<>();
+    
+    Versao versaoTipos = versaoService.obterVersao(Defs.TIPO_FUNCIONALIDADE);
+    Versao versaoFunc = versaoService.obterVersao(Defs.FUNCIONALIDADE);
+    
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+    
+    if (versaoTipos != null) {
+        resultado.put("tipos_funcionalidade", sdf.format(versaoTipos.getData()));
+    } else {
+        resultado.put("tipos_funcionalidade", "Nunca importado");
+    }
+    
+    if (versaoFunc != null) {
+        resultado.put("funcionalidades", sdf.format(versaoFunc.getData()));
+    } else {
+        resultado.put("funcionalidades", "Nunca importado");
+    }
+    
+    return ResponseEntity.ok(resultado);
 }
 
 }

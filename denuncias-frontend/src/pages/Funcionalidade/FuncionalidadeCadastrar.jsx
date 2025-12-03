@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function FuncionalidadeCadastrar() {
   const [file, setFile] = useState(null);
@@ -6,19 +6,121 @@ export default function FuncionalidadeCadastrar() {
   const [loading, setLoading] = useState(false);
   const [erros, setErros] = useState([]);
   const [sucesso, setSucesso] = useState(false);
+  const [versoes, setVersoes] = useState({
+    tipos_funcionalidade: "Nenhuma versão importada",
+    funcionalidades: "Nenhuma versão importada"
+  });
+  const [versaoCarregando, setVersaoCarregando] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const [showMessages, setShowMessages] = useState(false);
+  const fileInputRef = useRef(null);
+  const progressRef = useRef(null);
+  const messagesRef = useRef(null);
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+  // Carregar versões atuais
+  useEffect(() => {
+    carregarVersoes();
+    const interval = setInterval(carregarVersoes, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Scroll para mensagens quando aparecerem
+  useEffect(() => {
+    if ((mensagem || erros.length > 0) && messagesRef.current) {
+      messagesRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setShowMessages(true);
+    }
+  }, [mensagem, erros]);
+
+  const carregarVersoes = async () => {
+    setVersaoCarregando(true);
+    try {
+      const response = await fetch("http://localhost:9090/api/seguranca/versoes_atuais", {
+        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setVersoes({
+          tipos_funcionalidade: data.tipos_funcionalidade || "Nenhuma versão importada",
+          funcionalidades: data.funcionalidades || "Nenhuma versão importada"
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao carregar versões:", error);
+    } finally {
+      setVersaoCarregando(false);
+    }
+  };
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files[0]) {
+      handleFileSelect(files[0]);
+    }
+  };
+
+  const handleFileSelect = (selectedFile) => {
+    const allowedExtensions = ['.xls', '.xlsx', '.csv'];
+    const fileExtension = selectedFile.name.substring(selectedFile.name.lastIndexOf('.')).toLowerCase();
+    
+    if (!allowedExtensions.includes(fileExtension)) {
+      setMensagem("❌ Formato de arquivo não suportado. Use .xls, .xlsx ou .csv");
+      setErros(["Formato de arquivo não suportado. Use .xls, .xlsx ou .csv"]);
+      setSucesso(false);
+      return;
+    }
+
+    setFile(selectedFile);
     setMensagem("");
     setErros([]);
     setSucesso(false);
+    setShowMessages(false);
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFileSelect(e.target.files[0]);
+    }
+  };
+
+  const simulateProgress = () => {
+    if (!progressRef.current) return;
+    
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 5;
+      if (progressRef.current) {
+        progressRef.current.style.width = `${progress}%`;
+      }
+      if (progress >= 95) {
+        clearInterval(interval);
+      }
+    }, 50);
+    
+    return interval;
   };
 
   const handleFileUpload = async (e) => {
     e.preventDefault();
-
     if (!file) {
-      setMensagem("Por favor selecione um ficheiro!");
+      setMensagem("❌ Por favor selecione um ficheiro!");
+      setErros(["Por favor selecione um ficheiro!"]);
+      setSucesso(false);
+      setShowMessages(true);
       return;
     }
 
@@ -26,108 +128,513 @@ export default function FuncionalidadeCadastrar() {
     setMensagem("");
     setErros([]);
     setSucesso(false);
+    setShowMessages(false);
+
+    // Simular progresso
+    const progressInterval = simulateProgress();
 
     try {
       const formDataUpload = new FormData();
       formDataUpload.append("file", file);
 
-      const response = await fetch(
-        "http://localhost:9090/api/seguranca/funcionalidade_importar",
-        {
-          method: "POST",
-          body: formDataUpload,
-        }
-      );
+      const response = await fetch("http://localhost:9090/api/seguranca/funcionalidade_importar", {
+        method: "POST",
+        body: formDataUpload,
+        headers: { 'Accept': 'application/json' },
+      });
 
       const resultado = await response.json();
+      console.log("Resposta da API:", resultado); // Para debug
+
+      // Completar progresso
+      if (progressRef.current) {
+        progressRef.current.style.width = "100%";
+      }
 
       if (response.ok) {
         if (resultado.sucesso) {
-          setMensagem("✅ " + resultado.mensagem);
+          setMensagem(resultado.mensagem || "✅ Importação realizada com sucesso!");
           setSucesso(true);
           setFile(null);
+          if (fileInputRef.current) fileInputRef.current.value = '';
+          
+          // Atualizar versões
+          await carregarVersoes();
+          
+          // Limpar mensagem após 5 segundos
+          setTimeout(() => {
+            setMensagem("");
+            setSucesso(false);
+            if (progressRef.current) {
+              progressRef.current.style.width = "0%";
+            }
+          }, 5000);
         } else {
-          setErros(resultado.erros || [resultado.erro]);
-          setMensagem("❌ Erros encontrados na importação");
+          // Se o servidor retornar erros
+          const errosArray = resultado.erros || [resultado.erro || "❌ Erro na importação"];
+          setErros(errosArray);
+          setMensagem("❌ Foram encontrados erros na importação");
+          if (progressRef.current) {
+            progressRef.current.style.width = "0%";
+          }
         }
       } else {
-        if (resultado.erros) {
-          setErros(resultado.erros);
-        } else {
-          setErros([resultado.erro || "❌ Erro ao importar ficheiro!"]);
-        }
+        // Se a resposta HTTP não for OK
+        const errosArray = resultado.erros || [resultado.erro || "❌ Erro ao importar ficheiro!"];
+        setErros(errosArray);
         setMensagem("❌ Erro na importação");
+        if (progressRef.current) {
+          progressRef.current.style.width = "0%";
+        }
       }
     } catch (error) {
       console.error("Erro no upload:", error);
       setMensagem("❌ Erro de conexão com o servidor.");
-      setErros(["Não foi possível conectar ao servidor"]);
+      setErros(["Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente."]);
+      if (progressRef.current) {
+        progressRef.current.style.width = "0%";
+      }
+    } finally {
+      clearInterval(progressInterval);
+      setLoading(false);
+      setShowMessages(true);
     }
+  };
 
-    setLoading(false);
+  const clearAll = () => {
+    setFile(null);
+    setMensagem("");
+    setErros([]);
+    setSucesso(false);
+    setShowMessages(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (progressRef.current) {
+      progressRef.current.style.width = "0%";
+    }
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   return (
-    <div className="container mt-4">
-      <h3 className="mb-4">Cadastrar Funcionalidade</h3>
+    <div className="container-fluid py-4">
+      {/* Header */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h1 className="h3 mb-0 text-primary">📊 Importar Funcionalidades</h1>
+          <p className="text-muted mb-0">Importe funcionalidades através de ficheiros Excel</p>
+        </div>
+       
+      </div>
 
-      {mensagem && (
-        <div 
-          className={`alert py-2 ${
-            sucesso ? 'alert-success' : 'alert-danger'
-          }`}
-        >
-          {mensagem}
+      {/* Messages Section - SEMPRE VISÍVEL QUANDO HOUVER MENSAGEM */}
+      {(mensagem || erros.length > 0) && showMessages && (
+        <div className="row mt-4" ref={messagesRef}>
+          <div className="col-12">
+            {/* Success Message */}
+            {mensagem && sucesso && (
+              <div className="alert alert-success border-0 shadow-sm fade show d-flex align-items-center justify-content-between animate__animated animate__fadeInDown">
+                <div className="d-flex align-items-center">
+                  <i className="bi bi-check-circle-fill me-2 fs-5"></i>
+                  <div>
+                    <strong className="d-block">Importação bem-sucedida!</strong>
+                    <small className="text-success">{mensagem}</small>
+                  </div>
+                </div>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => {
+                    setMensagem("");
+                    setSucesso(false);
+                    setShowMessages(false);
+                  }}
+                  aria-label="Close"
+                ></button>
+              </div>
+            )}
+
+            {/* Error Messages */}
+            {erros.length > 0 && !sucesso && (
+              <div className="alert alert-danger border-0 shadow-sm fade show animate__animated animate__shakeX">
+                <div className="d-flex align-items-center justify-content-between mb-2">
+                  <div className="d-flex align-items-center">
+                    <i className="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                    <strong>Erros encontrados ({erros.length})</strong>
+                  </div>
+                  <button 
+                    type="button" 
+                    className="btn-close btn-close-white" 
+                    onClick={() => {
+                      setErros([]);
+                      setMensagem("");
+                      setShowMessages(false);
+                    }}
+                    aria-label="Close"
+                  ></button>
+                </div>
+                <div className="mt-2">
+                  {erros.slice(0, 10).map((erro, index) => (
+                    <div key={index} className="alert alert-light py-2 mb-2 border-0">
+                      <small className="text-danger">{erro}</small>
+                    </div>
+                  ))}
+                  {erros.length > 10 && (
+                    <div className="alert alert-light py-2 mb-0 border-0">
+                      <small className="text-muted">
+                        ... e mais {erros.length - 10} erro(s)
+                      </small>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Generic Message (não sucesso, não erro específico) */}
+            {mensagem && !sucesso && erros.length === 0 && (
+              <div className="alert alert-warning border-0 shadow-sm fade show animate__animated animate__fadeIn">
+                <div className="d-flex align-items-center justify-content-between">
+                  <div className="d-flex align-items-center">
+                    <i className="bi bi-info-circle-fill me-2 fs-5"></i>
+                    <div>
+                      <strong className="d-block">Atenção</strong>
+                      <small>{mensagem}</small>
+                    </div>
+                  </div>
+                  <button 
+                    type="button" 
+                    className="btn-close" 
+                    onClick={() => {
+                      setMensagem("");
+                      setShowMessages(false);
+                    }}
+                    aria-label="Close"
+                  ></button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {erros.length > 0 && (
-        <div className="alert alert-danger">
-          <h6>Erros encontrados:</h6>
-          <ul className="mb-0">
-            {erros.map((erro, index) => (
-              <li key={index}>{erro}</li>
-            ))}
-          </ul>
+      {/* Grid Layout */}
+      <div className="row">
+        {/* Left Column - Upload Area */}
+        <div className="col-lg-8">
+          <div className="card border-0 shadow-sm mb-4">
+            <div className="card-body p-4">
+              <h5 className="card-title mb-4 d-flex align-items-center">
+                <i className="bi bi-upload me-2 text-primary"></i>
+                Upload de Arquivo
+              </h5>
+
+              {/* Drag & Drop Area */}
+              <div 
+                className={`drop-zone p-5 text-center border-2 border-dashed rounded-3 mb-4 ${
+                  dragActive ? 'drag-active bg-primary bg-opacity-10' : 'bg-light'
+                } ${file ? 'border-success' : ''}`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="py-4">
+                  <i className={`bi ${file ? 'bi-file-earmark-check text-success' : 'bi-cloud-upload'} display-4 mb-3`}></i>
+                  <h5 className="mb-2">
+                    {file ? file.name : "Arraste e solte seu arquivo aqui"}
+                  </h5>
+                  <p className="text-muted mb-3">
+                    {file 
+                      ? `${formatFileSize(file.size)} • Clique para alterar`
+                      : "Ou clique para selecionar o arquivo"
+                    }
+                  </p>
+                  <button className="btn btn-primary">
+                    <i className="bi bi-folder2-open me-2"></i>
+                    Selecionar Arquivo
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="d-none"
+                    accept=".csv, .xlsx, .xls"
+                    onChange={handleFileChange}
+                  />
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              {loading && (
+                <div className="mb-4">
+                  <div className="d-flex justify-content-between mb-1">
+                    <small className="text-muted">Processando arquivo...</small>
+                    <small className="text-muted">Aguarde</small>
+                  </div>
+                  <div className="progress" style={{ height: '8px' }}>
+                    <div 
+                      ref={progressRef}
+                      className="progress-bar progress-bar-striped progress-bar-animated" 
+                      role="progressbar"
+                      style={{ width: '0%', transition: 'width 0.3s ease' }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+
+              {/* File Info */}
+              {file && !loading && (
+                <div className="alert alert-light border mb-4 py-3">
+                  <div className="d-flex align-items-center justify-content-between">
+                    <div className="d-flex align-items-center">
+                      <i className="bi bi-file-earmark-excel text-success me-3 fs-4"></i>
+                      <div>
+                        <h6 className="mb-0">{file.name}</h6>
+                        <small className="text-muted">
+                          {formatFileSize(file.size)} • {file.type || "Arquivo Excel"}
+                        </small>
+                      </div>
+                    </div>
+                    <button 
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={() => setFile(null)}
+                    >
+                      <i className="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="d-flex gap-2">
+                <button
+                  type="button"
+                  className="btn btn-primary flex-fill"
+                  onClick={handleFileUpload}
+                  disabled={loading || !file}
+                >
+                  {loading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2"></span>
+                      Processando...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-play-circle me-2"></i>
+                      Iniciar Importação
+                    </>
+                  )}
+                </button>
+                
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={clearAll}
+                  disabled={loading}
+                >
+                  <i className="bi bi-x-circle me-1"></i>
+                  Limpar Tudo
+                </button>
+              </div>
+
+              {/* Format Info */}
+              <div className="mt-4 pt-3 border-top">
+                <h6 className="text-muted mb-2">Formato suportado:</h6>
+                <div className="d-flex flex-wrap gap-2">
+                  <span className="badge bg-light text-dark border">
+                    <i className="bi bi-file-earmark-excel me-1 text-success"></i>
+                    .xlsx
+                  </span>
+                  <span className="badge bg-light text-dark border">
+                    <i className="bi bi-file-earmark-excel me-1 text-warning"></i>
+                    .xls
+                  </span>
+                  <span className="badge bg-light text-dark border">
+                    <i className="bi bi-file-earmark-text me-1 text-primary"></i>
+                    .csv
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      )}
 
-      <div className="card p-4 mt-4 col-6 offset-3">
-        <h5 className="mb-3">Importar Funcionalidade</h5>
+        {/* Right Column - Info & Status */}
+        <div className="col-lg-4">
+          {/* Versions Card */}
+          <div className="card border-0 shadow-sm mb-4">
+            <div className="card-body p-4">
+              <h6 className="card-title mb-3 d-flex align-items-center">
+                <i className="bi bi-clock-history me-2 text-info"></i>
+                Versões Atuais
+              </h6>
+              
+              <div className="d-flex align-items-center mb-3">
+                <div className="me-3">
+                  <div className="icon-circle bg-info bg-opacity-10 text-info">
+                    <i className="bi bi-tags"></i>
+                  </div>
+                </div>
+                <div className="flex-grow-1">
+                  <small className="text-muted">Tipos de Funcionalidade</small>
+                  <div className="d-flex align-items-center">
+                    <span className="fw-semibold">{versoes.tipos_funcionalidade}</span>
+                    {versaoCarregando && (
+                      <span className="spinner-border spinner-border-sm ms-2 text-info"></span>
+                    )}
+                  </div>
+                </div>
+              </div>
 
-        <form onSubmit={handleFileUpload}>
-          <div className="mb-3">
-            <label className="form-label fw-bold">
-              Carregar ficheiro (.xls, .xlsx, .csv)
-            </label>
-
-            <input
-              type="file"
-              className="form-control"
-              accept=".csv, .xlsx, .xls"
-              onChange={handleFileChange}
-            />
-            <div className="form-text">
-              Formato esperado: Excel com duas folhas (funcionalidades e tipos de funcionalidade)
+              <div className="d-flex align-items-center">
+                <div className="me-3">
+                  <div className="icon-circle bg-success bg-opacity-10 text-success">
+                    <i className="bi bi-list-check"></i>
+                  </div>
+                </div>
+                <div className="flex-grow-1">
+                  <small className="text-muted">Funcionalidades</small>
+                  <div className="d-flex align-items-center">
+                    <span className="fw-semibold">{versoes.funcionalidades}</span>
+                    {versaoCarregando && (
+                      <span className="spinner-border spinner-border-sm ms-2 text-success"></span>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={loading || !file}
-          >
-            {loading ? (
-              <>
-                <span className="spinner-border spinner-border-sm me-2" />
-               enviar...
-              </>
-            ) : (
-              " Enviar"
-            )}
-          </button>
-        </form>
+          {/* Quick Info Card */}
+          <div className="card border-0 shadow-sm">
+            <div className="card-body p-4">
+              <h6 className="card-title mb-3 d-flex align-items-center">
+                <i className="bi bi-info-circle me-2 text-warning"></i>
+                Informações Importantes
+              </h6>
+              
+              <div className="alert alert-warning bg-opacity-10 border-0 py-2 px-3 mb-3">
+                <small>
+                  <i className="bi bi-exclamation-triangle me-1"></i>
+                  <strong>Atenção:</strong> Apenas arquivos com data igual ou posterior às versões atuais serão importados.
+                </small>
+              </div>
+
+              <div className="accordion accordion-flush" id="infoAccordion">
+                <div className="accordion-item border-0">
+                  <h6 className="accordion-header">
+                    <button 
+                      className="accordion-button collapsed p-0 bg-transparent" 
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#formatInfo"
+                    >
+                      <small>📋 Formato do Arquivo</small>
+                    </button>
+                  </h6>
+                  <div id="formatInfo" className="accordion-collapse collapse">
+                    <div className="accordion-body pt-2 px-0">
+                      <ul className="small mb-0">
+                        <li>Excel com duas folhas</li>
+                        <li>Folha 1: Funcionalidades</li>
+                        <li>Folha 2: Tipos de Funcionalidade</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="accordion-item border-0">
+                  <h6 className="accordion-header">
+                    <button 
+                      className="accordion-button collapsed p-0 bg-transparent" 
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#validationInfo"
+                    >
+                      <small>✅ Validações Realizadas</small>
+                    </button>
+                  </h6>
+                  <div id="validationInfo" className="accordion-collapse collapse">
+                    <div className="accordion-body pt-2 px-0">
+                      <ul className="small mb-0">
+                        <li>Formato da data (yyyy-MM-dd-HH-mm)</li>
+                        <li>PKs devem ser numéricos</li>
+                        <li>Verificação de duplicados</li>
+                        <li>Campos obrigatórios</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* CSS Styles */}
+      <style jsx>{`
+        .drop-zone {
+          transition: all 0.3s ease;
+          border-color: #dee2e6;
+        }
+        .drop-zone:hover {
+          border-color: #0d6efd;
+          background-color: rgba(13, 110, 253, 0.05);
+        }
+        .drag-active {
+          border-color: #0d6efd !important;
+          background-color: rgba(13, 110, 253, 0.1) !important;
+        }
+        .border-dashed {
+          border-style: dashed !important;
+        }
+        .icon-circle {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.1rem;
+        }
+        .accordion-button:not(.collapsed) {
+          color: #6c757d;
+          background-color: transparent;
+        }
+        .accordion-button:focus {
+          box-shadow: none;
+        }
+        .progress-bar {
+          transition: width 0.3s ease;
+        }
+        .card {
+          border-radius: 12px;
+        }
+        .alert-success {
+          background-color: rgba(25, 135, 84, 0.1);
+          border: none;
+        }
+        .alert-danger {
+          background-color: rgba(220, 53, 69, 0.1);
+          border: none;
+        }
+        .alert-warning {
+          background-color: rgba(255, 193, 7, 0.1);
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate__fadeInDown {
+          animation: fadeIn 0.5s ease-out;
+        }
+      `}</style>
     </div>
   );
 }
