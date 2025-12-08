@@ -17,10 +17,14 @@ import Contacto from './pages/Contacto';
 import Seguranca from './pages/Seguranca';
 import FuncionalidadeCadastrar from './pages/Funcionalidade/FuncionalidadeCadastrar';
 import FuncionalidadeListar from './pages/Funcionalidade/FuncionalidadeListar';
+import FuncionalidadePerfilCadastrar from './pages/Funcionalidade/FuncionalidadePerfilCadastrar';
+import FuncionalidadePerfilListar from './pages/Funcionalidade/FuncionalidadePerfilListar';
 import PerfilCadastrar from './pages/Perfil/PerfilCadastrar';
 import PerfilListar from './pages/Perfil/PerfilListar';
 import ContaCadastrar from './pages/Conta/ContaCadastrar';
-import ContaAtribuirContas from './pages/Conta/ContaAtribuirContas';
+import ContaListar from './pages/Conta/ContaListar';
+import ContaPerfilCadastrar from './pages/Conta/ContaPerfilCadastrar';
+import ContaPerfilListar from './pages/Conta/ContaPerfilListar';
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(true);
@@ -198,115 +202,116 @@ function App() {
                       </li>
                     </ul>
                   </li>
-{/* SEGURANÇA (estilizado) */}
-<li className="nav-item dropdown">
-  <button
-    type="button"
-    className={`nav-link btn btn-link dropdown-toggle text-start d-flex align-items-center gap-2 py-2 px-3
+                  {/* SEGURANÇA (estilizado) */}
+                  <li className="nav-item dropdown">
+                    <button
+                      type="button"
+                      className={`nav-link btn btn-link dropdown-toggle text-start d-flex align-items-center gap-2 py-2 px-3
       ${startsWith('/seguranca') ? 'fw-bold text-warning' : 'text-light'}`}
-    aria-expanded={openTop.seguranca}
-    aria-controls="seguranca-menu"
-    onClick={(e) => { e.preventDefault(); toggleTop('seguranca'); }}
-    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTop('seguranca'); } }}
-  >
-    <FaBuilding className="me-1 fs-5" /> <span className="me-auto">Segurança</span>
-    <span className={`menu-arrow ${openTop.seguranca ? 'open' : ''}`} aria-hidden>▸</span>
-  </button>
+                      aria-expanded={openTop.seguranca}
+                      aria-controls="seguranca-menu"
+                      onClick={(e) => { e.preventDefault(); toggleTop('seguranca'); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTop('seguranca'); } }}
+                    >
+                      <FaBuilding className="me-1 fs-5" /> <span className="me-auto">Segurança</span>
+                      <span className={`menu-arrow ${openTop.seguranca ? 'open' : ''}`} aria-hidden>▸</span>
+                    </button>
 
-  <ul
-    id="seguranca-menu"
-    role="menu"
-    className={`dropdown-menu shadow-lg border-0 seguranca-menu ${openTop.seguranca ? 'show' : ''}`}
-  >
-    {/* FUNCIONALIDADE */}
-    <li className="dropdown-submenu" role="none">
-      <button
-        type="button"
-        role="menuitem"
-        className="dropdown-item submenu-btn d-flex align-items-center justify-content-between"
-        aria-expanded={segOpen.funcionalidade}
-        aria-controls="submenu-funcionalidade"
-        onClick={(e) => { e.preventDefault(); toggleSeg('funcionalidade'); }}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSeg('funcionalidade'); } }}
-      >
-        <div className="d-flex align-items-center gap-2">
-          <span className="icon-circle bg-danger"><FaBuilding /></span>
-          <span className="submenu-title">Funcionalidade</span>
-        </div>
-        <span className={`menu-arrow small ${segOpen.funcionalidade ? 'open' : ''}`} aria-hidden>▸</span>
-      </button>
+                    <ul
+                      id="seguranca-menu"
+                      role="menu"
+                      className={`dropdown-menu shadow-lg border-0 seguranca-menu ${openTop.seguranca ? 'show' : ''}`}
+                    >
+                      {/* FUNCIONALIDADE */}
+                      <li className="dropdown-submenu" role="none">
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="dropdown-item submenu-btn d-flex align-items-center justify-content-between"
+                          aria-expanded={segOpen.funcionalidade}
+                          aria-controls="submenu-funcionalidade"
+                          onClick={(e) => { e.preventDefault(); toggleSeg('funcionalidade'); }}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSeg('funcionalidade'); } }}
+                        >
+                          <div className="d-flex align-items-center gap-2">
+                            <span className="icon-circle bg-danger"><FaBuilding /></span>
+                            <span className="submenu-title">Funcionalidade</span>
+                          </div>
+                          <span className={`menu-arrow small ${segOpen.funcionalidade ? 'open' : ''}`} aria-hidden>▸</span>
+                        </button>
 
-      <ul
-        id="submenu-funcionalidade"
-        role="menu"
-        className={`dropdown-menu border-0 shadow-sm submenu-list ${segOpen.funcionalidade ? 'show' : ''}`}
-      >
-        <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/funcionalidade/cadastrar" onClick={closeAll}>➕ Cadastrar</Link></li>
-        <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/funcionalidade/listar" onClick={closeAll}>📋 Listar</Link></li>
-      </ul>
-    </li>
+                        <ul
+                          id="submenu-funcionalidade"
+                          role="menu"
+                          className={`dropdown-menu border-0 shadow-sm submenu-list ${segOpen.funcionalidade ? 'show' : ''}`}
+                        >
+                          <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/funcionalidade/cadastrar" onClick={closeAll}>➕ Cadastrar</Link></li>
+                          <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/funcionalidade/listar" onClick={closeAll}>📋 Listar</Link></li>
+                        </ul>
+                      </li>
 
-    {/* PERFIS */}
-    <li className="dropdown-submenu" role="none">
-      <button
-        type="button"
-        role="menuitem"
-        className="dropdown-item submenu-btn d-flex align-items-center justify-content-between"
-        aria-expanded={segOpen.perfis}
-        aria-controls="submenu-perfis"
-        onClick={(e) => { e.preventDefault(); toggleSeg('perfis'); }}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSeg('perfis'); } }}
-      >
-        <div className="d-flex align-items-center gap-2">
-          <span className="icon-circle bg-success"><FaListAlt /></span>
-          <span className="submenu-title">Perfis</span>
-        </div>
-        <span className={`menu-arrow small ${segOpen.perfis ? 'open' : ''}`} aria-hidden>▸</span>
-      </button>
+                      {/* PERFIS */}
+                      <li className="dropdown-submenu" role="none">
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="dropdown-item submenu-btn d-flex align-items-center justify-content-between"
+                          aria-expanded={segOpen.perfis}
+                          aria-controls="submenu-perfis"
+                          onClick={(e) => { e.preventDefault(); toggleSeg('perfis'); }}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSeg('perfis'); } }}
+                        >
+                          <div className="d-flex align-items-center gap-2">
+                            <span className="icon-circle bg-success"><FaListAlt /></span>
+                            <span className="submenu-title">Perfis</span>
+                          </div>
+                          <span className={`menu-arrow small ${segOpen.perfis ? 'open' : ''}`} aria-hidden>▸</span>
+                        </button>
 
-      <ul
-        id="submenu-perfis"
-        role="menu"
-        className={`dropdown-menu border-0 shadow-sm submenu-list ${segOpen.perfis ? 'show' : ''}`}
-      >
-        <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/perfis/cadastrar" onClick={closeAll}>➕ Cadastrar</Link></li>
-        <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/perfis/listar" onClick={closeAll}>📋 Listar</Link></li>
-        <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/perfis/atribuir" onClick={closeAll}>⚙️ Atribuir Perfis</Link></li>
-      </ul>
-    </li>
+                        <ul
+                          id="submenu-perfis"
+                          role="menu"
+                          className={`dropdown-menu border-0 shadow-sm submenu-list ${segOpen.perfis ? 'show' : ''}`}
+                        >
+                          <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/perfis/cadastrar" onClick={closeAll}>➕ Cadastrar</Link></li>
+                          <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/perfis/listar" onClick={closeAll}>📋 Listar</Link></li>
+                          <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/perfis/atribuir" onClick={closeAll}>⚙️ Atribuir Perfis</Link></li>
+                          <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/perfis/atribuir_listar" onClick={closeAll}>📋 Listar Funcionalidades Atribuidas</Link></li>
+                        </ul>
+                      </li>
 
-    {/* CONTAS */}
-    <li className="dropdown-submenu" role="none">
-      <button
-        type="button"
-        role="menuitem"
-        className="dropdown-item submenu-btn d-flex align-items-center justify-content-between"
-        aria-expanded={segOpen.contas}
-        aria-controls="submenu-contas"
-        onClick={(e) => { e.preventDefault(); toggleSeg('contas'); }}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSeg('contas'); } }}
-      >
-        <div className="d-flex align-items-center gap-2">
-          <span className="icon-circle bg-info"><FaUser /></span>
-          <span className="submenu-title">Contas</span>
-        </div>
-        <span className={`menu-arrow small ${segOpen.contas ? 'open' : ''}`} aria-hidden>▸</span>
-      </button>
+                      {/* CONTAS */}
+                      <li className="dropdown-submenu" role="none">
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="dropdown-item submenu-btn d-flex align-items-center justify-content-between"
+                          aria-expanded={segOpen.contas}
+                          aria-controls="submenu-contas"
+                          onClick={(e) => { e.preventDefault(); toggleSeg('contas'); }}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSeg('contas'); } }}
+                        >
+                          <div className="d-flex align-items-center gap-2">
+                            <span className="icon-circle bg-info"><FaUser /></span>
+                            <span className="submenu-title">Contas</span>
+                          </div>
+                          <span className={`menu-arrow small ${segOpen.contas ? 'open' : ''}`} aria-hidden>▸</span>
+                        </button>
 
-      <ul
-        id="submenu-contas"
-        role="menu"
-        className={`dropdown-menu border-0 shadow-sm submenu-list ${segOpen.contas ? 'show' : ''}`}
-      >
-        <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/contas/cadastrar" onClick={closeAll}>➕ Cadastrar</Link></li>
-        <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/contas/listar" onClick={closeAll}>📋 Listar</Link></li>
-        <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/contas/atribuir" onClick={closeAll}>⚙️ Atribuir Contas</Link></li>
-      </ul>
-    </li>
+                        <ul
+                          id="submenu-contas"
+                          role="menu"
+                          className={`dropdown-menu border-0 shadow-sm submenu-list ${segOpen.contas ? 'show' : ''}`}
+                        >
+                          <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/contas/cadastrar" onClick={closeAll}>➕ Cadastrar</Link></li>
+                          <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/contas/listar" onClick={closeAll}>📋 Listar</Link></li> 
+                          <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/contas/atribuir" onClick={closeAll}>⚙️ Atribuir Perfil as Contas</Link></li>
+                           <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/contas/atribuir_listar" onClick={closeAll}>📋 Listar Perfil atribuidas as Contas</Link></li>
+                        </ul>
+                      </li>
 
-  </ul>
-</li>
-
+                    </ul>
+                  </li>
 
                 </ul>
 
@@ -338,8 +343,12 @@ function App() {
           <Route path="/seguranca/funcionalidade/listar" element={loggedIn ? <FuncionalidadeListar /> : <Navigate to="/login" />} />
           <Route path="/seguranca/perfis/cadastrar" element={loggedIn ? <PerfilCadastrar /> : <Navigate to="/login" />} />
           <Route path="/seguranca/perfis/listar" element={loggedIn ? <PerfilListar /> : <Navigate to="/login" />} />
+          <Route path="/seguranca/perfis/atribuir" element={loggedIn ? <FuncionalidadePerfilCadastrar /> : <Navigate to="/login" />} />
+          <Route path="/seguranca/perfis/atribuir_listar" element={loggedIn ? <FuncionalidadePerfilListar /> : <Navigate to="/login" />} />
           <Route path="/seguranca/contas/cadastrar" element={loggedIn ? <ContaCadastrar /> : <Navigate to="/login" />} />
-          <Route path="/seguranca/contas/listar" element={loggedIn ? <ContaAtribuirContas /> : <Navigate to="/login" />} />
+          <Route path="/seguranca/contas/listar" element={loggedIn ? <ContaListar /> : <Navigate to="/login" />} />
+          <Route path="/seguranca/contas/atribuir" element={loggedIn ? <ContaPerfilCadastrar /> : <Navigate to="/login" />} />
+          <Route path="/seguranca/contas/atribuir_listar" element={loggedIn ? <ContaPerfilListar /> : <Navigate to="/login" />} />
 
           <Route path="/login" element={<Login setLoggedIn={setLoggedIn} />} />
         </Routes>
@@ -390,7 +399,7 @@ function App() {
             <hr className="border-secondary my-4" />
             <div className="text-center small text-muted">
               &copy; 2025 — República de Angola. Todos os direitos reservados. <br />
-              
+
             </div>
           </div>
         </footer>

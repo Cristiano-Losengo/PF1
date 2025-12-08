@@ -41,5 +41,4 @@ public class ContaPerfil {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-
 }

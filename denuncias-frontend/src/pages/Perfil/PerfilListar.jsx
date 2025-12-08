@@ -41,7 +41,6 @@ export default function PerfilListar() {
             <th>Nome</th>
             <th>Detalhes</th>
             <th>URL</th>
-            <th>Perfil Pai</th>
             <th>Criado em</th>
             <th>Atualizado em</th>
             <th>Ações</th>
@@ -54,11 +53,6 @@ export default function PerfilListar() {
               <td>{perfil.designacao}</td>
               <td>{perfil.descricao}</td>
               <td>{perfil.url}</td>
-              <td>
-                {perfil.fkPerfil
-                  ? perfis.find((p) => p.pkPerfil === perfil.fkPerfil)?.nome
-                  : "Nenhum"}
-              </td>
               <td>{new Date(perfil.createdAt).toLocaleString()}</td>
               <td>{perfil.updatedAt ? new Date(perfil.updatedAt).toLocaleString() : "-"}</td>
               <td>

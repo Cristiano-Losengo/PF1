@@ -55,9 +55,6 @@ public class Perfil {
     private Integer estado;
 
     // Muitos perfis podem ter o mesmo perfil "pai"
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_perfil")
-    private Perfil fkPerfil;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -84,11 +81,10 @@ public class Perfil {
         this.pkPerfil = pkPerfil;
     }
 
-    public Perfil(String designacao, String descricao, Integer estado, Perfil fkPerfil, LocalDateTime createdAt) {
+    public Perfil(String designacao, String descricao, Integer estado, LocalDateTime createdAt) {
         this.designacao = designacao;
         this.descricao = descricao;
         this.estado = estado;
-        this.fkPerfil = fkPerfil;
         this.createdAt = createdAt;
     }
 }

@@ -24,7 +24,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 
-
 /**
  *
  * @author cristiano
@@ -42,8 +41,7 @@ public class Pessoa {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "pk_pessoa")
     private Integer pkPessoa;
-    
-    
+
     @NotBlank(message = "O nome não pode estar em branco")
     @Size(max = 150, message = "O nome deve ter no máximo 150 caracteres")
     @Column(name = "nome", nullable = false, length = 150)
@@ -71,8 +69,7 @@ public class Pessoa {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-    
-        
+
     @ManyToOne
     @JoinColumn(name = "fk_localidade", referencedColumnName = "pk_localidade")
     private Localidade localidade;

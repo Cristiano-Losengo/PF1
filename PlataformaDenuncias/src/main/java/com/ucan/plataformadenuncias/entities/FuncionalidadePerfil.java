@@ -24,7 +24,6 @@ import org.hibernate.annotations.UpdateTimestamp;
  * @author cristiano
  */
 
-
 @Getter
 @Setter
 @Builder
@@ -40,18 +39,15 @@ public class FuncionalidadePerfil {
     private Integer pkFuncionalidadePerfil;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_funcionalidade", nullable = false)
-    private Funcionalidade fkFuncionalidade;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_perfil", nullable = false)
     private Perfil fkPerfil;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_funcionalidade", nullable = false)
+    private Funcionalidade fkFuncionalidade;
+
     @Column(name = "detalhe", length = 500)
     private String detalhe;
-
-    @Column(name = "anexo", nullable = false)
-    private String anexo;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -61,13 +57,11 @@ public class FuncionalidadePerfil {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    public FuncionalidadePerfil(Funcionalidade fkFuncionalidade, Perfil fkPerfil, String detalhe, String anexo, LocalDateTime createdAt) {
+    public FuncionalidadePerfil(Funcionalidade fkFuncionalidade, Perfil fkPerfil, String detalhe, LocalDateTime createdAt) {
         this.fkFuncionalidade = fkFuncionalidade;
         this.fkPerfil = fkPerfil;
         this.detalhe = detalhe;
-        this.anexo = anexo;
         this.createdAt = createdAt;
     }
-    
-    
+
 }

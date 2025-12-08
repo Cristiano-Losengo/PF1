@@ -11,7 +11,6 @@ public class FuncionalidadePerfilDTO {
     private int fkFuncionalidade;
     private int fkPerfil;
     private String detalhe;
-    private String anexo;
     private String nomePerfil;
     private String nomeFuncionalidade;
     private String tipoFuncionalidade;

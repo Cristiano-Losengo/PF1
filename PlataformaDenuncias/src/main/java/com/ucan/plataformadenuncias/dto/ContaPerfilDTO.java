@@ -8,10 +8,11 @@ import lombok.Setter;
 @Setter
 public class ContaPerfilDTO {
 
-    private int tipoConta;
+    private String tipoConta;
     private String nomeCompleto;
     private String email;
     private String senha;
+    private String designacaoPerfil;
     private int fkPessoa;
     private int fkConta;
     private int fkPerfil;

@@ -1,6 +1,7 @@
 package com.ucan.plataformadenuncias.entities;
 
 
+import com.ucan.plataformadenuncias.enumerable.TipoContaEnum;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -33,7 +34,7 @@ public class Conta {
     private Integer pkConta;
 
     @Column(name = "tipo_conta")
-    private int tipoConta;
+    private TipoContaEnum tipoConta;
 
     @Column(name = "nome_completo", length = 50)
     private String nomeCompleto;

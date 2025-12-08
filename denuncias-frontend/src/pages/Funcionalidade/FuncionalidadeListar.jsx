@@ -42,7 +42,6 @@ export default function FuncionalidadesTree() {
         }
     });
 
-
     const renderNode = (node) => {
         const temFilhos = node.filhos && node.filhos.length > 0;
         const aberto = abertos.has(node.pkFuncionalidade);

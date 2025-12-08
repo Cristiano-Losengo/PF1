@@ -92,8 +92,26 @@ public class SegurancaController {
     }
 
     @GetMapping("conta_perfil_listar")
-    public List<ContaPerfil> listarContaPerfil() {
-        return contaPerfilRepository.findAll();
+    public List<ContaPerfilDTO> listarContaPerfil() {
+
+        List<ContaPerfilDTO> listContaPerfil = new ArrayList<>();
+
+        for(ContaPerfil contaPerfil : contaPerfilRepository.findAll())
+        {
+            ContaPerfilDTO contaPerfilDTO = new ContaPerfilDTO();
+
+            contaPerfilDTO.setFkPerfil(contaPerfil.getFkPerfil().getPkPerfil());
+            contaPerfilDTO.setFkConta(contaPerfil.getFkConta().getPkConta());
+
+            contaPerfilDTO.setEmail(contaPerfil.getFkConta().getEmail());
+            contaPerfilDTO.setTipoConta(contaPerfil.getFkConta().getTipoConta().name());
+            contaPerfilDTO.setNomeCompleto(contaPerfil.getFkConta().getNomeCompleto());
+            contaPerfilDTO.setEstado(contaPerfil.getStatus());
+            contaPerfilDTO.setDesignacaoPerfil(contaPerfil.getFkPerfil().getDesignacao());
+
+        }
+
+        return listContaPerfil;
     }
 
     @GetMapping("funcionalidade_perfil_listar")
@@ -110,9 +128,14 @@ public class SegurancaController {
             funcionalidadePerfilDTO.setFkPerfil(funcionalidadePerfilModel.getFkPerfil().getPkPerfil());
             funcionalidadePerfilDTO.setFkFuncionalidade(funcionalidadePerfilModel.getFkFuncionalidade().getPkFuncionalidade());
 
+            funcionalidadePerfilDTO.setTipoFuncionalidade(funcionalidadePerfilModel.getFkFuncionalidade().getFkTipoFuncionalidade().getDesignacao());
+
+            funcionalidadePerfilDTO.setDetalhePerfil(funcionalidadePerfilModel.getFkPerfil().getDescricao());
+            funcionalidadePerfilDTO.setDetalheFuncionalidade(funcionalidadePerfilModel.getFkFuncionalidade().getDescricao());
+
             System.out.println("HOJE");
-            System.out.println(funcionalidadePerfilModel.getFkPerfil().getFkPerfil());
-            funcionalidadePerfilDTO.setPaiFuncionalidade(funcionalidadePerfilModel.getFkPerfil().getFkPerfil().getDesignacao());
+            System.out.println(funcionalidadePerfilModel.getFkPerfil());
+            funcionalidadePerfilDTO.setPaiFuncionalidade(funcionalidadePerfilModel.getFkPerfil().getDesignacao());
          //   funcionalidadePerfilDTO.setTipoFuncionalidade(String.valueOf(funcionalidadePerfilModel.getFkFuncionalidade()));
 
             listFuncionalidadePerfil.add(funcionalidadePerfilDTO);
@@ -127,6 +150,8 @@ public class SegurancaController {
     public Conta cadastrarConta(@RequestBody Conta conta) {
 
         Conta contaModel = contaRepository.save(conta);
+
+        System.out.println(conta);
         return contaModel;
     }
 
@@ -149,7 +174,7 @@ public class SegurancaController {
         contaModel.setNomeCompleto(contaPerfilDTO.getNomeCompleto());
         contaModel.setEmail(contaPerfilDTO.getEmail());
         contaModel.setSenha(contaModel.getSenha());
-        contaModel.setTipoConta(contaPerfilDTO.getTipoConta());
+        contaModel.setTipoConta(null);
 
         contaPerfilModel.setFkPerfil(perfilModel);
         contaPerfilModel.setFkConta(contaModel);
@@ -170,6 +195,7 @@ public class SegurancaController {
     @PostMapping("/funcionalidade_perfil_cadastrar")
     public FuncionalidadePerfil cadastrarFuncionalidadePerfil(@RequestBody FuncionalidadePerfilDTO funcionalidadePerfilDTO) {
 
+        System.out.println(funcionalidadePerfilDTO);
         Funcionalidade funcionalidadeModel = new Funcionalidade();
         Perfil perfilModel = new Perfil();
         FuncionalidadePerfil funcionalidadePerfilModel = new FuncionalidadePerfil();
@@ -179,6 +205,8 @@ public class SegurancaController {
 
         funcionalidadePerfilModel.setFkFuncionalidade(funcionalidadeModel);
         funcionalidadePerfilModel.setFkPerfil(perfilModel);
+
+        funcionalidadePerfilRepository.save(funcionalidadePerfilModel);
 
         return funcionalidadePerfilModel;
     }
