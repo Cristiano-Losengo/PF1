@@ -10,11 +10,11 @@ export default function Agua() {
   const [anonimo, setAnonimo] = useState(false);
   const [formData, setFormData] = useState({
     local: '',
-    municipio: 'Luanda',       
-    bairro: 'Sambizanga',    
+    municipio: 'Luanda',
+    bairro: 'Sambizanga',
     rua: '',
     data: '',
-    subtipo: 'agua_inexistente', 
+    subtipo: 'agua_inexistente',
     descricao: '',
     nome: '',
     contacto: '',
@@ -105,7 +105,7 @@ export default function Agua() {
       contacto: anonimo ? null : formData.contacto,
       descricao: formData.descricao,
       anonima: anonimo,
-      dataOcorrencia: formData.data, 
+      dataOcorrencia: formData.data,
       subtipo: formData.subtipo,
       localidade: {
         municipio: formData.municipio,
@@ -161,7 +161,7 @@ export default function Agua() {
           {/* FORMULÁRIO DE DENÚNCIA */}
           {tipo === "registrar" && (
             <form className="container mt-5" onSubmit={handleSubmit} style={{ maxWidth: "800px" }}>
-              <h3 className="mb-4">
+              <h3 className="mb-4 text-primary">
                 <FaTint className="me-2 text-primary" /> Registrar Ocorrência - Setor de Água
               </h3>
 

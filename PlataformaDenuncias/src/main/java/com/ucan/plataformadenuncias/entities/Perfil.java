@@ -12,6 +12,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,11 +48,21 @@ public class Perfil {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer pkPerfil;
 
-    @Column(name = "designacao", nullable = false, length = 100)
+    /*@Column(name = "designacao", nullable = false, length = 100)
     private String designacao;
-
+    
     @Column(name = "descricao", length = 100)
-    private String descricao;
+    private String descricao;*/
+    
+    @NotBlank(message = "A designação é obrigatória")
+    @Size(min = 3, max = 50, message = "A designação deve ter entre 3 e 50 caracteres")
+    @Pattern(regexp = "^[a-zA-ZÀ-ÿ\\s\\-']+$", message = "A designação só pode conter letras, espaços, hífens e apóstrofos")
+    @Column(nullable = false, unique = true)
+    private String designacao;
+    
+    @Size(max = 200, message = "A descrição não pode exceder 200 caracteres")
+@Pattern(regexp = "^[a-zA-ZÀ-ÿ0-9\\s\\-',.!?]*$", message = "A descrição contém caracteres inválidos")
+private String descricao;
 
     @Column(name = "estado")
     private Integer estado;

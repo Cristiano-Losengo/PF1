@@ -41,9 +41,7 @@ public class FuncionsHelper {
         }
     }
     
-    /**
-     * Método auxiliar para obter o valor numérico de uma célula, tratando fórmulas
-     */
+ 
     public static Double getCellAsDouble(Cell cell) {
         if (cell == null) {
             return null;

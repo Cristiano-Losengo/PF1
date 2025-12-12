@@ -14,43 +14,60 @@ export default function Home() {
   return (
     <div className="page bg-light min-vh-100 d-flex flex-column">
 
-      {/* ===== HERO ===== */}
-      <section
-        className="text-white d-flex align-items-center shadow"
+{/* ===== HERO ===== */}
+<section
+  className="d-flex align-items-center shadow"
+  style={{
+    background: "linear-gradient(135deg, #000000 0%, #000000 50%, rgb(5, 4, 1) 100%)",
+    minHeight: "75vh",
+  }}
+>
+  <div className="container text-center py-5">
+    <div className="mb-4">
+      <img
+        src="/brasao-angola.png"
+        alt="República de Angola"
+        width="70"
+        className="mb-3 rounded-circle border border-warning p-1 bg-white"
+        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+      />
+      <FaBullhorn className="fs-1" style={{ color: '#D4AF37' }} />
+
+      {/* Título com cor do logotipo */}
+      <h1 className="display-5 fw-bold mb-3" style={{ color: '#D4AF37' }}>
+        Plataforma Nacional de Denúncias
+      </h1>
+
+      {/* Descrição */}
+      <p className="lead fw-light text-white-50">
+        Iniciativa oficial do <strong>Governo da República de Angola</strong> que garante
+        ao cidadão o direito de relatar irregularidades de forma
+        <strong> anónima, segura e protegida.</strong>
+      </p>
+
+      {/* Mensagem dinâmica com cor do logotipo */}
+      {mensagem && (
+        <p className="fw-semibold fst-italic mt-3" style={{ color: '#D4AF37' }}>
+          {mensagem}
+        </p>
+      )}
+
+      {/* Botão com cor do logotipo */}
+      <button
+        className="btn btn-lg px-5 mt-4 fw-bold shadow-lg border-0"
         style={{
-          background: "linear-gradient(135deg, #000000 0%, #000000 50%,rgb(5, 4, 1) 100%)",
-          minHeight: "75vh",
+          backgroundColor: '#D4AF37',
+          color: '#000',
+          transition: 'background-color 0.3s',
         }}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#b5942d'}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#D4AF37'}
       >
-        <div className="container text-center py-5">
-          <div className="mb-4">
-            <img
-              src="/brasao-angola.png"
-              alt="República de Angola"
-              width="70"
-              className="mb-3 rounded-circle border border-warning p-1 bg-white"
-              onError={(e) => { e.currentTarget.style.display = 'none'; }}
-            />
-            <FaBullhorn className="fs-1 text-warning mb-3" />
-            <h1 className="display-5 fw-bold mb-3 text-warning">
-              Plataforma Nacional de Denúncias
-            </h1>
-            <p className="lead fw-light text-white-50">
-              Iniciativa oficial do <strong>Governo da República de Angola</strong> que garante
-              ao cidadão o direito de relatar irregularidades de forma
-              <strong> anónima, segura e protegida.</strong>
-            </p>
-            {mensagem && (
-              <p className="fw-semibold fst-italic mt-3 text-warning">
-                {mensagem}
-              </p>
-            )}
-            <button className="btn btn-warning btn-lg px-5 mt-4 fw-bold shadow-lg border-0">
-              Fazer uma Denúncia
-            </button>
-          </div>
-        </div>
-      </section>
+        Fazer uma Denúncia
+      </button>
+    </div>
+  </div>
+</section>
 
       {/* ===== ÁREAS DE DENÚNCIA ===== */}
       <main className="flex-grow-1">

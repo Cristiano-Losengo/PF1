@@ -8,9 +8,13 @@ import com.ucan.plataformadenuncias.entities.*;
 import com.ucan.plataformadenuncias.initializer.TipoFuncionalidadeLoader;
 import com.ucan.plataformadenuncias.repositories.*;
 import com.ucan.plataformadenuncias.services.VersaoService;
+import jakarta.validation.Valid;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,6 +22,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api/seguranca")  
@@ -44,6 +50,10 @@ public class SegurancaController {
 
     @Autowired
     private VersaoService versaoService;
+
+    // Expressões regulares para validação
+    private static final Pattern DESIGNACAO_PATTERN = Pattern.compile("^[a-zA-ZÀ-ÿ\\s\\-']+$");
+    private static final Pattern DESCRICAO_PATTERN = Pattern.compile("^[a-zA-ZÀ-ÿ0-9\\s\\-',.!?]*$");
 
     @GetMapping("/")
     public String index() {
@@ -155,12 +165,72 @@ public class SegurancaController {
         return contaModel;
     }
 
-    @PostMapping("/perfil_cadastrar")
-    public Perfil cadastrarPerfil(@RequestBody Perfil perfil) {
-
-        Perfil perfilModel = perfilRepository.save(perfil);
-        return perfilModel;
+@PostMapping("/perfil_cadastrar")
+public ResponseEntity<?> cadastrarPerfil(@RequestBody Perfil perfil) {
+    
+    Map<String, String> erros = new HashMap<>();
+    
+    // Validação da designação
+    if (perfil.getDesignacao() == null || perfil.getDesignacao().trim().isEmpty()) {
+      //  erros.put("designacao", "A designação é obrigatória");
+    } else {
+        String designacao = perfil.getDesignacao().trim();
+        
+        // Verificar tamanho
+        if (designacao.length() < 3) {
+            erros.put("designacao", "A designação deve ter no mínimo 3 caracteres");
+        } else if (designacao.length() > 50) {
+            erros.put("designacao", "A designação não pode exceder 50 caracteres");
+        }
+        
+        // Verificar padrão de caracteres
+        else if (!DESIGNACAO_PATTERN.matcher(designacao).matches()) {
+            erros.put("designacao", "A designação não pode conter números ou caracteres especiais");
+        }
+        
+        // Verificar se designação já existe
+        else if (perfilRepository.existsByDesignacaoIgnoreCase(designacao)) {
+            erros.put("designacao", "Esta designação já está em uso");
+        }
     }
+    
+    // Validação da descrição - SÓ VALIDA SE TIVER CONTEÚDO
+    if (perfil.getDescricao() != null && !perfil.getDescricao().trim().isEmpty()) {
+        String descricao = perfil.getDescricao().trim();
+        
+        if (descricao.length() > 200) {
+            erros.put("descricao", "A descrição não pode exceder 200 caracteres");
+        } else if (!DESCRICAO_PATTERN.matcher(descricao).matches()) {
+            erros.put("descricao", "A descrição contém caracteres inválidos");
+        }
+    }
+    
+    // Se houver erros, retornar com status 400
+    if (!erros.isEmpty()) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("sucesso", false);
+        response.put("mensagem", "Erro de validação");
+        response.put("erros", erros);
+        return ResponseEntity.badRequest().body(response);
+    }
+    
+    try {
+        Perfil perfilModel = perfilRepository.save(perfil);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("sucesso", true);
+        response.put("mensagem", "Perfil cadastrado com sucesso");
+        response.put("perfil", perfilModel);
+        
+        return ResponseEntity.ok(response);
+        
+    } catch (Exception e) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("sucesso", false);
+        response.put("mensagem", "Erro ao cadastrar perfil: " + e.getMessage());
+        return ResponseEntity.badRequest().body(response);
+    }
+}
 
     @PostMapping("/conta_perfil_cadastrar")
     public ContaPerfil cadastrarContaPerfil(@RequestBody ContaPerfilDTO contaPerfilDTO) {
@@ -318,5 +388,149 @@ public ResponseEntity<?> obterVersoesAtuais() {
     
     return ResponseEntity.ok(resultado);
 }
+
+
+// Endpoint para editar perfil
+@PutMapping("/perfil_editar/{id}")
+public ResponseEntity<?> editarPerfil(@PathVariable Integer id, @RequestBody Perfil perfil) {
+    
+    Map<String, String> erros = new HashMap<>();
+    
+    // Verificar se o perfil existe
+    Optional<Perfil> perfilExistente = perfilRepository.findById(id);
+    if (!perfilExistente.isPresent()) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("sucesso", false);
+        response.put("mensagem", "Perfil não encontrado");
+        return ResponseEntity.badRequest().body(response);
+    }
+    
+    // Validação da designação
+    if (perfil.getDesignacao() == null || perfil.getDesignacao().trim().isEmpty()) {
+        erros.put("designacao", "A designação é obrigatória");
+    } else {
+        String designacao = perfil.getDesignacao().trim();
+        
+        if (designacao.length() < 3) {
+            erros.put("designacao", "A designação deve ter no mínimo 3 caracteres");
+        } else if (designacao.length() > 50) {
+            erros.put("designacao", "A designação não pode exceder 50 caracteres");
+        } else if (!DESIGNACAO_PATTERN.matcher(designacao).matches()) {
+            erros.put("designacao", "A designação não pode conter números ou caracteres especiais");
+        } else if (perfilRepository.existsByDesignacaoIgnoreCaseAndPkPerfilNot(designacao, id)) {
+            erros.put("designacao", "Esta designação já está em uso por outro perfil");
+        }
+    }
+    
+    // Validação da descrição
+    if (perfil.getDescricao() != null && !perfil.getDescricao().trim().isEmpty()) {
+        String descricao = perfil.getDescricao().trim();
+        
+        if (descricao.length() > 200) {
+            erros.put("descricao", "A descrição não pode exceder 200 caracteres");
+        } else if (!DESCRICAO_PATTERN.matcher(descricao).matches()) {
+            erros.put("descricao", "A descrição contém caracteres inválidos");
+        }
+    }
+    
+    // Se houver erros, retornar com status 400
+    if (!erros.isEmpty()) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("sucesso", false);
+        response.put("mensagem", "Erro de validação");
+        response.put("erros", erros);
+        return ResponseEntity.badRequest().body(response);
+    }
+    
+    try {
+        Perfil perfilAtual = perfilExistente.get();
+        perfilAtual.setDesignacao(perfil.getDesignacao().trim());
+        perfilAtual.setDescricao(perfil.getDescricao() != null ? perfil.getDescricao().trim() : null);
+        perfilAtual.setEstado(perfil.getEstado());
+        
+        Perfil perfilModel = perfilRepository.save(perfilAtual);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("sucesso", true);
+        response.put("mensagem", "Perfil atualizado com sucesso");
+        response.put("perfil", perfilModel);
+        
+        return ResponseEntity.ok(response);
+        
+    } catch (Exception e) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("sucesso", false);
+        response.put("mensagem", "Erro ao atualizar perfil: " + e.getMessage());
+        return ResponseEntity.badRequest().body(response);
+    }
+}
+
+// Endpoint para buscar perfil por ID
+@GetMapping("/perfil_buscar/{id}")
+public ResponseEntity<?> buscarPerfil(@PathVariable Integer id) {
+    try {
+        Optional<Perfil> perfil = perfilRepository.findById(id);
+        
+        if (perfil.isPresent()) {
+            return ResponseEntity.ok(perfil.get());
+        } else {
+            Map<String, Object> response = new HashMap<>();
+            response.put("sucesso", false);
+            response.put("mensagem", "Perfil não encontrado");
+            return ResponseEntity.badRequest().body(response);
+        }
+    } catch (Exception e) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("sucesso", false);
+        response.put("mensagem", "Erro ao buscar perfil: " + e.getMessage());
+        return ResponseEntity.badRequest().body(response);
+    }
+}
+
+// Endpoint para histórico (exemplo)
+@GetMapping("/perfil_historico/{id}")
+public ResponseEntity<?> historicoPerfil(@PathVariable Integer id) {
+    try {
+        // Dados de exemplo - substitua por consulta real ao banco
+        List<Map<String, Object>> historico = new ArrayList<>();
+        
+        // Exemplo 1
+        Map<String, Object> item1 = new HashMap<>();
+        item1.put("id", 1);
+        item1.put("acao", "Cadastro");
+        item1.put("usuario", "admin");
+        item1.put("data", LocalDateTime.now().minusDays(2));
+        item1.put("detalhes", "Perfil criado inicialmente");
+        historico.add(item1);
+        
+        // Exemplo 2
+        Map<String, Object> item2 = new HashMap<>();
+        item2.put("id", 2);
+        item2.put("acao", "Atualização");
+        item2.put("usuario", "admin");
+        item2.put("data", LocalDateTime.now().minusDays(1));
+        item2.put("detalhes", "Estado alterado para ATIVO");
+        historico.add(item2);
+        
+        // Exemplo 3
+        Map<String, Object> item3 = new HashMap<>();
+        item3.put("id", 3);
+        item3.put("acao", "Atualização");
+        item3.put("usuario", "moderador");
+        item3.put("data", LocalDateTime.now());
+        item3.put("detalhes", "Descrição atualizada");
+        historico.add(item3);
+        
+        return ResponseEntity.ok(historico);
+    } catch (Exception e) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("sucesso", false);
+        response.put("mensagem", "Erro ao carregar histórico");
+        return ResponseEntity.badRequest().body(response);
+    }
+}
+
+
+
 
 }

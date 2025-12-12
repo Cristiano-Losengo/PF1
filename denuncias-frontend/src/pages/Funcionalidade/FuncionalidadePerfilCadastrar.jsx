@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { FaUserCog } from "react-icons/fa";
 
 export default function FuncionalidadePerfilCadastrar() {
   const [funcionalidades, setFuncionalidades] = useState([]);
@@ -85,7 +86,9 @@ export default function FuncionalidadePerfilCadastrar() {
     <div className="container mt-5 d-flex justify-content-center">
       <div className="card p-4 shadow w-50">
 
-        <h3 className="mb-4">Atribuir Funcionalidade o Perfil</h3>
+        <h3 className="mb-4 text-primary">
+          <FaUserCog className="me-2" /> Atribuir Funcionalidade ao Perfil
+        </h3>
 
         {mensagem && (
           <div className={`alert alert-${mensagem.tipo} text-center`} role="alert">
@@ -157,14 +160,23 @@ export default function FuncionalidadePerfilCadastrar() {
 
           {/* Botões */}
           <div className="text-center mt-4">
-            <button type="submit" className="btn btn-success me-2 px-4" disabled={loading}>
+            <button
+              type="submit"
+              className="btn btn-primary me-2 px-4"
+              disabled={loading}
+            >
               {loading ? "Salvando..." : "Salvar"}
             </button>
 
-            <button type="button" className="btn btn-secondary px-4" onClick={resetForm}>
+            <button
+              type="button"
+              className="btn btn-secondary px-4"
+              onClick={resetForm}
+            >
               Limpar
             </button>
           </div>
+
 
         </form>
       </div>

@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { FaUsers } from "react-icons/fa";
+
 
 export default function ContaListar() {
   const [contas, setContas] = useState([]);
@@ -35,7 +37,9 @@ export default function ContaListar() {
 
   return (
     <div className="container mt-4">
-      <h3 className="mb-4">Lista de Contas</h3>
+      <h3 className="mb-4 text-primary">
+        <FaUsers className="me-2" /> Lista de Contas
+      </h3>
       <table className="table table-bordered table-striped">
         <thead className="table-dark">
           <tr>

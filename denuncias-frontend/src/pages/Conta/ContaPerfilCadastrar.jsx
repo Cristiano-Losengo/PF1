@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FaTrash } from "react-icons/fa";
+import { FaUserShield } from "react-icons/fa";
+
 
 export default function ContaPerfilListar() {
   const [data, setData] = useState([]);
@@ -47,7 +49,9 @@ export default function ContaPerfilListar() {
 
   return (
     <div className="container mt-4">
-      <h3 className="mb-4">Perfis por Utilizador</h3>
+      <h3 className="mb-4 text-primary">
+        <FaUserShield className="me-2" /> Perfis por Utilizador
+      </h3>
       <ul className="list-group">
         {Object.entries(pessoasMap).map(([nome, bloco]) => {
           const aberto = abertos.has(nome);

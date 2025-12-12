@@ -324,7 +324,6 @@ export default function FuncionalidadeCadastrar() {
 
       {/* Grid Layout */}
       <div className="row">
-        {/* Left Column - Upload Area */}
         <div className="col-lg-8">
           <div className="card border-0 shadow-sm mb-4">
             <div className="card-body p-4">
@@ -333,7 +332,6 @@ export default function FuncionalidadeCadastrar() {
                 Upload de Arquivo
               </h5>
 
-              {/* Drag & Drop Area */}
               <div 
                 className={`drop-zone p-5 text-center border-2 border-dashed rounded-3 mb-4 ${
                   dragActive ? 'drag-active bg-primary bg-opacity-10' : 'bg-light'
@@ -353,9 +351,10 @@ export default function FuncionalidadeCadastrar() {
                   <p className="text-muted mb-3">
                     {file 
                       ? `${formatFileSize(file.size)} • Clique para alterar`
-                      : "Ou clique para selecionar o arquivo"
+                      : "ou clique para selecionar o arquivo, com o seguinte formato:  .xlsx .xls .csv"
                     }
                   </p>
+                  
                   <button className="btn btn-primary">
                     <i className="bi bi-folder2-open me-2"></i>
                     Selecionar Arquivo
@@ -370,7 +369,7 @@ export default function FuncionalidadeCadastrar() {
                 </div>
               </div>
 
-              {/* Progress Bar */}
+            
               {loading && (
                 <div className="mb-4">
                   <div className="d-flex justify-content-between mb-1">
@@ -444,23 +443,7 @@ export default function FuncionalidadeCadastrar() {
               </div>
 
               {/* Format Info */}
-              <div className="mt-4 pt-3 border-top">
-                <h6 className="text-muted mb-2">Formato suportado:</h6>
-                <div className="d-flex flex-wrap gap-2">
-                  <span className="badge bg-light text-dark border">
-                    <i className="bi bi-file-earmark-excel me-1 text-success"></i>
-                    .xlsx
-                  </span>
-                  <span className="badge bg-light text-dark border">
-                    <i className="bi bi-file-earmark-excel me-1 text-warning"></i>
-                    .xls
-                  </span>
-                  <span className="badge bg-light text-dark border">
-                    <i className="bi bi-file-earmark-text me-1 text-primary"></i>
-                    .csv
-                  </span>
-                </div>
-              </div>
+
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-// src/App.js
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Navigate, Link, NavLink, useLocation } from 'react-router-dom';
 import {
@@ -124,23 +124,33 @@ function App() {
                   <li className="nav-item">
                     <NavLink
                       to="/"
-                      className={({ isActive }) => `nav-link ${isActive ? 'text-warning fw-bold border-bottom border-3 border-warning' : 'text-light'}`}
+                      className={({ isActive }) =>
+                        `nav-link ${isActive ? 'fw-bold border-3' : 'text-light'}`
+                      }
+                      style={({ isActive }) => ({
+                        color: isActive ? '#D4AF37' : '',
+                        borderColor: isActive ? '' : '',
+                      })}
                       onClick={closeAll}
                     >
                       <FaHome className="me-1" /> Home
                     </NavLink>
                   </li>
 
+
                   {/* ÁGUA */}
                   <li className="nav-item dropdown">
                     <button
                       type="button"
-                      className={`nav-link btn btn-link dropdown-toggle text-start ${startsWith('/agua') ? 'fw-bold text-warning' : 'text-light'}`}
+                      className={`nav-link btn btn-link dropdown-toggle text-start 
+      ${startsWith('/agua') ? 'pnd-gold fw-bold pnd-gold-border border-3' : 'text-light'}`}
                       aria-expanded={openTop.agua}
                       onClick={(e) => { e.preventDefault(); toggleTop('agua'); }}
                     >
-                      <FaTint className="me-1" /> Água
+                      <FaTint className={`me-1 ${startsWith('/agua') ? 'pnd-gold' : 'text-light'}`} /> Água
                     </button>
+
+
                     <ul className={`dropdown-menu shadow-sm border-0 ${openTop.agua ? 'show' : ''}`}>
                       <li>
                         <Link className="dropdown-item d-flex align-items-center" to="/agua/registrar" onClick={closeAll}>
@@ -155,15 +165,17 @@ function App() {
                     </ul>
                   </li>
 
+
                   {/* SAÚDE */}
                   <li className="nav-item dropdown">
                     <button
                       type="button"
-                      className={`nav-link btn btn-link dropdown-toggle text-start ${startsWith('/saude') ? 'fw-bold text-warning' : 'text-light'}`}
+                      className={`nav-link btn btn-link dropdown-toggle text-start 
+      ${startsWith('/saude') ? 'pnd-gold fw-bold pnd-gold-border border-3' : 'text-light'}`}
                       aria-expanded={openTop.saude}
                       onClick={(e) => { e.preventDefault(); toggleTop('saude'); }}
                     >
-                      <FaUserMd className="me-1" /> Saúde
+                      <FaUserMd className={`me-1 ${startsWith('/saude') ? 'pnd-gold' : 'text-light'}`} /> Saúde
                     </button>
                     <ul className={`dropdown-menu shadow-sm border-0 ${openTop.saude ? 'show' : ''}`}>
                       <li>
@@ -183,11 +195,12 @@ function App() {
                   <li className="nav-item dropdown">
                     <button
                       type="button"
-                      className={`nav-link btn btn-link dropdown-toggle text-start ${startsWith('/educacao') ? 'fw-bold text-warning' : 'text-light'}`}
+                      className={`nav-link btn btn-link dropdown-toggle text-start 
+      ${startsWith('/educacao') ? 'pnd-gold fw-bold pnd-gold-border border-3' : 'text-light'}`}
                       aria-expanded={openTop.educacao}
                       onClick={(e) => { e.preventDefault(); toggleTop('educacao'); }}
                     >
-                      <FaGraduationCap className="me-1" /> Educação
+                      <FaGraduationCap className={`me-1 ${startsWith('/educacao') ? 'pnd-gold' : 'text-light'}`} /> Educação
                     </button>
                     <ul className={`dropdown-menu shadow-sm border-0 ${openTop.educacao ? 'show' : ''}`}>
                       <li>
@@ -202,21 +215,20 @@ function App() {
                       </li>
                     </ul>
                   </li>
-                  {/* SEGURANÇA (estilizado) */}
+                  {/* SEGURANÇA */}
                   <li className="nav-item dropdown">
                     <button
                       type="button"
-                      className={`nav-link btn btn-link dropdown-toggle text-start d-flex align-items-center gap-2 py-2 px-3
-      ${startsWith('/seguranca') ? 'fw-bold text-warning' : 'text-light'}`}
+                      className={`nav-link btn btn-link dropdown-toggle d-flex align-items-center gap-2 py-2 px-3 
+      ${startsWith('/seguranca') ? 'pnd-gold fw-bold pnd-gold-border border-3' : 'text-light'}`}
                       aria-expanded={openTop.seguranca}
-                      aria-controls="seguranca-menu"
                       onClick={(e) => { e.preventDefault(); toggleTop('seguranca'); }}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTop('seguranca'); } }}
+                      aria-controls="seguranca-menu"
                     >
-                      <FaBuilding className="me-1 fs-5" /> <span className="me-auto">Segurança</span>
-                      <span className={`menu-arrow ${openTop.seguranca ? 'open' : ''}`} aria-hidden>▸</span>
+                      <FaBuilding className={`me-1 fs-5 ${startsWith('/seguranca') ? 'pnd-gold' : 'text-light'}`} />
+                      <span className="me-auto">Segurança</span>
+                      <span className={`menu-arrow ${startsWith('/seguranca') ? 'pnd-gold' : 'text-light'}`} aria-hidden>▸</span>
                     </button>
-
                     <ul
                       id="seguranca-menu"
                       role="menu"
@@ -304,9 +316,9 @@ function App() {
                           className={`dropdown-menu border-0 shadow-sm submenu-list ${segOpen.contas ? 'show' : ''}`}
                         >
                           <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/contas/cadastrar" onClick={closeAll}>➕ Cadastrar</Link></li>
-                          <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/contas/listar" onClick={closeAll}>📋 Listar</Link></li> 
+                          <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/contas/listar" onClick={closeAll}>📋 Listar</Link></li>
                           <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/contas/atribuir" onClick={closeAll}>⚙️ Atribuir Perfil as Contas</Link></li>
-                           <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/contas/atribuir_listar" onClick={closeAll}>📋 Listar Perfil atribuidas as Contas</Link></li>
+                          <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/contas/atribuir_listar" onClick={closeAll}>📋 Listar Perfil atribuidas as Contas</Link></li>
                         </ul>
                       </li>
 
@@ -318,12 +330,13 @@ function App() {
                 <div className="d-flex ms-3">
                   <Link
                     to="/login"
-                    className="btn btn-warning d-flex align-items-center fw-semibold"
+                    className="btn pnd-gold-btn d-flex align-items-center fw-semibold"
                     onClick={() => { setLoggedIn(false); closeAll(); }}
                   >
-                    <FaSignOutAlt className="me-1" /> Logout
+                    <FaSignOutAlt className="me-1 pnd-gold" /> Logout
                   </Link>
                 </div>
+
               </div>
             </div>
           </nav>
@@ -355,56 +368,58 @@ function App() {
       </main>
 
       {/* RODAPÉ */}
-      {!isLoginPage && (
-        <footer className="bg-black text-light mt-auto pt-5 pb-3 border-top shadow-sm">
-          <div className="container px-4">
-            <div className="row gy-4">
-              <div className="col-md-3 text-center text-md-start">
-                <div className="d-flex align-items-center justify-content-center justify-content-md-start mb-2">
-                  <img src="/brasao-angola.png" alt="Governo de Angola" width="40" style={{ marginRight: 10 }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                  <h5 className="fw-bold mb-0 text-uppercase">Plataforma Nacional de Denúncias</h5>
+      {
+        !isLoginPage && (
+          <footer className="bg-black text-light mt-auto pt-5 pb-3 border-top shadow-sm">
+            <div className="container px-4">
+              <div className="row gy-4">
+                <div className="col-md-3 text-center text-md-start">
+                  <div className="d-flex align-items-center justify-content-center justify-content-md-start mb-2">
+                    <img src="/brasao-angola.png" alt="Governo de Angola" width="40" style={{ marginRight: 10 }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                    <h5 className="fw-bold mb-0 text-uppercase">Plataforma Nacional de Denúncias</h5>
+                  </div>
+                  <p className="small text-muted mb-0">
+                    Sistema oficial do Governo da República de Angola para monitorar e responder às denúncias
+                    dos cidadãos sobre serviços públicos de <strong>Água</strong>, <strong>Saúde</strong> e <strong>Educação</strong>.
+                  </p>
                 </div>
-                <p className="small text-muted mb-0">
-                  Sistema oficial do Governo da República de Angola para monitorar e responder às denúncias
-                  dos cidadãos sobre serviços públicos de <strong>Água</strong>, <strong>Saúde</strong> e <strong>Educação</strong>.
-                </p>
-              </div>
 
-              <div className="col-md-3 text-center text-md-start">
-                <h6 className="fw-bold text-uppercase mb-3">Institucional</h6>
-                <ul className="list-unstyled small">
-                  <li><Link className="text-light text-decoration-none" to="/sobre">Sobre a Plataforma</Link></li>
-                  <li><a href="#" className="text-light text-decoration-none">Política de Privacidade</a></li>
-                  <li><a href="#" className="text-light text-decoration-none">Termos de Uso</a></li>
-                </ul>
-              </div>
-
-              <div className="col-md-3 mb-3 text-center text-md-start">
-                <h6 className="fw-bold text-uppercase mb-3">Contacto</h6>
-                <p className="small mb-1"><strong>Linha Verde:</strong> 111</p>
-                <p className="small mb-1"><strong>Email:</strong> denuncias@gov.ao</p>
-                <p className="small mb-0"><strong>Endereço:</strong> Largo da Independência, Luanda - Angola</p>
-              </div>
-
-              <div className="col-md-3 text-center text-md-end">
-                <h6 className="fw-bold text-uppercase mb-3">Siga-nos</h6>
-                <div className="d-flex justify-content-center justify-content-md-end gap-3 fs-4">
-                  <a className="text-light" href="#" aria-label="Twitter"><FaTwitter /></a>
-                  <a className="text-light" href="#" aria-label="LinkedIn"><FaLinkedin /></a>
-                  <a className="text-light" href="#" aria-label="GitHub"><FaGithub /></a>
+                <div className="col-md-3 text-center text-md-start">
+                  <h6 className="fw-bold text-uppercase mb-3">Institucional</h6>
+                  <ul className="list-unstyled small">
+                    <li><Link className="text-light text-decoration-none" to="/sobre">Sobre a Plataforma</Link></li>
+                    <li><a href="#" className="text-light text-decoration-none">Política de Privacidade</a></li>
+                    <li><a href="#" className="text-light text-decoration-none">Termos de Uso</a></li>
+                  </ul>
                 </div>
+
+                <div className="col-md-3 mb-3 text-center text-md-start">
+                  <h6 className="fw-bold text-uppercase mb-3">Contacto</h6>
+                  <p className="small mb-1"><strong>Linha Verde:</strong> 111</p>
+                  <p className="small mb-1"><strong>Email:</strong> denuncias@gov.ao</p>
+                  <p className="small mb-0"><strong>Endereço:</strong> Largo da Independência, Luanda - Angola</p>
+                </div>
+
+                <div className="col-md-3 text-center text-md-end">
+                  <h6 className="fw-bold text-uppercase mb-3">Siga-nos</h6>
+                  <div className="d-flex justify-content-center justify-content-md-end gap-3 fs-4">
+                    <a className="text-light" href="#" aria-label="Twitter"><FaTwitter /></a>
+                    <a className="text-light" href="#" aria-label="LinkedIn"><FaLinkedin /></a>
+                    <a className="text-light" href="#" aria-label="GitHub"><FaGithub /></a>
+                  </div>
+                </div>
+              </div>
+
+              <hr className="border-secondary my-4" />
+              <div className="text-center small text-muted">
+                &copy; 2025 — República de Angola. Todos os direitos reservados. <br />
+
               </div>
             </div>
-
-            <hr className="border-secondary my-4" />
-            <div className="text-center small text-muted">
-              &copy; 2025 — República de Angola. Todos os direitos reservados. <br />
-
-            </div>
-          </div>
-        </footer>
-      )}
-    </div>
+          </footer>
+        )
+      }
+    </div >
   );
 }
 

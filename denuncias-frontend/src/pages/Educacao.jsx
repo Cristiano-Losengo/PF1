@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   FaMapMarkerAlt, FaCalendarAlt, FaExclamationCircle, FaUser, FaPhoneAlt,
-  FaFileAlt, FaListAlt, FaPaperclip, FaSchool, FaComments, FaCheckCircle, FaHourglassHalf
+  FaFileAlt, FaListAlt,FaGraduationCap, FaPaperclip, FaSchool, FaComments, FaCheckCircle, FaHourglassHalf
 } from 'react-icons/fa';
 import { useParams } from 'react-router-dom';
 
@@ -100,9 +100,10 @@ export default function Educacao() {
           {/* Registrar Denúncia */}
           {tipo === "registrar" && (
             <form className="container mt-5" onSubmit={handleSubmit} style={{ maxWidth: "800px" }}>
-              <h2 className="mb-4 text-center">
-                <FaExclamationCircle className="me-2 text-danger" /> Registrar Ocorrência - Setor de Educação
-              </h2>
+        <h2 className="mb-4 text-center text-primary">
+  <FaGraduationCap className="me-2" /> Registrar Ocorrência - Setor de Educação
+</h2>
+
 
               {/* Nome da Escola */}
               <div className="mb-3">

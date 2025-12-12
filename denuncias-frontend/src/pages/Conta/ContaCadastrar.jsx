@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { FaUserPlus } from "react-icons/fa";
+
 
 export default function ContaCadastrar() {
   const [contas, setContas] = useState([]);
@@ -111,7 +113,9 @@ export default function ContaCadastrar() {
     <div className="container mt-5 d-flex justify-content-center">
       <div className="card p-4 shadow w-50">
 
-        <h3 className="mb-4">Cadastrar Conta</h3>
+        <h3 className="mb-4 text-primary">
+          <FaUserPlus className="me-2" /> Cadastrar Conta
+        </h3>
 
         {/* Mensagem */}
         {mensagem && (
@@ -132,7 +136,7 @@ export default function ContaCadastrar() {
               onChange={handleChange}
               required
             >
-  
+
               <option value="">Selecione...</option>
               <option value="ADMIN">ADMIN</option>
               <option value="GESTOR_PROVINCIAL">GESTOR PROVINCIAL</option>
@@ -183,36 +187,37 @@ export default function ContaCadastrar() {
           </div>
 
           {/* Botões */}
-          <div className="text-center mt-4">
-            <button
-              type="submit"
-              className="btn btn-success me-2 px-4"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <span
-                    className="spinner-border spinner-border-sm me-2"
-                    role="status"
-                  ></span>
-                  Salvando...
-                </>
-              ) : editando ? (
-                "Salvar Alterações"
-              ) : (
-                "Cadastrar"
-              )}
-            </button>
+        <div className="text-center mt-4">
+  <button
+    type="submit"
+    className="btn me-2 px-4"
+    style={{ backgroundColor: "#007bff", borderColor: "#007bff", color: "#fff" }}
+    disabled={loading}
+  >
+    {loading ? (
+      <>
+        <span
+          className="spinner-border spinner-border-sm me-2"
+          role="status"
+        ></span>
+        Salvando...
+      </>
+    ) : editando ? (
+      "Salvar Alterações"
+    ) : (
+      "Cadastrar"
+    )}
+  </button>
 
-            <button
-              type="button"
-              className="btn btn-secondary px-4"
-              onClick={resetForm}
-              disabled={loading}
-            >
-              Limpar
-            </button>
-          </div>
+  <button
+    type="button"
+    className="btn btn-secondary px-4"
+    onClick={resetForm}
+    disabled={loading}
+  >
+    Limpar
+  </button>
+</div>
 
         </form>
 

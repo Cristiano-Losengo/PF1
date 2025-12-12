@@ -129,20 +129,117 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .fw-bold {
 }
 
 /* Links e menus */
-.nav-link {
-  font-weight: 500;
-  transition: all 0.2s ease-in-out;
-}
 
-.nav-link:hover {
-  color: #ffc107 !important;
-  transform: scale(1.05);
-}
 
-footer {
-  font-size: 0.95rem;
-  line-height: 1.6;
+
+
+.pnd-gold {
+  color: #D4AF37 !important;
 }
 
 
 
+
+.pnd-gold-border {
+  border-color: #D4AF37 !important;
+}
+
+
+
+
+.pnd-gold-btn {
+  background-color: transparent !important;
+  color: #D4AF37 !important;
+  border: 1px solid #D4AF37 !important;
+  font-weight: 600;
+}
+
+
+
+
+.pnd-gold-btn {
+  background-color: transparent !important;
+  color: #D4AF37 !important;
+  border: 1px solid #D4AF37 !important;
+  font-weight: 600;
+}
+
+.pnd-gold-btn:hover {
+  background-color: #D4AF37 !important;
+  color: #000 !important;
+}
+
+
+
+
+
+
+/* Estilos para os botões de ação na tabela */
+.btn-group-sm .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  border-radius: 0.2rem;
+}
+
+/* Feedback visual para botões desabilitados */
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Transição suave para hover nos botões */
+.btn {
+  transition: all 0.2s ease;
+}
+
+/* Estilo para o modal de histórico */
+.timeline {
+  position: relative;
+  padding-left: 30px;
+}
+
+.timeline-item {
+  position: relative;
+  padding-bottom: 15px;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -30px;
+  top: 5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.timeline-content {
+  background: #f8f9fa;
+  padding: 10px 15px;
+  border-radius: 5px;
+  border-left: 3px solid #007bff;
+}
+
+/* Estilo para o botão de limpar campo */
+.btn-link.position-absolute {
+  text-decoration: none;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.btn-link.position-absolute:hover {
+  color: #dc3545 !important;
+}
+
+/* Estilo para o breadcrumb */
+.breadcrumb {
+  background-color: transparent;
+  padding: 0.5rem 0;
+}
+
+.breadcrumb-item a {
+  color: #6c757d;
+}
+
+.breadcrumb-item.active {
+  color: #495057;
+}

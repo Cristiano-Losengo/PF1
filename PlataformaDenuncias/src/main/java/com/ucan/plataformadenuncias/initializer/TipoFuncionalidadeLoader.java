@@ -47,7 +47,7 @@ public class TipoFuncionalidadeLoader {
                 return erros;
             }
 
-            // 1. Extrair e validar cabeçalho
+          
             System.out.println("=== VALIDANDO CABEÇALHO TIPOS ===");
             String nome = FuncionsHelper.getCellAsString(sheet.getRow(0).getCell(1));
             String descricao = FuncionsHelper.getCellAsString(sheet.getRow(1).getCell(1));
@@ -221,7 +221,6 @@ public class TipoFuncionalidadeLoader {
                 return erros;
             }
 
-            // 2. Converter data do arquivo
             Date dataArquivo;
             try {
                 dataArquivo = DATE_FORMAT.parse(dataString);
@@ -230,7 +229,7 @@ public class TipoFuncionalidadeLoader {
                 return erros;
             }
 
-            // 2.5. VERIFICAR SE A DATA É FUTURA
+          
             Date dataAtual = new Date();
             if (dataArquivo.after(dataAtual)) {
                 String dataAtualStr = DATE_FORMAT.format(dataAtual);
@@ -280,9 +279,8 @@ public class TipoFuncionalidadeLoader {
             int linhasComErro = 0;
             Set<Integer> pksValidadas = new HashSet<>();
             
-            // Lista para armazenar os dados brutos das funcionalidades
             List<FuncionalidadeData> funcionalidadesData = new ArrayList<>();
-            // Mapa para armazenar referências cruzadas
+
             Map<Integer, FuncionalidadeData> funcionalidadesPorPk = new HashMap<>();
 
             while (index <= sheet.getLastRowNum()) {
@@ -292,7 +290,6 @@ public class TipoFuncionalidadeLoader {
                     continue;
                 }
                 
-                // Parar quando encontrar linha vazia
                 if (isEmptyRow(row)) {
                     break;
                 }
@@ -342,12 +339,10 @@ public class TipoFuncionalidadeLoader {
             int linhasInseridas = 0;
             int linhasAtualizadas = 0;
             
-            // Mapa para cache de funcionalidades já salvas/recuperadas
             Map<Integer, Funcionalidade> cacheFuncionalidades = new HashMap<>();
             
             for (FuncionalidadeData funcData : funcionalidadesOrdenadas) {
                 try {
-                    // Verificar se já existe no banco
                     Optional<Funcionalidade> existenteOpt = funcData.pkFuncionalidade > 0 ? 
                         funcionalidadeRepository.findById(funcData.pkFuncionalidade) : Optional.empty();
                     
@@ -369,11 +364,10 @@ public class TipoFuncionalidadeLoader {
                     
                     // Resolver referência à funcionalidade pai (fkFuncionalidade)
                     if (funcData.fkFuncionalidade != null && funcData.fkFuncionalidade > 0) {
-                        // Buscar no cache primeiro
                         Funcionalidade funcPai = cacheFuncionalidades.get(funcData.fkFuncionalidade);
                         
                         if (funcPai == null) {
-                            // Buscar no banco
+                           
                             Optional<Funcionalidade> paiOpt = funcionalidadeRepository.findById(funcData.fkFuncionalidade);
                             if (paiOpt.isPresent()) {
                                 funcPai = paiOpt.get();
@@ -401,7 +395,7 @@ public class TipoFuncionalidadeLoader {
                         }
                     }
                     
-                    // Salvar a funcionalidade
+                  
                     Funcionalidade funcSalva = funcionalidadeRepository.save(funcionalidade);
                     
                     // Adicionar ao cache
@@ -449,7 +443,6 @@ public class TipoFuncionalidadeLoader {
      * Encontra o início dos dados das funcionalidades baseado no cabeçalho
      */
     private static int encontrarInicioDadosFuncionalidades(Sheet sheet) {
-        // Procura pelo cabeçalho "pk_funcionalidade" na primeira coluna
         for (int i = 0; i <= Math.min(20, sheet.getLastRowNum()); i++) {
             Row row = sheet.getRow(i);
             if (row != null) {
@@ -457,13 +450,12 @@ public class TipoFuncionalidadeLoader {
                 if (cell != null) {
                     String valor = FuncionsHelper.getCellAsString(cell);
                     if (valor != null && "pk_funcionalidade".equalsIgnoreCase(valor.trim())) {
-                        return i + 1; // Dados começam na próxima linha
+                        return i + 1;
                     }
                 }
             }
         }
         
-        // Fallback: procura por padrão numérico na primeira coluna a partir da linha 4
         for (int i = 4; i <= Math.min(20, sheet.getLastRowNum()); i++) {
             Row row = sheet.getRow(i);
             if (row != null) {
@@ -513,16 +505,11 @@ public class TipoFuncionalidadeLoader {
         }
     }
 
-    /**
-     * Processa uma linha de funcionalidade para dados brutos
-     */
     private static FuncionalidadeData processarLinhaFuncionalidadeData(Row row) {
         try {
-            // Função auxiliar para obter valores inteiros com validação rigorosa
             Function<Cell, Integer> getIntValue = (cell) -> {
                 if (cell == null) return 0;
                 
-                // Primeiro obtém como string para validação completa
                 String cellValue = FuncionsHelper.getCellAsString(cell);
                 if (cellValue == null || cellValue.trim().isEmpty()) return 0;
                 
@@ -533,10 +520,8 @@ public class TipoFuncionalidadeLoader {
                     // Tenta converter diretamente para inteiro
                     return Integer.parseInt(cellValue);
                 } catch (NumberFormatException e1) {
-                    // Se falhar, tenta como double e verifica se não tem parte decimal
                     try {
                         double doubleValue = Double.parseDouble(cellValue);
-                        // Verifica se é um número inteiro (sem parte decimal)
                         if (doubleValue != Math.floor(doubleValue)) {
                             throw new RuntimeException("Valor deve ser inteiro, sem casas decimais: '" + cellValue + "'");
                         }
@@ -547,13 +532,12 @@ public class TipoFuncionalidadeLoader {
                 }
             };
 
-            // Função auxiliar para obter valores de string
-            Function<Cell, String> getStringValue = (cell) -> {
+                        Function<Cell, String> getStringValue = (cell) -> {
                 if (cell == null) return "";
                 return FuncionsHelper.getCellAsString(cell);
             };
 
-            // pkFuncionalidade - VALIDAÇÃO RIGOROSA
+            
             Integer pkFuncionalidade = null;
             Cell cell0 = row.getCell(0);
             if (cell0 != null) {
@@ -565,7 +549,6 @@ public class TipoFuncionalidadeLoader {
                     if (!valorPkStr.matches("\\d+")) {
                         // Se não for apenas dígitos, verifica se é um número decimal
                         if (valorPkStr.matches("\\d+\\.\\d+")) {
-                            // É um número decimal - verifica se é inteiro
                             double doubleValue = Double.parseDouble(valorPkStr);
                             if (doubleValue != Math.floor(doubleValue)) {
                                 throw new RuntimeException("Coluna A: PK Funcionalidade deve ser inteiro (sem casas decimais). Valor: '" + valorPkStr + "'");
@@ -634,7 +617,7 @@ public class TipoFuncionalidadeLoader {
                 }
             }
 
-            // funcionalidadesPartilhadas (opcional)
+            
             String funcionalidadesPartilhadas = null;
             Cell cell6 = row.getCell(6);
             if (cell6 != null && !isCellEmpty(cell6)) {
@@ -664,9 +647,7 @@ public class TipoFuncionalidadeLoader {
         }
     }
 
-    /**
-     * Cria uma entidade Funcionalidade a partir dos dados
-     */
+ 
     private static Funcionalidade criarFuncionalidadeDeData(FuncionalidadeData data) {
         Funcionalidade funcionalidade = new Funcionalidade();
         
@@ -677,7 +658,6 @@ public class TipoFuncionalidadeLoader {
         funcionalidade.setDesignacao(data.designacao);
         funcionalidade.setDescricao(data.descricao);
         
-        // Criar apenas a referência básica ao tipo (sem carregar tudo)
         TipoFuncionalidade tipo = new TipoFuncionalidade();
         tipo.setPkTipoFuncionalidade(data.fkTipoFuncionalidade);
         funcionalidade.setFkTipoFuncionalidade(tipo);
@@ -704,14 +684,13 @@ public class TipoFuncionalidadeLoader {
         existente.setDesignacao(novosDados.designacao);
         existente.setDescricao(novosDados.descricao);
         
-        // Atualizar tipo
+   
         TipoFuncionalidade tipo = new TipoFuncionalidade();
         tipo.setPkTipoFuncionalidade(novosDados.fkTipoFuncionalidade);
         existente.setFkTipoFuncionalidade(tipo);
         
         existente.setGrupo(novosDados.grupo);
         
-        // NOTA: fkFuncionalidade será atualizada depois, quando resolvermos as dependências
         
         existente.setFuncionalidadesPartilhadas(novosDados.funcionalidadesPartilhadas);
         existente.setUrl(novosDados.url);
@@ -721,7 +700,7 @@ public class TipoFuncionalidadeLoader {
      * Ordena funcionalidades por dependência
      */
     private static List<FuncionalidadeData> ordenarPorDependencia(List<FuncionalidadeData> funcionalidades) {
-        // Criar mapa de dependências
+       
         Map<Integer, List<Integer>> dependencias = new HashMap<>();
         Map<Integer, FuncionalidadeData> funcionalidadesMap = new HashMap<>();
         
@@ -734,11 +713,9 @@ public class TipoFuncionalidadeLoader {
             }
         }
         
-        // Ordenação topológica simples
         List<FuncionalidadeData> ordenadas = new ArrayList<>();
         Set<Integer> processados = new HashSet<>();
         
-        // Primeiro, adicionar funcionalidades sem dependências
         for (FuncionalidadeData func : funcionalidades) {
             if (func.fkFuncionalidade == null || func.fkFuncionalidade <= 0 || 
                 !funcionalidadesMap.containsKey(func.fkFuncionalidade)) {
@@ -747,7 +724,6 @@ public class TipoFuncionalidadeLoader {
             }
         }
         
-        // Depois, adicionar as que dependem de funcionalidades já processadas
         boolean mudou;
         do {
             mudou = false;
@@ -766,7 +742,6 @@ public class TipoFuncionalidadeLoader {
             }
         } while (mudou);
         
-        // Adicionar as restantes (pode haver referências circulares)
         for (FuncionalidadeData func : funcionalidades) {
             if (!processados.contains(func.pkFuncionalidade)) {
                 ordenadas.add(func);
@@ -777,9 +752,7 @@ public class TipoFuncionalidadeLoader {
         return ordenadas;
     }
 
-    /**
-     * Encontra o início dos dados baseado no cabeçalho
-     */
+ 
     private static int encontrarInicioDadosTipos(Sheet sheet) {
         for (int i = 0; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
@@ -793,7 +766,6 @@ public class TipoFuncionalidadeLoader {
                 }
             }
         }
-        // Fallback: procura por padrão numérico na primeira coluna
         for (int i = 0; i <= Math.min(10, sheet.getLastRowNum()); i++) {
             Row row = sheet.getRow(i);
             if (row != null) {
@@ -814,9 +786,7 @@ public class TipoFuncionalidadeLoader {
         return -1;
     }
 
-    /**
-     * Verifica se uma linha está vazia
-     */
+
     private static boolean isEmptyRow(Row row) {
         if (row == null) return true;
         
@@ -836,7 +806,6 @@ public class TipoFuncionalidadeLoader {
         try {
             TipoFuncionalidade tipoFuncionalidade = new TipoFuncionalidade();
             
-            // Coluna 0 - pk_tipo_funcionalidade (pode ser 0 para novos registros)
             Cell cell0 = row.getCell(0);
             if (cell0 != null) {
                 int pkTipo = converterParaInteiro(cell0, "PK Tipo Funcionalidade");
@@ -849,7 +818,6 @@ public class TipoFuncionalidadeLoader {
                 throw new RuntimeException("PK Tipo Funcionalidade é obrigatório");
             }
             
-            // Coluna 1 - designacao
             Cell cell1 = row.getCell(1);
             if (cell1 != null) {
                 String designacao = FuncionsHelper.getCellAsString(cell1).trim();
@@ -869,16 +837,14 @@ public class TipoFuncionalidadeLoader {
         }
     }
 
-    /**
-     * Converte uma célula para inteiro com tratamento robusto (incluindo fórmulas)
-     */
+ 
     private static int converterParaInteiro(Cell cell, String nomeCampo) {
         if (cell == null) {
             throw new RuntimeException(nomeCampo + " não pode ser nulo");
         }
         
         try {
-            // Obtém sempre como string primeiro (mais robusto)
+          
             String stringValue = FuncionsHelper.getCellAsString(cell);
             if (stringValue == null || stringValue.trim().isEmpty()) {
                 throw new RuntimeException(nomeCampo + " não pode estar vazio");
@@ -886,9 +852,7 @@ public class TipoFuncionalidadeLoader {
             
             stringValue = stringValue.trim();
             
-            // VALIDAÇÃO RIGOROSA: verifica se contém apenas dígitos
             if (!stringValue.matches("\\d+")) {
-                // Se não for apenas dígitos, verifica se é um número decimal
                 if (stringValue.matches("\\d+\\.\\d+")) {
                     // É um número decimal - verifica se é inteiro
                     double doubleValue = Double.parseDouble(stringValue);
@@ -897,12 +861,10 @@ public class TipoFuncionalidadeLoader {
                     }
                     return (int) doubleValue;
                 } else {
-                    // É um caractere/texto - ERRO
                     throw new RuntimeException(nomeCampo + " deve ser um número inteiro. Valor inválido: '" + stringValue + "'");
                 }
             }
             
-            // Se chegou aqui, é um número inteiro válido
             int valor = Integer.parseInt(stringValue);
             if (valor < 0) {
                 throw new RuntimeException(nomeCampo + " não pode ser negativo");
@@ -921,7 +883,6 @@ public class TipoFuncionalidadeLoader {
         List<String> erros = new ArrayList<>();
         int linhaReal = numeroLinha + 1;
 
-        // Validação da coluna 0 - pk_tipo_funcionalidade
         Cell cell0 = row.getCell(0);
         if (cell0 == null) {
             erros.add("❌ Linha " + linhaReal + ", Coluna A (pk_tipo_funcionalidade): Campo obrigatório não preenchido");
@@ -934,11 +895,9 @@ public class TipoFuncionalidadeLoader {
                            "designacao".equalsIgnoreCase(valorCell0.trim())) {
                     erros.add("❌ Linha " + linhaReal + ", Coluna A (pk_tipo_funcionalidade): Texto de cabeçalho não permitido");
                 } else {
-                    // VALIDAÇÃO RIGOROSA PARA NÚMEROS INTEIROS
                     valorCell0 = valorCell0.trim();
                     
                     if (!valorCell0.matches("\\d+")) {
-                        // Se não for apenas dígitos
                         if (valorCell0.matches("\\d+\\.\\d+")) {
                             // É um número decimal
                             double doubleValue = Double.parseDouble(valorCell0);
@@ -1015,11 +974,9 @@ public class TipoFuncionalidadeLoader {
             } else {
                 valorStr = valorStr.trim();
                 
-                // VALIDAÇÃO RIGOROSA: verifica se é um número inteiro válido
                 if (!valorStr.matches("\\d+")) {
                     // Se não for apenas dígitos, verifica se é um número decimal
                     if (valorStr.matches("\\d+\\.\\d+")) {
-                        // É um número decimal - verifica se é inteiro
                         try {
                             double doubleValue = Double.parseDouble(valorStr);
                             if (doubleValue != Math.floor(doubleValue)) {
@@ -1084,7 +1041,6 @@ public class TipoFuncionalidadeLoader {
             erros.add("❌ Linha " + linhaReal + ", Coluna D (fkTipoFuncionalidade): Campo obrigatório não preenchido");
         } else {
             valorFkTipoStr = valorFkTipoStr.trim();
-            // VALIDAÇÃO RIGOROSA: verifica se é um número inteiro válido
             if (!valorFkTipoStr.matches("\\d+")) {
                 if (valorFkTipoStr.matches("\\d+\\.\\d+")) {
                     try {
@@ -1122,7 +1078,6 @@ public class TipoFuncionalidadeLoader {
             erros.add("❌ Linha " + linhaReal + ", Coluna E (grupo): Campo obrigatório não preenchido");
         } else {
             valorGrupoStr = valorGrupoStr.trim();
-            // VALIDAÇÃO RIGOROSA: verifica se é um número inteiro válido
             if (!valorGrupoStr.matches("\\d+")) {
                 if (valorGrupoStr.matches("\\d+\\.\\d+")) {
                     try {
@@ -1153,7 +1108,6 @@ public class TipoFuncionalidadeLoader {
             }
         }
 
-        // Coluna 5 - fkFuncionalidade (opcional, inteiro)
         Cell cell5 = row.getCell(5);
         if (cell5 != null && !isCellEmpty(cell5)) {
             String valorFkFuncStr = getStringValue.apply(cell5);

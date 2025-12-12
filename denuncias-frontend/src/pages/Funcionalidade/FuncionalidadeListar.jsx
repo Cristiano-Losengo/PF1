@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { FaList } from "react-icons/fa";
 
 export default function FuncionalidadesTree() {
     const [data, setData] = useState([]);
@@ -79,10 +80,14 @@ export default function FuncionalidadesTree() {
 
     return (
         <div className="container mt-4">
-            <h3 className="mb-4">Lista de Funcionalidades</h3>
+            <h3 className="mb-4 text-primary">
+                <FaList className="me-2" /> Lista de Funcionalidades
+            </h3>
+
             <ul className="list-group">
                 {raiz.map(renderNode)}
             </ul>
         </div>
+
     );
 }

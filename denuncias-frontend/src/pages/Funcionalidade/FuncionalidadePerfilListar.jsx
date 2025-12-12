@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FaTrash } from "react-icons/fa";
+import { FaTasks } from "react-icons/fa";
+
 
 export default function FuncionalidadePerfilTree() {
   const [data, setData] = useState([]);
@@ -46,7 +48,9 @@ export default function FuncionalidadePerfilTree() {
 
   return (
     <div className="container mt-4">
-      <h3 className="mb-4">Funcionalidades por Perfil</h3>
+<h3 className="mb-4 text-primary">
+  <FaTasks className="me-2" /> Funcionalidades por Perfil
+</h3>
       <ul className="list-group">
         {Object.entries(perfisMap).map(([perfilId, perfil]) => {
           const aberto = abertos.has(perfilId);
