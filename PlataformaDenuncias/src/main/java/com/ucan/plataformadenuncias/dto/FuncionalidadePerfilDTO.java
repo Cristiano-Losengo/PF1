@@ -17,5 +17,7 @@ public class FuncionalidadePerfilDTO {
     private String detalhePerfil;
     private String detalheFuncionalidade;
     private String paiFuncionalidade;
+    //private String detalhe;  
+      private String estadoPerfil;
 
 }

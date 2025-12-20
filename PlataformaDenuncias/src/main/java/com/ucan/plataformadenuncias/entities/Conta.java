@@ -36,15 +36,16 @@ public class Conta {
     @Column(name = "tipo_conta")
     private TipoContaEnum tipoConta;
 
-    @Column(name = "nome_completo", length = 50)
-    private String nomeCompleto;
-
+  
     @Column(name = "email", unique = true, nullable = false, length = 50)
     private String email;
 
-    @Column(name = "senha", nullable = false, length = 50)
-    private String senha;
-
+     @Column(name = "password_hash", nullable = false, length = 255)
+    private String passwordHash;
+     
+     @Column(name = "estado")
+    private Integer estado;
+     
     /*
     @Column(name = "fk_pessoa", nullable = false)
     private Pessoa fkPessoa;

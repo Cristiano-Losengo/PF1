@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaUsers, FaEdit, FaHistory, FaTrash, FaUserPlus } from "react-icons/fa";
+import { FaUsers, FaEdit, FaHistory, FaTrash, FaUserPlus, FaSpinner, FaExclamationTriangle, FaCheckCircle } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
 export default function PerfilListar() {
@@ -8,8 +8,13 @@ export default function PerfilListar() {
   const [historicoData, setHistoricoData] = useState([]);
   const [perfilHistorico, setPerfilHistorico] = useState(null);
   const [carregandoHistorico, setCarregandoHistorico] = useState(false);
+  const [carregandoPerfis, setCarregandoPerfis] = useState(true);
+  const [excluindo, setExcluindo] = useState(null);
+  const [mensagem, setMensagem] = useState(null);
   
   const navigate = useNavigate();
+  
+  const BASE_URL = "http://localhost:9090/api/seguranca";
   
   // Função para formatar o estado
   const formatarEstado = (estado) => {
@@ -24,11 +29,23 @@ export default function PerfilListar() {
 
   const carregarPerfis = async () => {
     try {
-      const response = await fetch("http://localhost:9090/api/seguranca/perfil_listar");
+      setCarregandoPerfis(true);
+      setMensagem(null);
+      
+      const response = await fetch(`${BASE_URL}/perfil_listar`);
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status}`);
+      }
       const data = await response.json();
       setPerfis(data);
     } catch (error) {
       console.error("Erro ao carregar perfis:", error);
+      setMensagem({
+        tipo: "danger",
+        texto: "❌ Erro ao carregar a lista de perfis. Verifique a conexão com o servidor."
+      });
+    } finally {
+      setCarregandoPerfis(false);
     }
   };
 
@@ -36,24 +53,96 @@ export default function PerfilListar() {
     carregarPerfis();
   }, []);
 
-  // Excluir
-  const handleDelete = async (id) => {
-    if (!window.confirm("Tem certeza que deseja excluir?")) return;
+  // Função de exclusão AJUSTADA para o backend corrigido
+  const handleDelete = async (id, designacao) => {
+    if (!window.confirm(`Tem certeza que deseja excluir o perfil "${designacao}"?\n\n⚠️ Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+    
+    setExcluindo(id);
+    setMensagem(null);
+    
     try {
-      await fetch(`http://localhost:9090/api/seguranca/perfil_excluir/${id}`, {
+      const response = await fetch(`${BASE_URL}/perfil_excluir/${id}`, {
         method: "DELETE",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        }
       });
-      carregarPerfis();
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        data = { 
+          sucesso: false, 
+          mensagem: `Resposta inesperada do servidor (Status: ${response.status})`
+        };
+      }
+
+      if (response.ok) {
+        if (data.sucesso) {
+          // Remove o perfil da lista localmente
+          setPerfis(prevPerfis => prevPerfis.filter(perfil => perfil.pkPerfil !== id));
+          
+          // Mostrar mensagem de sucesso
+          setMensagem({
+            tipo: "success",
+            texto: `✅ ${data.mensagem || `Perfil "${designacao}" excluído com sucesso!`}`
+          });
+          
+          // Limpar mensagem após 5 segundos
+          setTimeout(() => setMensagem(null), 5000);
+        } else {
+          // API retornou sucesso: false
+          setMensagem({
+            tipo: "danger",
+            texto: `❌ ${data.mensagem || "Erro ao excluir perfil"}`
+          });
+        }
+      } else {
+        // Erro HTTP baseado no status
+        let mensagemErro = "";
+        
+        switch (response.status) {
+          case 404:
+            mensagemErro = "❌ Perfil não encontrado";
+            break;
+          case 409:
+            mensagemErro = "❌ Não é possível excluir o perfil porque está em uso por outras entidades";
+            break;
+          case 500:
+            mensagemErro = "❌ Erro interno do servidor";
+            break;
+          default:
+            mensagemErro = `❌ Erro do servidor (Status: ${response.status})`;
+        }
+        
+        setMensagem({
+          tipo: "danger",
+          texto: mensagemErro
+        });
+        
+        console.error("Erro na exclusão:", {
+          status: response.status,
+          statusText: response.statusText,
+          data: data
+        });
+      }
     } catch (error) {
-      console.error("Erro ao excluir:", error);
+      console.error("Erro completo ao excluir:", error);
+      setMensagem({
+        tipo: "danger",
+        texto: "❌ Erro de comunicação com o servidor. Verifique sua conexão."
+      });
+    } finally {
+      setExcluindo(null);
     }
   };
 
   // Editar - navega para a página de cadastro passando o perfil como estado
   const handleEdit = (perfil) => {
-    // DEBUG: Verifique o que está sendo passado
-    console.log("Editando perfil:", perfil);
-    
     navigate('/seguranca/perfis/cadastrar', { 
       state: { 
         modoEdicao: true,
@@ -62,7 +151,6 @@ export default function PerfilListar() {
           designacao: perfil.designacao,
           estado: perfil.estado,
           descricao: perfil.descricao || "",
-          // Incluir timestamps se necessário
           createdAt: perfil.createdAt,
           updatedAt: perfil.updatedAt
         }
@@ -77,12 +165,14 @@ export default function PerfilListar() {
     setMostrarHistorico(true);
     
     try {
-      const response = await fetch(`http://localhost:9090/api/seguranca/perfil_historico/${perfil.pkPerfil}`);
+      const response = await fetch(`${BASE_URL}/perfil_historico/${perfil.pkPerfil}`);
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status}`);
+      }
       const data = await response.json();
       setHistoricoData(data);
     } catch (error) {
       console.error("Erro ao carregar histórico:", error);
-      // Dados de exemplo em caso de erro
       setHistoricoData([
         {
           id: 1,
@@ -113,14 +203,30 @@ export default function PerfilListar() {
 
   // Formatar data para exibição
   const formatarData = (dataString) => {
-    const data = new Date(dataString);
-    return data.toLocaleString('pt-PT', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    if (!dataString) return "-";
+    try {
+      const data = new Date(dataString);
+      return data.toLocaleString('pt-PT', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return dataString;
+    }
+  };
+
+  // Estilo para o botão de exclusão quando está processando
+  const getBotaoExcluirEstilo = (perfilId) => {
+    if (excluindo === perfilId) {
+      return {
+        cursor: 'not-allowed',
+        opacity: 0.7
+      };
+    }
+    return {};
   };
 
   return (
@@ -132,69 +238,135 @@ export default function PerfilListar() {
         <button
           className="btn btn-primary btn-sm"
           onClick={() => navigate('/seguranca/perfis/cadastrar')}
+          disabled={carregandoPerfis}
         >
           <FaUserPlus className="me-1" /> Novo Perfil
         </button>
       </div>
-      
-      <table className="table table-bordered table-striped">
-        <thead className="table-dark">
-          <tr>
-            <th>#</th>
-            <th>Designação</th>
-            <th>Descrição</th>
-            <th>Estado</th>
-            <th>Criado em</th>
-            <th>Atualizado em</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {perfis.map((perfil, i) => (
-            <tr key={perfil.pkPerfil}>
-              <td>{i + 1}</td>
-              <td>{perfil.designacao}</td>
-              <td>{perfil.descricao || "-"}</td>
-              <td>{formatarEstado(perfil.estado)}</td>
-              <td>{new Date(perfil.createdAt).toLocaleString()}</td>
-              <td>{perfil.updatedAt ? new Date(perfil.updatedAt).toLocaleString() : "-"}</td>
-              <td>
-                <div className="btn-group btn-group-sm" role="group">
-                  <button
-                    className="btn btn-warning me-1"
-                    onClick={() => handleEdit(perfil)}
-                    title="Editar"
-                  >
-                    <FaEdit />
-                  </button>
-                  <button
-                    className="btn btn-info me-1"
-                    onClick={() => handleHistory(perfil)}
-                    title="Histórico"
-                  >
-                    <FaHistory />
-                  </button>
-                  <button
-                    className="btn btn-danger"
-                    onClick={() => handleDelete(perfil.pkPerfil)}
-                    title="Excluir"
-                  >
-                    <FaTrash />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
-          {perfis.length === 0 && (
-            <tr>
-              <td colSpan={7} className="text-center">
-                Nenhum Perfil cadastrado
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
 
+      {/* Mensagem de erro/sucesso */}
+      {mensagem && (
+        <div
+          className={`alert alert-${mensagem.tipo} alert-dismissible fade show mb-4`}
+          role="alert"
+          style={{
+            borderRadius: '12px',
+            boxShadow: '0 6px 20px rgba(0, 0, 0, 0.1)',
+            borderLeft: `5px solid ${
+              mensagem.tipo === 'success' ? '#28a745' : '#dc3545'
+            }`,
+            background: 'white',
+            padding: '1rem 1.25rem'
+          }}
+        >
+          <div className="d-flex align-items-center">
+            <div className="me-3" style={{ fontSize: '1.8rem' }}>
+              {mensagem.tipo === 'success' ? (
+                <FaCheckCircle className="text-success" />
+              ) : (
+                <FaExclamationTriangle className="text-danger" />
+              )}
+            </div>
+            <div className="flex-grow-1">
+              <span dangerouslySetInnerHTML={{ __html: mensagem.texto }} />
+            </div>
+            <button
+              type="button"
+              className="btn-close"
+              onClick={() => setMensagem(null)}
+              aria-label="Close"
+              style={{ opacity: 0.7 }}
+            ></button>
+          </div>
+        </div>
+      )}
+      
+      {carregandoPerfis ? (
+        <div className="text-center py-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Carregando...</span>
+          </div>
+          <p className="mt-2">Carregando perfis...</p>
+        </div>
+      ) : (
+        <div className="table-responsive">
+          <table className="table table-bordered table-striped table-hover">
+            <thead className="table-dark">
+              <tr>
+                <th>#</th>
+                <th>Designação</th>
+                <th>Descrição</th>
+                <th>Estado</th>
+                <th>Criado em</th>
+                <th>Atualizado em</th>
+                <th style={{ width: '150px' }}>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {perfis.map((perfil, i) => (
+                <tr key={perfil.pkPerfil}>
+                  <td>{i + 1}</td>
+                  <td><strong>{perfil.designacao}</strong></td>
+                  <td>{perfil.descricao || <span className="text-muted">-</span>}</td>
+                  <td>{formatarEstado(perfil.estado)}</td>
+                  <td>{formatarData(perfil.createdAt)}</td>
+                  <td>{formatarData(perfil.updatedAt)}</td>
+                  <td>
+                    <div className="btn-group btn-group-sm" role="group">
+                      <button
+                        className="btn btn-warning me-1"
+                        onClick={() => handleEdit(perfil)}
+                        title="Editar"
+                        disabled={excluindo === perfil.pkPerfil}
+                        style={{ width: '40px' }}
+                      >
+                        <FaEdit />
+                      </button>
+                      <button
+                        className="btn btn-info me-1"
+                        onClick={() => handleHistory(perfil)}
+                        title="Histórico"
+                        disabled={excluindo === perfil.pkPerfil}
+                        style={{ width: '40px' }}
+                      >
+                        <FaHistory />
+                      </button>
+                      <button
+                        className="btn btn-danger"
+                        onClick={() => handleDelete(perfil.pkPerfil, perfil.designacao)}
+                        title="Excluir"
+                        disabled={excluindo === perfil.pkPerfil}
+                        style={{
+                          width: '40px',
+                          ...getBotaoExcluirEstilo(perfil.pkPerfil)
+                        }}
+                      >
+                        {excluindo === perfil.pkPerfil ? (
+                          <FaSpinner className="fa-spin" />
+                        ) : (
+                          <FaTrash />
+                        )}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {perfis.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="text-center py-4">
+                    <div className="text-muted">
+                      <FaUsers className="display-4 mb-3" />
+                      <p>Nenhum perfil cadastrado</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+     
       {/* Modal de Histórico */}
       {mostrarHistorico && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>

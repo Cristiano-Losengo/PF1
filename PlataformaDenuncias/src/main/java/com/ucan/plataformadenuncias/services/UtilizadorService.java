@@ -1,9 +1,7 @@
 package com.ucan.plataformadenuncias.services;
 import com.ucan.plataformadenuncias.dto.UtilizadorDTO;
-import com.ucan.plataformadenuncias.entities.Email;
 import com.ucan.plataformadenuncias.entities.Telefone;
 import com.ucan.plataformadenuncias.entities.Utilizador;
-import com.ucan.plataformadenuncias.repositories.EmailRepository;
 import com.ucan.plataformadenuncias.repositories.TelefoneRepository;
 import com.ucan.plataformadenuncias.repositories.UtilizadorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,10 +24,7 @@ public class UtilizadorService {
 
     @Autowired
     private TelefoneRepository telefoneRepository;
-
-    @Autowired
-    private EmailRepository  emailRepository;
-
+  
     public List<Utilizador> listarTodos() {
         return utilizadorRepository.findAll();
     }
@@ -58,16 +53,15 @@ public class UtilizadorService {
             utilizadorDTO.setNome(utilizadorModel.getFkPessoa().getNome());
 
             Telefone telefoneModel = telefoneRepository.findByFkPessoa(utilizadorModel.getFkPessoa().getPkPessoa());
-            Email emailModel = emailRepository.findByFkPessoa(utilizadorModel.getFkPessoa());
 
-            if(telefoneModel != null)
+           /* if(telefoneModel != null)
             {
                 utilizadorDTO.setTelefone(telefoneModel.getNumero());
             }
             if(emailModel != null)
             {
                 utilizadorDTO.setEmail(emailModel.getMail());
-            }
+            }*/
 
             listUtilizadores.add(utilizadorDTO);
         }

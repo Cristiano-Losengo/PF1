@@ -61,8 +61,8 @@ public class Perfil {
     private String designacao;
     
     @Size(max = 200, message = "A descrição não pode exceder 200 caracteres")
-@Pattern(regexp = "^[a-zA-ZÀ-ÿ0-9\\s\\-',.!?]*$", message = "A descrição contém caracteres inválidos")
-private String descricao;
+    @Pattern(regexp = "^[a-zA-ZÀ-ÿ0-9\\s\\-',.!?]*$", message = "A descrição contém caracteres inválidos")
+    private String descricao;
 
     @Column(name = "estado")
     private Integer estado;

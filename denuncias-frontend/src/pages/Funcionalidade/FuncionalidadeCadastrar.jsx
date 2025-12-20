@@ -5,6 +5,7 @@ export default function FuncionalidadeCadastrar() {
   const [mensagem, setMensagem] = useState("");
   const [loading, setLoading] = useState(false);
   const [erros, setErros] = useState([]);
+  const [warnings, setWarnings] = useState([]);
   const [sucesso, setSucesso] = useState(false);
   const [versoes, setVersoes] = useState({
     tipos_funcionalidade: "Nenhuma versão importada",
@@ -13,6 +14,8 @@ export default function FuncionalidadeCadastrar() {
   const [versaoCarregando, setVersaoCarregando] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [showMessages, setShowMessages] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorDetails, setErrorDetails] = useState("");
   const fileInputRef = useRef(null);
   const progressRef = useRef(null);
   const messagesRef = useRef(null);
@@ -26,11 +29,11 @@ export default function FuncionalidadeCadastrar() {
 
   // Scroll para mensagens quando aparecerem
   useEffect(() => {
-    if ((mensagem || erros.length > 0) && messagesRef.current) {
+    if ((mensagem || erros.length > 0 || warnings.length > 0) && messagesRef.current) {
       messagesRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
       setShowMessages(true);
     }
-  }, [mensagem, erros]);
+  }, [mensagem, erros, warnings]);
 
   const carregarVersoes = async () => {
     setVersaoCarregando(true);
@@ -87,8 +90,10 @@ export default function FuncionalidadeCadastrar() {
     setFile(selectedFile);
     setMensagem("");
     setErros([]);
+    setWarnings([]);
     setSucesso(false);
     setShowMessages(false);
+    setShowErrorModal(false);
   };
 
   const handleFileChange = (e) => {
@@ -114,6 +119,13 @@ export default function FuncionalidadeCadastrar() {
     return interval;
   };
 
+  const formatarErroParaModal = (errosArray) => {
+    if (Array.isArray(errosArray)) {
+      return errosArray.join('\n');
+    }
+    return errosArray || "";
+  };
+
   const handleFileUpload = async (e) => {
     e.preventDefault();
     if (!file) {
@@ -127,10 +139,11 @@ export default function FuncionalidadeCadastrar() {
     setLoading(true);
     setMensagem("");
     setErros([]);
+    setWarnings([]);
     setSucesso(false);
     setShowMessages(false);
+    setShowErrorModal(false);
 
-    // Simular progresso
     const progressInterval = simulateProgress();
 
     try {
@@ -144,9 +157,8 @@ export default function FuncionalidadeCadastrar() {
       });
 
       const resultado = await response.json();
-      console.log("Resposta da API:", resultado); // Para debug
+      console.log("Resposta da API:", resultado);
 
-      // Completar progresso
       if (progressRef.current) {
         progressRef.current.style.width = "100%";
       }
@@ -158,10 +170,8 @@ export default function FuncionalidadeCadastrar() {
           setFile(null);
           if (fileInputRef.current) fileInputRef.current.value = '';
           
-          // Atualizar versões
           await carregarVersoes();
           
-          // Limpar mensagem após 5 segundos
           setTimeout(() => {
             setMensagem("");
             setSucesso(false);
@@ -170,22 +180,37 @@ export default function FuncionalidadeCadastrar() {
             }
           }, 5000);
         } else {
-          // Se o servidor retornar erros
-          const errosArray = resultado.erros || [resultado.erro || "❌ Erro na importação"];
-          setErros(errosArray);
+          if (resultado.erros && Array.isArray(resultado.erros)) {
+            const primeiroErro = resultado.erros[0] || "";
+            
+            if (primeiroErro.includes("# Detalhes") || 
+                primeiroErro.includes("erro(s) de validação encontrado(s)")) {
+              setErrorDetails(formatarErroParaModal(resultado.erros));
+              setShowErrorModal(true);
+              setErros([]);
+            } else {
+              setErros(resultado.erros);
+            }
+          } else {
+            setErros([resultado.erro || "❌ Erro na importação"]);
+          }
           setMensagem("❌ Foram encontrados erros na importação");
           if (progressRef.current) {
             progressRef.current.style.width = "0%";
           }
         }
       } else {
-        // Se a resposta HTTP não for OK
         const errosArray = resultado.erros || [resultado.erro || "❌ Erro ao importar ficheiro!"];
         setErros(errosArray);
         setMensagem("❌ Erro na importação");
         if (progressRef.current) {
           progressRef.current.style.width = "0%";
         }
+      }
+      
+      // Capturar warnings do backend
+      if (resultado.warnings && Array.isArray(resultado.warnings)) {
+        setWarnings(resultado.warnings);
       }
     } catch (error) {
       console.error("Erro no upload:", error);
@@ -201,12 +226,23 @@ export default function FuncionalidadeCadastrar() {
     }
   };
 
+  // Função para fechar o modal e limpar as mensagens
+  const fecharModalLimparMensagens = () => {
+    setShowErrorModal(false);
+    setMensagem("");
+    setErros([]);
+    setWarnings([]);
+    setShowMessages(false);
+  };
+
   const clearAll = () => {
     setFile(null);
     setMensagem("");
     setErros([]);
+    setWarnings([]);
     setSucesso(false);
     setShowMessages(false);
+    setShowErrorModal(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (progressRef.current) {
       progressRef.current.style.width = "0%";
@@ -221,19 +257,267 @@ export default function FuncionalidadeCadastrar() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  // Função para formatar os detalhes do erro com base na imagem
+  const formatarDetalhesErro = (texto) => {
+    if (!texto) return null;
+    
+    const linhas = texto.split('\n');
+    let emDetalhesErros = false;
+    let emProximosPassos = false;
+    
+    return linhas.map((linha, index) => {
+      // Título principal
+      if (linha.startsWith('# ')) {
+        return (
+          <h5 key={index} style={{ color: '#333', marginBottom: '16px', fontSize: '18px' }}>
+            {linha.substring(2)}
+          </h5>
+        );
+      }
+      
+      // Checkbox de contagem de erros
+      if (linha.includes('erro(s) de validação encontrado(s)')) {
+        return (
+          <div key={index} className="d-flex align-items-start mb-3">
+            <input 
+              type="checkbox" 
+              disabled 
+              className="me-2 mt-1" 
+              style={{ transform: 'scale(1.2)' }}
+            />
+            <span style={{ color: '#d32f2f', fontWeight: '500' }}>{linha.trim()}</span>
+          </div>
+        );
+      }
+      
+      // Código e Status
+      if (linha.includes('Código:') || linha.includes('Status:')) {
+        return (
+          <div key={index} className="mb-2" style={{ color: '#666', fontSize: '14px' }}>
+            {linha}
+          </div>
+        );
+      }
+      
+      // Seção de mensagem do servidor
+      if (linha.includes('Mensagem do servidor:')) {
+        return (
+          <div key={index} className="mb-3">
+            <div style={{ color: '#1976d2', fontWeight: '500', marginBottom: '4px' }}>
+              {linha.replace('**', '').replace('**', '')}
+            </div>
+          </div>
+        );
+      }
+      
+      // Seção de detalhes dos erros
+      if (linha.includes('Detalhes dos erros encontrados:')) {
+        emDetalhesErros = true;
+        return (
+          <div key={index} className="mb-3 mt-4">
+            <div style={{ color: '#d32f2f', fontWeight: '500', marginBottom: '12px' }}>
+              {linha.replace('**', '').replace('**', '')}
+            </div>
+          </div>
+        );
+      }
+      
+      // Linhas de erro específicas
+      if (linha.startsWith('**Linha') || linha.startsWith('**Motivo do erro:')) {
+        return (
+          <div key={index} className="mb-2" style={{ 
+            color: emDetalhesErros ? '#333' : '#1976d2',
+            fontWeight: linha.startsWith('**') ? '500' : 'normal',
+            marginLeft: linha.startsWith('**Motivo') ? '20px' : '0'
+          }}>
+            {linha.replace(/\*\*/g, '')}
+          </div>
+        );
+      }
+      
+      // Seção de próximos passos
+      if (linha.includes('Próximos passos:')) {
+        emDetalhesErros = false;
+        emProximosPassos = true;
+        return (
+          <div key={index} className="mb-3 mt-4">
+            <div style={{ color: '#388e3c', fontWeight: '500', marginBottom: '12px' }}>
+              {linha.replace('**', '').replace('**', '')}
+            </div>
+          </div>
+        );
+      }
+      
+      // Itens de lista nos próximos passos
+      if (linha.startsWith('- ') && emProximosPassos) {
+        return (
+          <div key={index} className="d-flex align-items-start mb-2" style={{ marginLeft: '20px' }}>
+            <span style={{ marginRight: '8px', color: '#388e3c' }}>•</span>
+            <span style={{ color: '#555' }}>{linha.substring(2)}</span>
+          </div>
+        );
+      }
+      
+      // Linha de requisição realizada com sucesso
+      if (linha.includes('Requisição realizada com sucesso!')) {
+        return (
+          <div key={index} className="mb-3" style={{ 
+            padding: '8px 12px', 
+            backgroundColor: '#e8f5e9', 
+            borderRadius: '4px',
+            color: '#2e7d32',
+            borderLeft: '4px solid #4caf50'
+          }}>
+            {linha}
+          </div>
+        );
+      }
+      
+      // Descrições de erro específicas
+      if (linha.includes('repetida nas linhas:')) {
+        return (
+          <div key={index} className="mb-3" style={{ 
+            padding: '8px 12px', 
+            backgroundColor: '#ffebee', 
+            borderRadius: '4px',
+            color: '#c62828',
+            borderLeft: '4px solid #f44336',
+            marginLeft: '40px'
+          }}>
+            {linha}
+          </div>
+        );
+      }
+      
+      // Linha vazia
+      if (linha.trim() === '') {
+        return <div key={index} className="mb-2"></div>;
+      }
+      
+      // Linha normal
+      return (
+        <div key={index} className="mb-1" style={{ color: '#666' }}>
+          {linha}
+        </div>
+      );
+    });
+  };
+
   return (
     <div className="container-fluid py-4">
+      {/* Modal de Erros Detalhados - DESIGN MELHORADO */}
+      {showErrorModal && (
+        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered">
+            <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '12px', overflow: 'hidden' }}>
+              <div className="modal-header" style={{ 
+                backgroundColor: '#f44336', 
+                color: 'white',
+                borderBottom: 'none',
+                padding: '20px 24px'
+              }}>
+                <div className="d-flex align-items-center w-100">
+                  <div style={{ 
+                    backgroundColor: 'rgba(255,255,255,0.2)', 
+                    borderRadius: '50%',
+                    width: '40px',
+                    height: '40px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: '12px'
+                  }}>
+                    <i className="bi bi-exclamation-triangle-fill" style={{ fontSize: '20px' }}></i>
+                  </div>
+                  <div>
+                    <h5 className="modal-title mb-0" style={{ fontSize: '18px', fontWeight: '600' }}>
+                      Detalhes do Erro
+                    </h5>
+                    <small style={{ opacity: 0.9 }}>Verifique os problemas identificados</small>
+                  </div>
+                </div>
+                <button 
+                  type="button" 
+                  className="btn-close btn-close-white"
+                  onClick={fecharModalLimparMensagens}
+                  style={{ opacity: 0.8 }}
+                ></button>
+              </div>
+              
+              <div className="modal-body p-0">
+                <div className="p-4" style={{ 
+                  backgroundColor: '#f8f9fa',
+                  maxHeight: '70vh',
+                  overflowY: 'auto'
+                }}>
+                  <div style={{ 
+                    backgroundColor: 'white', 
+                    padding: '24px', 
+                    borderRadius: '8px',
+                    border: '1px solid #e0e0e0',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                  }}>
+                    <div style={{ 
+                      fontFamily: "'Segoe UI', 'Roboto', sans-serif",
+                      fontSize: '14px',
+                      lineHeight: '1.6',
+                      color: '#333'
+                    }}>
+                      {formatarDetalhesErro(errorDetails)}
+                    </div>
+                    
+                    {/* Resumo do Erro */}
+                    <div className="mt-4 pt-3 border-top">
+                      <div className="d-flex align-items-center justify-content-between">
+                       
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="modal-footer" style={{ 
+                backgroundColor: '#f8f9fa',
+                borderTop: '1px solid #e0e0e0',
+                padding: '16px 24px'
+              }}>
+                <button 
+                  type="button" 
+                  className="btn btn-outline-secondary"
+                  onClick={fecharModalLimparMensagens}
+                  style={{ padding: '8px 20px' }}
+                >
+                  <i className="bi bi-eye-slash me-2"></i>
+                  Fechar Detalhes
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-primary"
+                  onClick={() => {
+                    fecharModalLimparMensagens();
+                    if (fileInputRef.current) fileInputRef.current.click();
+                  }}
+                  style={{ padding: '8px 20px' }}
+                >
+                  <i className="bi bi-arrow-clockwise me-2"></i>
+                  Corrigir e Tentar Novamente
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h1 className="h3 mb-0 text-primary">📊 Importar Funcionalidades</h1>
           <p className="text-muted mb-0">Importe funcionalidades através de ficheiros Excel</p>
         </div>
-       
       </div>
 
-      {/* Messages Section - SEMPRE VISÍVEL QUANDO HOUVER MENSAGEM */}
-      {(mensagem || erros.length > 0) && showMessages && (
+      {/* Messages Section */}
+      {(mensagem || erros.length > 0 || warnings.length > 0) && showMessages && (
         <div className="row mt-4" ref={messagesRef}>
           <div className="col-12">
             {/* Success Message */}
@@ -259,8 +543,8 @@ export default function FuncionalidadeCadastrar() {
               </div>
             )}
 
-            {/* Error Messages */}
-            {erros.length > 0 && !sucesso && (
+            {/* Error Messages (formato antigo) */}
+            {erros.length > 0 && !sucesso && !showErrorModal && (
               <div className="alert alert-danger border-0 shadow-sm fade show animate__animated animate__shakeX">
                 <div className="d-flex align-items-center justify-content-between mb-2">
                   <div className="d-flex align-items-center">
@@ -295,8 +579,40 @@ export default function FuncionalidadeCadastrar() {
               </div>
             )}
 
-            {/* Generic Message (não sucesso, não erro específico) */}
-            {mensagem && !sucesso && erros.length === 0 && (
+            {/* Warnings Section */}
+            {warnings.length > 0 && (
+              <div className="alert alert-warning border-0 shadow-sm fade show animate__animated animate__fadeIn">
+                <div className="d-flex align-items-center justify-content-between mb-2">
+                  <div className="d-flex align-items-center">
+                    <i className="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                    <strong>Avisos ({warnings.length})</strong>
+                  </div>
+                  <button 
+                    type="button" 
+                    className="btn-close" 
+                    onClick={() => setWarnings([])}
+                    aria-label="Close"
+                  ></button>
+                </div>
+                <div className="mt-2">
+                  {warnings.slice(0, 10).map((warning, index) => (
+                    <div key={index} className="alert alert-light py-2 mb-2 border-0">
+                      <small className="text-warning">{warning}</small>
+                    </div>
+                  ))}
+                  {warnings.length > 10 && (
+                    <div className="alert alert-light py-2 mb-0 border-0">
+                      <small className="text-muted">
+                        ... e mais {warnings.length - 10} aviso(s)
+                      </small>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Generic Message */}
+            {mensagem && !sucesso && erros.length === 0 && warnings.length === 0 && !showErrorModal && (
               <div className="alert alert-warning border-0 shadow-sm fade show animate__animated animate__fadeIn">
                 <div className="d-flex align-items-center justify-content-between">
                   <div className="d-flex align-items-center">
@@ -327,11 +643,6 @@ export default function FuncionalidadeCadastrar() {
         <div className="col-lg-8">
           <div className="card border-0 shadow-sm mb-4">
             <div className="card-body p-4">
-              <h5 className="card-title mb-4 d-flex align-items-center">
-                <i className="bi bi-upload me-2 text-primary"></i>
-                Upload de Arquivo
-              </h5>
-
               <div 
                 className={`drop-zone p-5 text-center border-2 border-dashed rounded-3 mb-4 ${
                   dragActive ? 'drag-active bg-primary bg-opacity-10' : 'bg-light'
@@ -369,7 +680,6 @@ export default function FuncionalidadeCadastrar() {
                 </div>
               </div>
 
-            
               {loading && (
                 <div className="mb-4">
                   <div className="d-flex justify-content-between mb-1">
@@ -441,9 +751,6 @@ export default function FuncionalidadeCadastrar() {
                   Limpar Tudo
                 </button>
               </div>
-
-              {/* Format Info */}
-
             </div>
           </div>
         </div>
@@ -497,52 +804,10 @@ export default function FuncionalidadeCadastrar() {
           {/* Quick Info Card */}
           <div className="card border-0 shadow-sm">
             <div className="card-body p-4">
-              <h6 className="card-title mb-3 d-flex align-items-center">
-                <i className="bi bi-info-circle me-2 text-warning"></i>
-                Informações Importantes
-              </h6>
               
-              <div className="alert alert-warning bg-opacity-10 border-0 py-2 px-3 mb-3">
-                <small>
-                  <i className="bi bi-exclamation-triangle me-1"></i>
-                  <strong>Atenção:</strong> Apenas arquivos com data igual ou posterior às versões atuais serão importados.
-                </small>
-              </div>
 
               <div className="accordion accordion-flush" id="infoAccordion">
                 <div className="accordion-item border-0">
-                  <h6 className="accordion-header">
-                    <button 
-                      className="accordion-button collapsed p-0 bg-transparent" 
-                      type="button"
-                      data-bs-toggle="collapse"
-                      data-bs-target="#formatInfo"
-                    >
-                      <small>📋 Formato do Arquivo</small>
-                    </button>
-                  </h6>
-                  <div id="formatInfo" className="accordion-collapse collapse">
-                    <div className="accordion-body pt-2 px-0">
-                      <ul className="small mb-0">
-                        <li>Excel com duas folhas</li>
-                        <li>Folha 1: Funcionalidades</li>
-                        <li>Folha 2: Tipos de Funcionalidade</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="accordion-item border-0">
-                  <h6 className="accordion-header">
-                    <button 
-                      className="accordion-button collapsed p-0 bg-transparent" 
-                      type="button"
-                      data-bs-toggle="collapse"
-                      data-bs-target="#validationInfo"
-                    >
-                      <small>✅ Validações Realizadas</small>
-                    </button>
-                  </h6>
                   <div id="validationInfo" className="accordion-collapse collapse">
                     <div className="accordion-body pt-2 px-0">
                       <ul className="small mb-0">
@@ -616,6 +881,9 @@ export default function FuncionalidadeCadastrar() {
         }
         .animate__fadeInDown {
           animation: fadeIn 0.5s ease-out;
+        }
+        .modal-backdrop {
+          opacity: 0.5 !important;
         }
       `}</style>
     </div>

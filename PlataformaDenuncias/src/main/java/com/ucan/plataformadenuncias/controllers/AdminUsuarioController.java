@@ -4,8 +4,6 @@ import com.ucan.plataformadenuncias.dto.UtilizadorDTO;
 import com.ucan.plataformadenuncias.entities.Pessoa;
 import com.ucan.plataformadenuncias.entities.Telefone;
 import com.ucan.plataformadenuncias.entities.Utilizador;
-import com.ucan.plataformadenuncias.entities.Email;
-import com.ucan.plataformadenuncias.repositories.EmailRepository;
 import com.ucan.plataformadenuncias.repositories.PessoaRepository;
 import com.ucan.plataformadenuncias.repositories.TelefoneRepository;
 import com.ucan.plataformadenuncias.repositories.UtilizadorRepository;
@@ -34,7 +32,7 @@ public class AdminUsuarioController {
     private TelefoneRepository telefoneRepository;
 
     @Autowired
-    private EmailRepository emailRepository;
+   // private EmailRepository emailRepository;
 
     @GetMapping("/listar_utilizadores")
     public List<UtilizadorDTO> listarTodos() {
@@ -49,14 +47,12 @@ public class AdminUsuarioController {
 
         Utilizador utilizadorModel = new Utilizador();
         Pessoa pessoaModel = new Pessoa();
-        Email emailModel = new Email();
         Telefone telefoneModel =  new Telefone();
         LocalDateTime localDate = LocalDateTime.now();
 
-        emailModel.setMail(usuarioDTO.getEmail());
-        emailModel.setCreatedAt(localDate);
+       // emailModel.setMail(usuarioDTO.getEmail());
 
-        telefoneModel.setNumero(usuarioDTO.getTelefone());
+      //  telefoneModel.setNumero(usuarioDTO.getTelefone());
         telefoneModel.setCreatedAt(localDate);
 
         pessoaModel.setNome(usuarioDTO.getNome());
@@ -66,12 +62,12 @@ public class AdminUsuarioController {
 
         pessoaModel = pessoaRepository.save(pessoaModel); // salva pessoa e retorna
 
-        emailModel.setFkPessoa(pessoaModel);
+       // emailModel.setFkPessoa(pessoaModel);
         telefoneModel.setFkPessoa(pessoaModel);
 
-        utilizadorModel.setEmail(usuarioDTO.getEmail());
-        utilizadorModel.setUsername(usuarioDTO.getEmail());
-        utilizadorModel.setPasswordHash("123");
+//        utilizadorModel.setEmail(usuarioDTO.getEmail());
+       // utilizadorModel.setUsername(usuarioDTO.getEmail());
+       // utilizadorModel.setPasswordHash("123");
         utilizadorModel.setAtivo(true);
 
         utilizadorModel.setFkPessoa(pessoaModel); //salva usuario e retorna

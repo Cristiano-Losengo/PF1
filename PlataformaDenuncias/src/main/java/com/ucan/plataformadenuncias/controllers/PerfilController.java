@@ -124,7 +124,12 @@ public class PerfilController {
                 erros.put("descricao", "A descrição contém caracteres inválidos");
             }
         }
-        
+                
         return erros;
     }
+    
+    
+  
+    
+    
 }

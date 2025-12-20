@@ -1,5 +1,6 @@
 package com.ucan.plataformadenuncias.dto;
 
+import com.ucan.plataformadenuncias.entities.Localidade;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,6 +14,12 @@ public class UtilizadorDTO {
     private int pkUtilizador;
     private int fkPessoa;
     private int fkConta;
+    private String detalhes;
+    private LocalDateTime createdAt;
+     private LocalDateTime updatedAt;
+    private String username;
+    private Boolean ativo = true;
+
     //Pessoa campos
     private String nome;
 
@@ -21,23 +28,12 @@ public class UtilizadorDTO {
     private LocalDate dataNascimento;
 
     private String identificacao;
+     private Localidade localidade;
 
-    //utilizador campos
-    private String detalhes;
+   
 
-    private LocalDateTime createdAt;
 
-    private String username;
-
-    private String email;
-
-    private String telefone;
-
-    private String password;
-
-    private Boolean ativo = true;
-
-    private String nivelAcesso;
+  
 
     @Override
     public String toString() {
@@ -53,11 +49,8 @@ public class UtilizadorDTO {
                 ", detalhes='" + detalhes + '\'' +
                 ", createdAt=" + createdAt +
                 ", username='" + username + '\'' +
-                ", email='" + email + '\'' +
-                ", telefone='" + telefone + '\'' +
-                ", password='" + password + '\'' +
+               
                 ", ativo=" + ativo +
-                ", nivelAcesso='" + nivelAcesso + '\'' +
                 '}';
     }
 }

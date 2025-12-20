@@ -30,16 +30,15 @@ public class LoginController {
         return "Servidor autenticação está operacional - " + java.time.LocalDateTime.now();
     }
 
-    @PostMapping("/login")
+    /*@PostMapping("/login")
     public UtilizadorDTO login(@RequestBody LoginDTO login) {
 
-        Utilizador utilizadorModel = utilizadorRepository.findByUsernameAndPasswordHash(login.getUsername(), login.getPassword());
+      Utilizador utilizadorModel = utilizadorRepository.findByUsernameAndPasswordHash(login.getUsername(), login.getPassword());
         UtilizadorDTO utilizadorDTO =  new UtilizadorDTO();
 
-        utilizadorDTO.setEmail(utilizadorModel.getEmail());
         utilizadorDTO.setUsername(utilizadorModel.getUsername());
         utilizadorDTO.setNome(utilizadorModel.getFkPessoa().getNome());
-        utilizadorDTO.setNivelAcesso(utilizadorModel.getFkConta().getNomeCompleto());
+       // utilizadorDTO.setNivelAcesso(utilizadorModel.getFkPessoa().getNome());
         utilizadorDTO.setDataNascimento(utilizadorModel.getFkPessoa().getDataNascimento());
         utilizadorDTO.setIdentificacao(utilizadorModel.getFkPessoa().getIdentificacao());
 
@@ -54,12 +53,12 @@ public class LoginController {
 
         return null;
 
-    }
+    }*/
 
     // Classe interna para representar o request de login
-    private static class LoginRequest {
+     /*  private static class LoginRequest {
 
-        private String username;
+     private String username;
         private String password;
 
         // Getters e Setters (necessários para o Spring)
@@ -79,5 +78,8 @@ public class LoginController {
             this.password = password;
         }
     }
-
+*/
 }
+  
+ 
+ 

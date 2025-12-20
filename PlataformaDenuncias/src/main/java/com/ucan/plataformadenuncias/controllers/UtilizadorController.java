@@ -61,11 +61,11 @@ public class UtilizadorController {
 
             utilizadorDTO.setPkUtilizador(utilizadorModel.getPkUtilizador());
             utilizadorDTO.setNome(utilizadorModel.getFkPessoa().getNome());
-            utilizadorDTO.setNomeConta(utilizadorModel.getFkConta().getNomeCompleto());
+          //  utilizadorDTO.setNomeConta(utilizadorModel.getFkConta().getNomeCompleto());
             utilizadorDTO.setFkPessoa(utilizadorModel.getFkPessoa().getPkPessoa());
             utilizadorDTO.setFkConta(utilizadorModel.getFkConta().getPkConta());
             utilizadorDTO.setUsername(utilizadorModel.getUsername());
-            utilizadorDTO.setDetalhes(utilizadorModel.getDetalhe());
+            //utilizadorDTO.setDetalhes(utilizadorModel.getDetalhe());
             utilizadorDTOList.add(utilizadorDTO);
         }
 

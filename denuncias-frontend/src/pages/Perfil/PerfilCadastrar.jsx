@@ -1,5 +1,20 @@
 import { useState, useEffect, useCallback } from "react";
-import { FaUserPlus, FaSave, FaSpinner, FaCheckCircle, FaEdit, FaArrowLeft } from "react-icons/fa";
+import { 
+  FaUserPlus, 
+  FaSave, 
+  FaSpinner, 
+  FaCheckCircle, 
+  FaEdit, 
+  FaArrowLeft,
+  FaTag,
+  FaToggleOn,
+  FaToggleOff,
+  FaAlignLeft,
+  FaTimes,
+  FaCircle,
+  FaRegCircle,
+  FaInfoCircle
+} from "react-icons/fa";
 import { useLocation, useNavigate } from "react-router-dom";
 
 export default function PerfilCadastrar() {
@@ -157,24 +172,27 @@ export default function PerfilCadastrar() {
 
     setFormData((prev) => ({ ...prev, [name]: valorFinal }));
 
-    if (touched[name]) {
-      const erro = validarCampo(name, valorFinal);
-      if (erro) {
-        setErros((prev) => ({ ...prev, [name]: erro }));
-      } else {
-        setErros((prev) => {
-          const newErros = { ...prev };
-          delete newErros[name];
-          return newErros;
-        });
-      }
+    // Validação imediata ao digitar
+    const erro = validarCampo(name, valorFinal);
+    if (erro) {
+      setErros((prev) => ({ ...prev, [name]: erro }));
+    } else {
+      setErros((prev) => {
+        const newErros = { ...prev };
+        delete newErros[name];
+        return newErros;
+      });
     }
-  }, [touched]);
+  }, []);
 
-  const handleBlur = useCallback((e) => {
+  // Nova função combinada que une validação e estilização
+  const handleBlurComEstilo = useCallback((e) => {
     const { name } = e.target;
+    
+    // 1. Marcar como tocado
     setTouched((prev) => ({ ...prev, [name]: true }));
 
+    // 2. Validação
     const erro = validarCampo(name, formData[name]);
     if (erro) {
       setErros((prev) => ({ ...prev, [name]: erro }));
@@ -185,6 +203,15 @@ export default function PerfilCadastrar() {
         return newErros;
       });
     }
+
+    // 3. Estilização - aplica as cores corretas após a validação
+    const status = getCampoStatus(name);
+    e.target.style.borderColor = status.includes('is-invalid') 
+      ? '#dc3545' 
+      : status.includes('is-valid')
+        ? '#28a745'
+        : '#e0e0e0';
+    e.target.style.boxShadow = 'inset 0 2px 4px rgba(0, 0, 0, 0.05)';
   }, [formData]);
 
   const handleSubmit = async (e) => {
@@ -246,7 +273,7 @@ export default function PerfilCadastrar() {
       if (response.ok && data.sucesso) {
         const msgSucesso = modoEdicao 
           ? `✅ Perfil "${formData.designacao.trim()}" atualizado com sucesso!`
-          : `✅ Perfil salvo com sucesso! O perfil "${formData.designacao.trim()}" foi cadastrado.`;
+          : `✅ Perfil salvo com sucesso!`;
         
         setMensagem({
           tipo: "success",
@@ -260,7 +287,15 @@ export default function PerfilCadastrar() {
           if (modoEdicao) {
             navigate('/seguranca/perfis/listar');
           } else {
-            resetForm();
+            // Limpa o formulário sem confirmação após salvar
+            setFormData({
+              designacao: "",
+              estado: "1",
+              descricao: "",
+            });
+            setErros({});
+            setTouched({});
+            setSalvoComSucesso(false);
           }
         }, 3000);
 
@@ -337,11 +372,7 @@ export default function PerfilCadastrar() {
         });
       }
     } else {
-      const confirmar = window.confirm(
-        "Tem certeza que deseja limpar o formulário? Todos os dados serão perdidos."
-      );
-      if (!confirmar) return;
-
+      // NOVO: Limpa automaticamente sem confirmação
       setFormData({
         designacao: "",
         estado: "1",
@@ -417,13 +448,24 @@ export default function PerfilCadastrar() {
 
   if (carregando) {
     return (
-      <div className="container mt-4">
+      <div className="container mt-5">
         <div className="row justify-content-center">
           <div className="col-md-8 col-lg-6">
-            <div className="card shadow-sm border-0">
+            <div className="card shadow-lg border-0" style={{ 
+              borderRadius: '15px',
+              background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)'
+            }}>
               <div className="card-body text-center py-5">
-                <FaSpinner className="fa-spin fa-2x mb-3 text-primary" />
-                <p>Carregando dados do perfil...</p>
+                <div className="spinner-grow text-primary mb-3" style={{ 
+                  width: '3rem', 
+                  height: '3rem',
+                  boxShadow: '0 0 20px rgba(0, 123, 255, 0.3)'
+                }} role="status">
+                  <span className="visually-hidden">Carregando...</span>
+                </div>
+                <h5 className="text-primary mb-2 fw-bold">Carregando dados do perfil...</h5>
+                <p className="text-muted">Por favor, aguarde um momento.</p>
               </div>
             </div>
           </div>
@@ -433,224 +475,548 @@ export default function PerfilCadastrar() {
   }
 
   return (
-    <div className="container mt-4">
-      {/* Breadcrumb */}
-  
-
+    <div className="container mt-5">
       <div className="row justify-content-center">
         <div className="col-md-8 col-lg-6">
-          <div className="card shadow-sm border-0">
-            <div className="card-header bg-white border-0 pt-4 pb-3">
-              <div className="d-flex justify-content-between align-items-center">
-                <h4 className="mb-0 text-primary">
-                  {modoEdicao ? <FaEdit className="me-2" /> : <FaUserPlus className="me-2" />} 
-                  {modoEdicao ? "Editar Perfil" : "Cadastrar Perfil"}
-                </h4>
+          {/* Card principal com sombras intensas e efeitos */}
+          <div className="card shadow-xl border-0" style={{
+            borderRadius: '20px',
+            overflow: 'hidden',
+            transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+            border: 'none',
+            boxShadow: modoEdicao 
+              ? '0 20px 40px rgba(40, 167, 69, 0.15), 0 5px 15px rgba(0, 0, 0, 0.1)'
+              : '0 20px 40px rgba(0, 123, 255, 0.15), 0 5px 15px rgba(0, 0, 0, 0.1)',
+            background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)'
+          }}>
+            {/* Header com gradiente e sombra */}
+            <div className="card-header border-0 py-4 px-5" style={{
+              background: modoEdicao 
+                ? 'linear-gradient(135deg, #28a745 0%, #20c997 100%)' 
+                : 'linear-gradient(135deg, #007bff 0%, #6610f2 100%)',
+              borderBottom: 'none',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              {/* Efeito de brilho no header */}
+              <div style={{
+                position: 'absolute',
+                top: '-50%',
+                right: '-50%',
+                width: '200%',
+                height: '200%',
+                background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%)',
+                transform: 'rotate(30deg)'
+              }}></div>
+              
+              <div className="d-flex justify-content-between align-items-center position-relative">
+                <div className="d-flex align-items-center">
+                  <div className="me-3 p-3 rounded-circle shadow-lg" style={{
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    backdropFilter: 'blur(10px)',
+                    width: '70px',
+                    height: '70px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '2px solid rgba(255, 255, 255, 0.3)'
+                  }}>
+                    {modoEdicao ? (
+                      <FaEdit className="text-white fa-xl" />
+                    ) : (
+                      <FaUserPlus className="text-white fa-xl" />
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="mb-1 text-white fw-bold" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+                      {modoEdicao ? "Editar Perfil" : "Cadastrar Perfil"}
+                    </h4>
+                    <p className="mb-0 text-white opacity-90" style={{ fontSize: '0.9rem' }}>
+                      {modoEdicao 
+                        ? "Modifique as informações deste perfil" 
+                        : "Crie um novo perfil para o sistema"}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Botão Cancelar - APENAS no modo edição */}
+                {modoEdicao && (
+                  <button
+                    type="button"
+                    className="btn btn-light btn-sm px-4 py-2"
+                    onClick={voltarParaLista}
+                    disabled={isSubmitting}
+                    style={{
+                      borderRadius: '30px',
+                      transition: 'all 0.3s ease',
+                      fontWeight: '600',
+                      boxShadow: '0 4px 10px rgba(0, 0, 0, 0.15)',
+                      border: 'none',
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      backdropFilter: 'blur(10px)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSubmitting) {
+                        e.target.style.transform = 'translateY(-2px)';
+                        e.target.style.boxShadow = '0 6px 15px rgba(0, 0, 0, 0.2)';
+                        e.target.style.background = 'rgba(255, 255, 255, 1)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSubmitting) {
+                        e.target.style.transform = 'translateY(0)';
+                        e.target.style.boxShadow = '0 4px 10px rgba(0, 0, 0, 0.15)';
+                        e.target.style.background = 'rgba(255, 255, 255, 0.9)';
+                      }
+                    }}
+                  >
+                    <FaArrowLeft className="me-2" />
+                    Cancelar
+                  </button>
+                )}
               </div>
             </div>
             
-            <div className="card-body p-4">
+            <div className="card-body p-5" style={{
+              background: 'linear-gradient(135deg, #ffffff 0%, #fafafa 100%)'
+            }}>
+              {/* Mensagem de alerta estilizada com sombra */}
               {mensagem && (
                 <div
-                  className={`alert alert-${mensagem.tipo} alert-dismissible fade show mb-4`}
+                  className={`alert alert-${mensagem.tipo} alert-dismissible fade show mb-4 border-0`}
                   role="alert"
-                  aria-live="assertive"
+                  style={{
+                    borderRadius: '12px',
+                    boxShadow: '0 6px 20px rgba(0, 0, 0, 0.1)',
+                    borderLeft: `5px solid ${
+                      mensagem.tipo === 'success' ? '#28a745' :
+                      mensagem.tipo === 'warning' ? '#ffc107' : '#dc3545'
+                    }`,
+                    background: 'white',
+                    padding: '1.25rem 1.5rem',
+                    marginBottom: '1.5rem'
+                  }}
                 >
                   <div className="d-flex align-items-center">
-                    <div className="me-3" style={{ fontSize: '1.2rem' }}>
-                      {mensagem.tipo === 'success' ? <FaCheckCircle /> : '⚠️'}
+                    <div className="me-3" style={{ fontSize: '1.8rem' }}>
+                      {mensagem.tipo === 'success' ? (
+                        <div className="p-2 rounded-circle" style={{
+                          background: 'linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(32, 201, 151, 0.1) 100%)'
+                        }}>
+                          <FaCheckCircle className="text-success" />
+                        </div>
+                      ) : mensagem.tipo === 'warning' ? (
+                        <div className="p-2 rounded-circle" style={{
+                          background: 'linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(253, 126, 20, 0.1) 100%)'
+                        }}>
+                          <FaInfoCircle className="text-warning" />
+                        </div>
+                      ) : (
+                        <div className="p-2 rounded-circle" style={{
+                          background: 'linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(189, 33, 48, 0.1) 100%)'
+                        }}>
+                          <FaTimes className="text-danger" />
+                        </div>
+                      )}
                     </div>
                     <div className="flex-grow-1">
-                      <strong className="d-block mb-1">
-                        {mensagem.tipo === 'success' ? 'Sucesso!' : 
-                         mensagem.tipo === 'warning' ? 'Atenção!' : 'Erro!'}
+                      <strong className="d-block mb-1" style={{ fontSize: '1.1rem' }}>
+                        {mensagem.tipo === 'success' ? '🎉 Sucesso!' : 
+                         mensagem.tipo === 'warning' ? '⚠️ Atenção!' : '❌ Erro!'}
                       </strong>
-                      {mensagem.texto}
+                      <span dangerouslySetInnerHTML={{ __html: mensagem.texto }} />
                     </div>
                     <button
                       type="button"
                       className="btn-close"
                       onClick={() => setMensagem(null)}
                       aria-label="Close"
+                      style={{ opacity: 0.7 }}
                     ></button>
                   </div>
                 </div>
               )}
 
               <form onSubmit={handleSubmit} noValidate>
-                {/* Designação */}
-                <div className="mb-3 position-relative">
-                  <label htmlFor="designacao" className="form-label fw-bold">
-                    Nome do Perfil *
+                {/* Campo Designação */}
+                <div className="mb-4 position-relative">
+                  <label htmlFor="designacao" className="form-label fw-bold d-flex align-items-center mb-3">
+                    <div className="me-3 p-2 rounded-circle shadow-sm" style={{
+                      background: 'linear-gradient(135deg, #6f42c1 0%, #d63384 100%)',
+                      width: '40px',
+                      height: '40px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 4px 10px rgba(111, 66, 193, 0.3)'
+                    }}>
+                      <FaTag className="text-white" style={{ fontSize: '1rem' }} />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '1.1rem' }}>Designação do Perfil</span>
+                      <div className="d-flex align-items-center mt-1">
+                        <FaCircle className="text-danger me-1" style={{ fontSize: '0.5rem' }} />
+                        <small className="text-muted ms-1">Campo obrigatório</small>
+                      </div>
+                    </div>
                   </label>
-                  <input
-                    type="text"
-                    className={`form-control form-control-sm ${getCampoStatus('designacao')}`}
-                    id="designacao"
-                    name="designacao"
-                    value={formData.designacao}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    placeholder="Digite a designação"
-                    required
-                    maxLength="50"
-                    disabled={isSubmitting || salvoComSucesso}
-                  />
-                  {formData.designacao && (
-                    <button
-                      type="button"
-                      className="btn btn-link position-absolute"
-                      style={{ right: '10px', top: '38px', padding: '0', color: '#6c757d' }}
-                      onClick={() => limparCampo('designacao')}
-                      title="Limpar campo"
-                      disabled={isSubmitting}
-                    >
-                      ×
-                    </button>
-                  )}
-                  <div className="d-flex justify-content-between mt-1">
-                    <small className="text-danger" aria-live="polite">{erros.designacao}</small>
-                    <small className={`text-muted ${contadores.designacao > 45 ? "text-warning" : ""}`}>
-                      {contadores.designacao}/50
+                  <div className="position-relative">
+                    <input
+                      type="text"
+                      className={`form-control form-control-lg ${getCampoStatus('designacao')}`}
+                      style={{
+                        borderRadius: '12px',
+                        border: '2px solid #e0e0e0',
+                        padding: '14px 50px 14px 20px',
+                        transition: 'all 0.3s ease',
+                        fontSize: '1rem',
+                        background: 'white',
+                        boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.05)'
+                      }}
+                      id="designacao"
+                      name="designacao"
+                      value={formData.designacao}
+                      onChange={handleChange}
+                      onBlur={handleBlurComEstilo}
+                      placeholder="Ex: Administrador, Usuário, Gestor..."
+                      required
+                      maxLength="50"
+                      disabled={isSubmitting || salvoComSucesso}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#6f42c1';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(111, 66, 193, 0.1), inset 0 2px 4px rgba(0, 0, 0, 0.05)';
+                      }}
+                    />
+                    {formData.designacao && (
+                      <button
+                        type="button"
+                        className="btn position-absolute"
+                        style={{
+                          right: '15px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          padding: '0',
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#888',
+                          fontSize: '1.3rem',
+                          width: '30px',
+                          height: '30px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: '50%',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onClick={() => limparCampo('designacao')}
+                        title="Limpar campo"
+                        disabled={isSubmitting}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = '#f0f0f0';
+                          e.target.style.color = '#dc3545';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'transparent';
+                          e.target.style.color = '#888';
+                        }}
+                      >
+                        <FaTimes />
+                      </button>
+                    )}
+                  </div>
+                  <div className="d-flex justify-content-between align-items-center mt-2">
+                    <small className="text-danger fw-semibold d-flex align-items-center">
+                      {erros.designacao && (
+                        <>
+                          <FaInfoCircle className="me-1" />
+                          {erros.designacao}
+                        </>
+                      )}
+                    </small>
+                    <small className={`fw-medium ${contadores.designacao > 45 ? "text-warning" : "text-muted"}`}>
+                      <span className="fw-bold">{contadores.designacao}</span>/50 caracteres
                     </small>
                   </div>
-                  <small className="form-text text-muted">
-                    Campo obrigatório. Apenas letras, espaços, hífens e apóstrofos. Mínimo 3 caracteres.
-                  </small>
                 </div>
 
-                {/* Estado */}
-                <div className="mb-3">
-                  <label htmlFor="estado" className="form-label fw-bold">Estado *</label>
+                {/* Campo Estado */}
+                <div className="mb-4">
+                  <label htmlFor="estado" className="form-label fw-bold d-flex align-items-center mb-3">
+                    <div className="me-3 p-2 rounded-circle shadow-sm" style={{
+                      background: 'linear-gradient(135deg, #20c997 0%, #0dcaf0 100%)',
+                      width: '40px',
+                      height: '40px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 4px 10px rgba(32, 201, 151, 0.3)'
+                    }}>
+                      {formData.estado === "1" ? (
+                        <FaToggleOn className="text-white" style={{ fontSize: '1.4rem' }} />
+                      ) : (
+                        <FaToggleOff className="text-white" style={{ fontSize: '1.4rem' }} />
+                      )}
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '1.1rem' }}>Estado do Perfil</span>
+                      <div className="d-flex align-items-center mt-1">
+                        <FaCircle className="text-danger me-1" style={{ fontSize: '0.5rem' }} />
+                        <small className="text-muted ms-1">Campo obrigatório</small>
+                      </div>
+                    </div>
+                  </label>
                   <select
-                    className={`form-select form-select-sm ${getCampoStatus('estado')}`}
+                    className={`form-select form-select-lg ${getCampoStatus('estado')}`}
+                    style={{
+                      borderRadius: '12px',
+                      border: '2px solid #e0e0e0',
+                      padding: '14px 50px 14px 20px',
+                      transition: 'all 0.3s ease',
+                      fontSize: '1rem',
+                      background: 'white',
+                      boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.05)',
+                      cursor: 'pointer',
+                      backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 20px center',
+                      backgroundSize: '16px 12px',
+                      appearance: 'none'
+                    }}
                     id="estado"
                     name="estado"
                     value={formData.estado}
                     onChange={handleChange}
-                    onBlur={handleBlur}
+                    onBlur={handleBlurComEstilo}
                     required
                     disabled={isSubmitting || salvoComSucesso}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#20c997';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(32, 201, 151, 0.1), inset 0 2px 4px rgba(0, 0, 0, 0.05)';
+                    }}
                   >
-                    <option value="">Selecione o estado</option>
-                    <option value="1">ATIVO</option>
-                    <option value="0">INATIVO</option>
+                    <option value="" className="text-muted">Selecione o estado do perfil</option>
+                    <option value="1" className="text-success fw-medium">
+                      <span className="d-inline-block me-2" style={{ width: '10px', height: '10px', background: '#28a745', borderRadius: '50%' }}></span>
+                      ✅ ATIVO - Perfil disponível para uso
+                    </option>
+                    <option value="0" className="text-danger fw-medium">
+                      <span className="d-inline-block me-2" style={{ width: '10px', height: '10px', background: '#dc3545', borderRadius: '50%' }}></span>
+                      ❌ INATIVO - Perfil desativado 
+                    </option>
                   </select>
-                  <small className="text-danger" aria-live="polite">{erros.estado}</small>
-                  <small className="form-text text-muted">
-                    Campo obrigatório. Selecione ATIVO ou INATIVO.
+                  <small className="text-danger fw-semibold d-block mt-2 d-flex align-items-center">
+                    {erros.estado && (
+                      <>
+                        <FaInfoCircle className="me-1" />
+                        {erros.estado}
+                      </>
+                    )}
                   </small>
                 </div>
 
-                {/* Descrição */}
+                {/* Campo Descrição */}
                 <div className="mb-4 position-relative">
-                  <label htmlFor="descricao" className="form-label fw-bold">Descrição</label>
-                  <textarea
-                    className={`form-control form-control-sm ${getCampoStatus('descricao')}`}
-                    id="descricao"
-                    name="descricao"
-                    value={formData.descricao}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    placeholder="Descreva aqui (opcional)"
-                    rows="2"
-                    maxLength="200"
-                    disabled={isSubmitting || salvoComSucesso}
-                  ></textarea>
-                  {formData.descricao && (
+                  <label htmlFor="descricao" className="form-label fw-bold d-flex align-items-center mb-3">
+                    <div className="me-3 p-2 rounded-circle shadow-sm" style={{
+                      background: 'linear-gradient(135deg, #fd7e14 0%, #ffc107 100%)',
+                      width: '40px',
+                      height: '40px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 4px 10px rgba(253, 126, 20, 0.3)'
+                    }}>
+                      <FaAlignLeft className="text-white" style={{ fontSize: '1rem' }} />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '1.1rem' }}>Descrição</span>
+                      <div className="d-flex align-items-center mt-1">
+                        <FaRegCircle className="text-info me-1" style={{ fontSize: '0.5rem' }} />
+                        <small className="text-muted ms-1">Campo opcional</small>
+                      </div>
+                    </div>
+                  </label>
+                  <div className="position-relative">
+                    <textarea
+                      className={`form-control form-control-lg ${getCampoStatus('descricao')}`}
+                      style={{
+                        borderRadius: '12px',
+                        border: '2px solid #e0e0e0',
+                        padding: '14px 50px 14px 20px',
+                        transition: 'all 0.3s ease',
+                        fontSize: '1rem',
+                        minHeight: '120px',
+                        resize: 'vertical',
+                        background: 'white',
+                        boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.05)'
+                      }}
+                      id="descricao"
+                      name="descricao"
+                      value={formData.descricao}
+                      onChange={handleChange}
+                      onBlur={handleBlurComEstilo}
+                      placeholder="Descreva as funcionalidades, permissões ou características deste perfil..."
+                      rows="4"
+                      maxLength="200"
+                      disabled={isSubmitting || salvoComSucesso}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#fd7e14';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(253, 126, 20, 0.1), inset 0 2px 4px rgba(0, 0, 0, 0.05)';
+                      }}
+                    />
+                    {formData.descricao && (
+                      <button
+                        type="button"
+                        className="btn position-absolute"
+                        style={{
+                          right: '15px',
+                          top: '15px',
+                          padding: '0',
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#888',
+                          fontSize: '1.3rem',
+                          width: '30px',
+                          height: '30px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: '50%',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onClick={() => limparCampo('descricao')}
+                        title="Limpar campo"
+                        disabled={isSubmitting}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = '#f0f0f0';
+                          e.target.style.color = '#dc3545';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'transparent';
+                          e.target.style.color = '#888';
+                        }}
+                      >
+                        <FaTimes />
+                      </button>
+                    )}
+                  </div>
+                  <div className="d-flex justify-content-between align-items-center mt-2">
+                    <small className="text-danger fw-semibold d-flex align-items-center">
+                      {erros.descricao && (
+                        <>
+                          <FaInfoCircle className="me-1" />
+                          {erros.descricao}
+                        </>
+                      )}
+                    </small>
+                    <small className={`fw-medium ${contadores.descricao > 180 ? "text-warning" : "text-muted"}`}>
+                      <span className="fw-bold">{contadores.descricao}</span>/200 caracteres
+                    </small>
+                  </div>
+                </div>
+
+                {/* Botões com sombras e efeitos */}
+                <div className="text-center mt-5 pt-4" style={{
+                  borderTop: '1px solid rgba(0, 0, 0, 0.08)'
+                }}>
+                  <div className="d-flex justify-content-center gap-4 flex-wrap">
+                    {/* Botão Principal */}
+                    <button
+                      type="submit"
+                      className="btn btn-lg px-5 py-3"
+                      style={{
+                        background: modoEdicao 
+                          ? 'linear-gradient(135deg, #28a745 0%, #20c997 100%)'
+                          : 'linear-gradient(135deg, #007bff 0%, #6610f2 100%)',
+                        border: 'none',
+                        color: '#fff',
+                        minWidth: '180px',
+                        borderRadius: '12px',
+                        fontSize: '1.1rem',
+                        fontWeight: '600',
+                        boxShadow: modoEdicao
+                          ? '0 8px 25px rgba(40, 167, 69, 0.4)'
+                          : '0 8px 25px rgba(0, 123, 255, 0.4)',
+                        transition: 'all 0.3s ease',
+                        position: 'relative',
+                        overflow: 'hidden'
+                      }}
+                      disabled={!podeEnviar() || isSubmitting}
+                      onMouseEnter={(e) => {
+                        if (podeEnviar() && !isSubmitting) {
+                          e.target.style.transform = 'translateY(-3px)';
+                          e.target.style.boxShadow = modoEdicao
+                            ? '0 12px 30px rgba(40, 167, 69, 0.5)'
+                            : '0 12px 30px rgba(0, 123, 255, 0.5)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (podeEnviar() && !isSubmitting) {
+                          e.target.style.transform = 'translateY(0)';
+                          e.target.style.boxShadow = modoEdicao
+                            ? '0 8px 25px rgba(40, 167, 69, 0.4)'
+                            : '0 8px 25px rgba(0, 123, 255, 0.4)';
+                        }
+                      }}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <FaSpinner className="me-2 fa-spin" />
+                          {modoEdicao ? "Atualizando..." : "Salvando..."}
+                        </>
+                      ) : (
+                        <>
+                          {modoEdicao ? <FaEdit className="me-2" /> : <FaSave className="me-2" />}
+                          {modoEdicao ? "Atualizar Perfil" : "Salvar Perfil"}
+                        </>
+                      )}
+                    </button>
+
+                    {/* Botão Limpar - SEMPRE aparece */}
                     <button
                       type="button"
-                      className="btn btn-link position-absolute"
-                      style={{ right: '10px', top: '38px', padding: '0', color: '#6c757d' }}
-                      onClick={() => limparCampo('descricao')}
-                      title="Limpar campo"
+                      className="btn btn-lg btn-outline-secondary px-5 py-3"
+                      onClick={resetForm}
                       disabled={isSubmitting}
+                      style={{
+                        borderRadius: '12px',
+                        fontSize: '1.1rem',
+                        fontWeight: '600',
+                        borderWidth: '2px',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 4px 15px rgba(0, 0, 0, 0.08)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.transform = 'translateY(-3px)';
+                        e.target.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.15)';
+                        e.target.style.borderColor = '#6c757d';
+                        e.target.style.color = '#495057';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.transform = 'translateY(0)';
+                        e.target.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.08)';
+                        e.target.style.borderColor = '#6c757d';
+                        e.target.style.color = '#6c757d';
+                      }}
                     >
-                      ×
+                      Limpar Campos
                     </button>
-                  )}
-                  <div className="d-flex justify-content-between mt-1">
-                    <small className="text-danger" aria-live="polite">{erros.descricao}</small>
-                    <small className={`text-muted ${contadores.descricao > 180 ? "text-warning" : ""}`}>
-                      {contadores.descricao}/200
-                    </small>
                   </div>
-                  <small className="form-text text-muted">
-                    Campo opcional. Letras, números e pontuação básica (, . ! ?). Máximo 200 caracteres.
-                  </small>
                 </div>
 
-                {/* Botões */}
-                <div className="text-center mt-4">
-                  {!salvoComSucesso ? (
-                    <div className="d-flex justify-content-center gap-2 flex-wrap">
-                      {/* Botão Principal (Salvar/Atualizar) */}
-                      <button
-                        type="submit"
-                        className="btn btn-sm px-4"
-                        style={{ 
-                          backgroundColor: modoEdicao ? "#28a745" : "#007bff", 
-                          borderColor: modoEdicao ? "#28a745" : "#007bff", 
-                          color: "#fff",
-                          minWidth: "100px"
-                        }}
-                        disabled={!podeEnviar()}
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <FaSpinner className="me-2 fa-spin" />
-                            {modoEdicao ? "Atualizando..." : "Salvando..."}
-                          </>
-                        ) : (
-                          <>
-                            {modoEdicao ? <FaEdit className="me-2" /> : <FaSave className="me-2" />}
-                            {modoEdicao ? "Atualizar" : "Salvar"}
-                          </>
-                        )}
-                      </button>
-
-                      {/* Botão Limpar */}
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-secondary px-4"
-                        onClick={resetForm}
-                        disabled={isSubmitting}
-                      >
-                        Limpar
-                      </button>
-                      
-                      {/* Botão Voltar/Cancelar */}
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-primary px-4"
-                        onClick={voltarParaLista}
-                        disabled={isSubmitting}
-                      >
-                        <FaArrowLeft className="me-1" />
-                        {modoEdicao ? "Cancelar" : "Voltar"}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="alert alert-info alert-sm py-2">
-                      <FaCheckCircle className="me-2" />
-                      {modoEdicao 
-                        ? "Perfil atualizado com sucesso!" 
-                        : "Cadastro realizado com sucesso!"}
-                    </div>
-                  )}
-                </div>
-
-                {!salvoComSucesso && (
-                  <div className="mt-3 text-center">
-                    <small className={`text-muted ${podeEnviar() ? 'text-success' : 'text-warning'}`}>
-                      {podeEnviar() 
-                        ? "✓ Formulário válido. Você pode salvar os dados." 
-                        : "✗ Preencha todos os campos obrigatórios corretamente para salvar."}
+                {/* Informação sobre navegação */}
+                {!salvoComSucesso && modoEdicao && (
+                  <div className="text-center mt-4 pt-3">
+                    <small className="text-muted d-flex align-items-center justify-content-center">
+                      <FaArrowLeft className="me-2" /> 
+                      Use o botão "Cancelar" no topo para retornar à lista de perfis sem salvar as alterações
                     </small>
                   </div>
-                )}
+                )}f
               </form>
             </div>
+                   
           </div>
         </div>
       </div>

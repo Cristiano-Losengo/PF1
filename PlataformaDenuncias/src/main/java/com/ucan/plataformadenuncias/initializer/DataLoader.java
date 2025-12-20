@@ -21,7 +21,6 @@ public class DataLoader implements CommandLineRunner {
     private final PerfilRepository perfilRepository;
     private final ContaRepository contaRepository;
     private final TelefoneRepository telefoneRepository;
-    private final EmailRepository emailRepository;
 
 
     public DataLoader(PessoaRepository pessoaRepository,
@@ -30,8 +29,7 @@ public class DataLoader implements CommandLineRunner {
                       FuncionalidadePerfilRepository funcionalidadePerfilRepository,
                       PerfilRepository perfilRepository,
                       ContaRepository contaRepository,
-                      TelefoneRepository telefoneRepository,
-                      EmailRepository emailRepository) {
+                      TelefoneRepository telefoneRepository ) {
 
         this.pessoaRepository = pessoaRepository;
         this.utilizadorRepository = utilizadorRepository;
@@ -40,7 +38,7 @@ public class DataLoader implements CommandLineRunner {
         this.perfilRepository = perfilRepository;
         this.contaRepository = contaRepository;
         this.telefoneRepository = telefoneRepository;
-        this.emailRepository = emailRepository;
+        
     }
 
     @Override

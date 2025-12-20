@@ -13,9 +13,10 @@ public class ContaPerfilDTO {
     private String email;
     private String senha;
     private String designacaoPerfil;
-    private int fkPessoa;
+   // private int fkPessoa;
     private int fkConta;
     private int fkPerfil;
     private boolean estado = true;
+    //private int fkPessoa;
 
 }

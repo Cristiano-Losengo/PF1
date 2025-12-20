@@ -13,8 +13,8 @@ import java.util.Optional;
 public interface UtilizadorRepository extends JpaRepository<Utilizador, Integer> {
 
     public Utilizador findByUsername(String username);
-    public Utilizador findByPasswordHash(String password);
-    public Utilizador findByUsernameAndPasswordHash(String username, String password);
+   /* public Utilizador findByPasswordHash(String password);
+    public Utilizador findByUsernameAndPasswordHash(String username, String password);*/
     public Utilizador findByFkPessoa(Pessoa pessoaModel);
 
     //@Query("SELECT u FROM utilizador u WHERE u.username = :username AND u.password = :password")
