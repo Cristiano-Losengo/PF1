@@ -6,14 +6,17 @@ import com.ucan.plataformadenuncias.dto.ContaPerfilDTO;
 import com.ucan.plataformadenuncias.dto.FuncionalidadeDTO;
 import com.ucan.plataformadenuncias.dto.FuncionalidadePerfilDTO;
 import com.ucan.plataformadenuncias.entities.*;
+import com.ucan.plataformadenuncias.enumerable.TipoContaEnum;
 import com.ucan.plataformadenuncias.initializer.TipoFuncionalidadeLoader;
 import com.ucan.plataformadenuncias.repositories.*;
 import com.ucan.plataformadenuncias.services.VersaoService;
 import jakarta.validation.Valid;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.convert.threeten.Jsr310JpaConverters;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -21,11 +24,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.poi.ss.usermodel.Cell;
@@ -41,6 +40,9 @@ public class SegurancaController {
 
     @Autowired
     private ContaRepository contaRepository;
+
+    @Autowired
+    private PessoaRepository pessoaRepository;
 
     @Autowired
     private PerfilRepository perfilRepository;
@@ -87,59 +89,34 @@ public class SegurancaController {
     }
 
     @GetMapping("/funcionalidade_listar")
-    public ResponseEntity<?> listarFuncionalidade() {
-        try {
-            List<Funcionalidade> funcionalidades = funcionalidadeRepository.findAll();
-            
-            if (funcionalidades.isEmpty()) {
-                Map<String, Object> response = new HashMap<>();
-                response.put("sucesso", true);
-                response.put("mensagem", "Nenhuma funcionalidade encontrada");
-                response.put("dados", new ArrayList<>());
-                return ResponseEntity.ok(response);
+    public List<FuncionalidadeDTO> listarFuncionalidade() {
+
+        System.out.println(funcionalidadeRepository.findAll());
+
+        List<FuncionalidadeDTO> listaFuncionalidade = new ArrayList<>();
+
+        for (Funcionalidade funcionalidade : funcionalidadeRepository.findAll() )
+        {
+            FuncionalidadeDTO funcionalidadeDTO = new FuncionalidadeDTO();
+            funcionalidadeDTO.setPkFuncionalidade(funcionalidade.getPkFuncionalidade());
+            funcionalidadeDTO.setDesignacao(funcionalidade.getDesignacao());
+            funcionalidadeDTO.setDescricao(funcionalidade.getDescricao());
+            funcionalidadeDTO.setCreatedAt(funcionalidade.getCreatedAt());
+            funcionalidadeDTO.setUpdatedAt(funcionalidade.getUpdatedAt());
+            funcionalidadeDTO.setUrl(funcionalidade.getUrl());
+            funcionalidadeDTO.setFkTipoFuncionalidade(funcionalidade.getFkTipoFuncionalidade().getPkTipoFuncionalidade());
+            funcionalidadeDTO.setDesignacaoTipoFuncionalidade(funcionalidade.getFkTipoFuncionalidade().getDesignacao());
+
+            if(funcionalidade.getFkFuncionalidade() != null)
+            {
+                funcionalidadeDTO.setFkFuncionalidade(funcionalidade.getFkFuncionalidade().getPkFuncionalidade());
             }
-            
-            List<FuncionalidadeDTO> listaFuncionalidade = new ArrayList<>();
-            
-            for (Funcionalidade funcionalidade : funcionalidades) {
-                FuncionalidadeDTO funcionalidadeDTO = new FuncionalidadeDTO();
-                funcionalidadeDTO.setPkFuncionalidade(funcionalidade.getPkFuncionalidade());
-                funcionalidadeDTO.setDesignacao(funcionalidade.getDesignacao());
-                funcionalidadeDTO.setDescricao(funcionalidade.getDescricao());
-                funcionalidadeDTO.setCreatedAt(funcionalidade.getCreatedAt());
-                funcionalidadeDTO.setUpdatedAt(funcionalidade.getUpdatedAt());
-                funcionalidadeDTO.setUrl(funcionalidade.getUrl());
-                funcionalidadeDTO.setGrupo(funcionalidade.getGrupo());
-                funcionalidadeDTO.setFuncionalidadesPartilhadas(funcionalidade.getFuncionalidadesPartilhadas());
-                
-                // Tipo de funcionalidade
-                if (funcionalidade.getFkTipoFuncionalidade() != null) {
-                    funcionalidadeDTO.setFkTipoFuncionalidade(funcionalidade.getFkTipoFuncionalidade().getPkTipoFuncionalidade());
-                    funcionalidadeDTO.setDesignacaoTipoFuncionalidade(funcionalidade.getFkTipoFuncionalidade().getDesignacao());
-                }
-                
-                // Funcionalidade pai (se houver)
-                if (funcionalidade.getFkFuncionalidade() != null) {
-                    funcionalidadeDTO.setFkFuncionalidade(funcionalidade.getFkFuncionalidade().getPkFuncionalidade());
-                }
-                
-                listaFuncionalidade.add(funcionalidadeDTO);
-            }
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("sucesso", true);
-            response.put("mensagem", "Funcionalidades listadas com sucesso");
-            response.put("dados", listaFuncionalidade);
-            response.put("total", listaFuncionalidade.size());
-            
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("sucesso", false);
-            response.put("mensagem", "Erro ao listar funcionalidades: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+
+            listaFuncionalidade.add(funcionalidadeDTO);
         }
+
+        return listaFuncionalidade;
+
     }
 
     @GetMapping("/tipos_funcionalidade_listar")
@@ -213,7 +190,7 @@ public class SegurancaController {
                 contaPerfilDTO.setTipoConta(contaPerfil.getFkConta().getTipoConta().name());
                 //contaPerfilDTO.setNomeCompleto(contaPerfil.getFkConta().getNomeCompleto());
                 contaPerfilDTO.setEstado(contaPerfil.getStatus());
-                contaPerfilDTO.setDesignacaoPerfil(contaPerfil.getFkPerfil().getDesignacao());
+               // contaPerfilDTO.setDesignacaoPerfil(contaPerfil.getFkPerfil().getDesignacao());
 
                 listContaPerfil.add(contaPerfilDTO);
             }
@@ -270,10 +247,33 @@ public class SegurancaController {
     }
 
     @PostMapping("/conta_cadastrar")
-    public ResponseEntity<?> cadastrarConta(@RequestBody Conta conta) {
+    public ResponseEntity<?> cadastrarConta(@RequestBody ContaPerfilDTO contaPerfilDTO) {
+
         try {
-            Conta contaModel = contaRepository.save(conta);
-            
+
+            Pessoa pessoaModel = new Pessoa();
+            Perfil perfilModel = perfilRepository.findByPkPerfil(contaPerfilDTO.getFkPerfil());
+            Conta contaModel =  new Conta();
+            ContaPerfil contaPerfilModel =   new ContaPerfil();
+
+            pessoaModel.setNome(contaPerfilDTO.getNomeCompleto());
+            pessoaModel.setIdentificacao(contaPerfilDTO.getBilheteIdentidade());
+
+            LocalDate localDate = LocalDate.now();
+
+            pessoaModel.setDataNascimento( localDate );
+            contaModel.setEmail(contaPerfilDTO.getEmail());
+            contaModel.setPasswordHash(contaPerfilDTO.getPasswordHash());
+            contaModel.setTipoConta(TipoContaEnum.ADMIN);
+            contaModel.setEstado(contaPerfilDTO.getEstado());
+
+            contaModel = contaRepository.save(contaModel);
+
+            contaPerfilModel.setFkConta(contaModel);
+            contaPerfilModel.setFkPerfil(perfilModel);
+
+            ContaPerfil contaPerfil = contaPerfilRepository.save(contaPerfilModel);
+
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", true);
             response.put("mensagem", "Conta cadastrada com sucesso");

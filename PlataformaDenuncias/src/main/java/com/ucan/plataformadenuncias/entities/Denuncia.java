@@ -1,14 +1,8 @@
 
 package com.ucan.plataformadenuncias.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
 import java.time.LocalDate;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
@@ -32,7 +26,9 @@ import lombok.Setter;
 
 @Table(name = "denuncia")
 public class Denuncia {
-    @Id @GeneratedValue
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "pk_denuncia")
     private Integer pkDenuncia;
     private String nome;
@@ -49,11 +45,9 @@ public class Denuncia {
     @JoinColumn(name = "fk_localidades",  nullable = false)
     private Localidade localidade;
     
-    
-    
     @ManyToOne
     @JoinColumn(name = "utilizador", nullable = true)
-    private Utilizador utilizador;
+    private Pessoa utilizador;
     
     @OneToOne(mappedBy = "denuncia")
     private Resposta resposta;
@@ -61,6 +55,7 @@ public class Denuncia {
     @NotNull(message = "A data de Ocorrecia é obrigatória")
     @Past(message = "A data de Ocorrecia pode ser no passado,ou no momento em que estiver sendo reportado ")
     @Column(name = "data_ocorrecia", nullable = false)
-    private LocalDate dataOcorrecia;
-}
 
+    private LocalDate dataOcorrecia;
+
+}

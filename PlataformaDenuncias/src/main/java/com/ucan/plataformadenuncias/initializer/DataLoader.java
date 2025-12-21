@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 public class DataLoader implements CommandLineRunner {
 
     private final PessoaRepository pessoaRepository;
-    private final UtilizadorRepository utilizadorRepository;
+  //  private final UtilizadorRepository utilizadorRepository;
     private final FuncionalidadeRepository funcionalidadeRepository;
     private final FuncionalidadePerfilRepository funcionalidadePerfilRepository;
     private final PerfilRepository perfilRepository;
@@ -24,7 +24,7 @@ public class DataLoader implements CommandLineRunner {
 
 
     public DataLoader(PessoaRepository pessoaRepository,
-                      UtilizadorRepository utilizadorRepository,
+       //               UtilizadorRepository utilizadorRepository,
                       FuncionalidadeRepository funcionalidadeRepository,
                       FuncionalidadePerfilRepository funcionalidadePerfilRepository,
                       PerfilRepository perfilRepository,
@@ -32,7 +32,7 @@ public class DataLoader implements CommandLineRunner {
                       TelefoneRepository telefoneRepository ) {
 
         this.pessoaRepository = pessoaRepository;
-        this.utilizadorRepository = utilizadorRepository;
+     //   this.utilizadorRepository = utilizadorRepository;
         this.funcionalidadeRepository = funcionalidadeRepository;
         this.funcionalidadePerfilRepository = funcionalidadePerfilRepository;
         this.perfilRepository = perfilRepository;

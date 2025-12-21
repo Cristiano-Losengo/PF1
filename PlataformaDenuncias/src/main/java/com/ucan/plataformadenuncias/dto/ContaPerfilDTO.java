@@ -8,15 +8,20 @@ import lombok.Setter;
 @Setter
 public class ContaPerfilDTO {
 
-    private String tipoConta;
     private String nomeCompleto;
+    private String dataNascimento;
+    private String genero;
+    private String estadoCivil;
+    private String bilheteIdentidade;
+    private String telefone;
+    private String provincia;
+    private String municipio;
+    // Dados da Conta
+    private String passwordHash;
+    private String tipoConta;
     private String email;
-    private String senha;
-    private String designacaoPerfil;
-   // private int fkPessoa;
     private int fkConta;
     private int fkPerfil;
-    private boolean estado = true;
-    //private int fkPessoa;
+    private int estado;
 
 }

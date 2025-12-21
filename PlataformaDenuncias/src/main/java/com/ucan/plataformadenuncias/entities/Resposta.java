@@ -21,21 +21,20 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "resposta")
 public class Resposta {
-    @Id @GeneratedValue
+
+    @Id
+    @GeneratedValue
      @Column(name = "pk_resposta")
     private Long pkResposta;
     
     private String texto;
 
-
-    
     @ManyToOne
     @JoinColumn(name = "fk_denuncia", referencedColumnName = "pk_denuncia")
     private Denuncia denuncia;
-    
+
     @ManyToOne
-    @JoinColumn(name = "fk_utilizador", referencedColumnName = "pk_utilizador")
-    private Utilizador utilizador;
-    
-    
+    @JoinColumn(name = "fk_pessoa", referencedColumnName = "pk_pessoa")
+    private Pessoa fkPessoa;
+
 }

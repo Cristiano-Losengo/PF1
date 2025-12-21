@@ -22,6 +22,7 @@ public class TipoFuncionalidade {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "pk_tipo_funcionalidade")
     private Integer pkTipoFuncionalidade;
 
     @Column(name = "designacao", length = 100)

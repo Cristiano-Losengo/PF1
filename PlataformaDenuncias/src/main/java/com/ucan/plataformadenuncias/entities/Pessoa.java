@@ -1,34 +1,15 @@
 package com.ucan.plataformadenuncias.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Past;
-import jakarta.validation.constraints.Size;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Objects;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Objects;
 
-/**
- *
- * @author cristiano
- */
- 
 @Getter
 @Setter
 @Builder
@@ -37,6 +18,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 @Entity
 @Table(name = "pessoa")
 public class Pessoa {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "pk_pessoa")
@@ -57,14 +39,45 @@ public class Pessoa {
     @Column(name = "identificacao", unique = true, nullable = false, length = 50)
     private String identificacao;
 
+    // CORREÇÃO: Removido @Past que é apenas para datas
+    @NotBlank(message = "O sexo é obrigatório")
+    @Size(max = 1, message = "O sexo deve ter no máximo 1 caractere")
+    @Column(name = "sexo", nullable = false, length = 1)
+    private String sexo;
+
+    // NOVOS CAMPOS NECESSÁRIOS DO FRONTEND
+    @NotBlank(message = "O estado civil é obrigatório")
+    @Size(max = 20, message = "O estado civil deve ter no máximo 20 caracteres")
+    @Column(name = "estado_civil", nullable = false, length = 20)
+    private String estadoCivil;
+
+    @NotBlank(message = "O telefone é obrigatório")
+    @Size(max = 20, message = "O telefone deve ter no máximo 20 caracteres")
+    @Column(name = "telefone", nullable = false, length = 20)
+    private String telefone;
+
+    @NotBlank(message = "O email é obrigatório")
+    @Email(message = "Email inválido")
+    @Column(name = "email", unique = true, nullable = false, length = 100)
+    private String email;
+
+    @NotBlank(message = "A província é obrigatória")
+    @Size(max = 100, message = "A província deve ter no máximo 100 caracteres")
+    @Column(name = "provincia", nullable = false, length = 100)
+    private String provincia;
+
+    @NotBlank(message = "O município é obrigatório")
+    @Size(max = 100, message = "O município deve ter no máximo 100 caracteres")
+    @Column(name = "municipio", nullable = false, length = 100)
+    private String municipio;
+
+    @NotNull(message = "O estado é obrigatório")
+    @Column(name = "estado", nullable = false)
+    private Integer estado;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
-    
-    @NotNull(message = "O tipo de sexo  é obrigatória")
-    @Past(message = "O sexo deve ter no máximo 1 caracteres")
-    @Column(name = "sexo", nullable = true)
-    private String sexo;
 
     @UpdateTimestamp
     @Column(name = "updated_at")
@@ -73,6 +86,10 @@ public class Pessoa {
     @ManyToOne
     @JoinColumn(name = "fk_localidade", referencedColumnName = "pk_localidade")
     private Localidade localidade;
+
+    // Relacionamento com Conta (se existir)
+    @OneToOne(mappedBy = "pessoa", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Conta conta;
 
     @Override
     public boolean equals(Object o) {
@@ -87,21 +104,24 @@ public class Pessoa {
         return Objects.hash(pkPessoa);
     }
 
-    public Pessoa(String nome,String identificacao, LocalDate dataNascimento,String sexo ) {
+    // Construtores atualizados
+    public Pessoa(String nome, String identificacao, LocalDate dataNascimento, String sexo,
+                  String estadoCivil, String telefone, String email,
+                  String provincia, String municipio, Integer estado) {
         this.nome = nome;
         this.identificacao = identificacao;
         this.dataNascimento = dataNascimento;
         this.sexo = sexo;
-    }
-
-    public Pessoa(String nome,String identificacao, LocalDate dataNascimento ) {
-        this.nome = nome;
-        this.identificacao = identificacao;
-        this.dataNascimento = dataNascimento;
+        this.estadoCivil = estadoCivil;
+        this.telefone = telefone;
+        this.email = email;
+        this.provincia = provincia;
+        this.municipio = municipio;
+        this.estado = estado;
+        this.createdAt = LocalDateTime.now();
     }
 
     public Pessoa(Integer pkPessoa) {
         this.pkPessoa = pkPessoa;
     }
-
 }

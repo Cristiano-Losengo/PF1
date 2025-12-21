@@ -46,6 +46,7 @@ public class Perfil {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "pk_perfil")
     private Integer pkPerfil;
 
     /*@Column(name = "designacao", nullable = false, length = 100)

@@ -1,8 +1,8 @@
 package com.ucan.plataformadenuncias.controllers;
 
+import com.ucan.plataformadenuncias.entities.Conta;
 import com.ucan.plataformadenuncias.entities.FuncionalidadePerfil;
 import com.ucan.plataformadenuncias.entities.Pessoa;
-import com.ucan.plataformadenuncias.entities.Utilizador;
 import com.ucan.plataformadenuncias.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -15,11 +15,12 @@ import java.util.List;
 @CrossOrigin(origins = "*")    
 public class FuncionalidadeController {
 
-    @Autowired
-    private UtilizadorRepository utilizadorRepository;
 
     @Autowired
     private PessoaRepository pessoaRepository;
+
+    @Autowired
+    private ContaRepository contaRepository;
 
     @Autowired
     private FuncionalidadePerfilRepository funcionalidadePerfilRepository;
@@ -39,7 +40,6 @@ public class FuncionalidadeController {
     public Pessoa adicionar(@RequestBody Pessoa motorista) {
 
         Pessoa pessoaModel = pessoaRepository.save(motorista);
-        Utilizador utilizadorModel = new Utilizador();
 
     /*
         usuario.setPessoaId(pessoaModel);
@@ -54,8 +54,8 @@ public class FuncionalidadeController {
     }
 
     @GetMapping("/{id}")
-    public Utilizador buscarPorId(@PathVariable int id) {
-        return utilizadorRepository.findById(id).orElse(null);
+    public Conta buscarPorId(@PathVariable int id) {
+        return contaRepository.findById(id).orElse(null);
     }
 
     @PostMapping("buscaPorIdentificacao")
@@ -64,17 +64,17 @@ public class FuncionalidadeController {
     }
 
     @PutMapping("/{id}")
-    public Utilizador atualizar(@PathVariable int id, @RequestBody Pessoa motorista) {
+    public Conta atualizar(@PathVariable int id, @RequestBody Pessoa motorista) {
 
         motorista.setPkPessoa(id);
         Pessoa pessoaModel = pessoaRepository.save(motorista);
-        Utilizador utilizadorModel = new Utilizador();
+        Conta utilizadorModel = new Conta();
 
-        return utilizadorRepository.save(utilizadorModel);
+        return null;
     }
 
     @DeleteMapping("/{id}")
     public void remover(@PathVariable int id) {
-        utilizadorRepository.deleteById(id);
+        contaRepository.deleteById(id);
     }
 }

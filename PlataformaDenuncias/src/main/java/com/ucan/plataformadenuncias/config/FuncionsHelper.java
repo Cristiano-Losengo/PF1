@@ -13,7 +13,6 @@ public class FuncionsHelper {
         
         CellType cellType = cell.getCellType();
         
-    
         if (cellType == CellType.FORMULA) {
             cellType = cell.getCachedFormulaResultType();
         }

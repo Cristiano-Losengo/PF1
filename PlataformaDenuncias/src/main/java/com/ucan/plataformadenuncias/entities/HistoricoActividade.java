@@ -24,7 +24,7 @@ public class HistoricoActividade {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private Utilizador utilizador;
+    private Pessoa utilizador;
 
     @Column(name = "data_login", nullable = false)
     private LocalDateTime dataLogin;
@@ -57,7 +57,6 @@ public class HistoricoActividade {
     public String toString() {
         return "HistoricoActividadeModel{" +
                 "pkHistoricoActividade=" + pkHistoricoActividade +
-                ", userId=" + (utilizador != null ? utilizador.getPkUtilizador() : "null") +
                 ", dataLogin=" + dataLogin +
                 ", dataLogout=" + dataLogout +
                 '}';

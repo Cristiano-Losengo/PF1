@@ -1,12 +1,6 @@
 package com.ucan.plataformadenuncias.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 /**
  *
@@ -15,7 +9,8 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "comentario")
 public class Comentario {
-    @Id @GeneratedValue
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "pk_comentario")
     private Integer pkComentario;
     private String texto;
@@ -26,8 +21,7 @@ public class Comentario {
      private Denuncia fkDenuncia;
     
     @ManyToOne
-    @JoinColumn(name = "fk_utilizador", referencedColumnName = "pk_utilizador")
-    private Utilizador fkUtilizador;
-    
-    
+    @JoinColumn(name = "fk_pessoa", referencedColumnName = "pk_pessoa")
+    private Pessoa fkPessoa;
+
 }

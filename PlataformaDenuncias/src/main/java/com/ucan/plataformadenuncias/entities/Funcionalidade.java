@@ -26,6 +26,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 public class Funcionalidade {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "pk_funcionalidade")
     private Integer pkFuncionalidade;
 
     @Column(name = "descricao", length = 100)
