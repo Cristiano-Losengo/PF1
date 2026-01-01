@@ -16,7 +16,7 @@ public class UtilizadorDTO {
     private int fkConta;
     private String detalhes;
     private LocalDateTime createdAt;
-     private LocalDateTime updatedAt;
+    private LocalDateTime updatedAt;
     private String username;
     private Boolean ativo = true;
 
@@ -28,12 +28,8 @@ public class UtilizadorDTO {
     private LocalDate dataNascimento;
 
     private String identificacao;
-     private Localidade localidade;
+    private Localidade localidade;
 
-   
-
-
-  
 
     @Override
     public String toString() {
@@ -49,7 +45,7 @@ public class UtilizadorDTO {
                 ", detalhes='" + detalhes + '\'' +
                 ", createdAt=" + createdAt +
                 ", username='" + username + '\'' +
-               
+
                 ", ativo=" + ativo +
                 '}';
     }
