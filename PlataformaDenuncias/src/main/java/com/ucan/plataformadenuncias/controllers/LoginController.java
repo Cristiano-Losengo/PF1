@@ -3,10 +3,8 @@ package com.ucan.plataformadenuncias.controllers;
 import com.ucan.plataformadenuncias.dto.LoginDTO;
 import com.ucan.plataformadenuncias.dto.UtilizadorDTO;
 import com.ucan.plataformadenuncias.entities.Telefone;
-import com.ucan.plataformadenuncias.entities.Utilizador;
 import com.ucan.plataformadenuncias.repositories.ContaRepository;
 import com.ucan.plataformadenuncias.repositories.TelefoneRepository;
-import com.ucan.plataformadenuncias.repositories.UtilizadorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,9 +14,7 @@ import org.springframework.web.bind.annotation.*;
 @CrossOrigin(origins = "*")
 public class LoginController {
 
-    @Autowired
-    private UtilizadorRepository utilizadorRepository;
-
+  
     @Autowired
     private ContaRepository contaPerfilRepository;
 

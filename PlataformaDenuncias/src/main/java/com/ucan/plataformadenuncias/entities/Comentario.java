@@ -25,9 +25,7 @@ public class Comentario {
     //@JoinColumn(name = "fk_denuncia")
      private Denuncia fkDenuncia;
     
-    @ManyToOne
-    @JoinColumn(name = "fk_utilizador", referencedColumnName = "pk_utilizador")
-    private Utilizador fkUtilizador;
+    
     
     
 }

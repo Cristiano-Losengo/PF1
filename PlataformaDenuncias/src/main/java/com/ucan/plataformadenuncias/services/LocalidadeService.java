@@ -1,207 +1,250 @@
 package com.ucan.plataformadenuncias.services;
 
 import com.ucan.plataformadenuncias.entities.Localidade;
+import com.ucan.plataformadenuncias.enumerable.TipoLocalidade;
 import com.ucan.plataformadenuncias.repositories.LocalidadeRepository;
 import com.ucan.plataformadenuncias.utils.Sitio;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;   // ✔ CORRETO
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Queue;
-import java.util.Random;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.*;
+
 @Service
-public class LocalidadeService
-{
+public class LocalidadeService {
+
     public static boolean localidadesInitialized = false;
-
     private static HashMap<Integer, Localidade> localidadesByPkLocalidadeCache;
-
     private static List<Localidade> localidades;
-
     private static List<Localidade> localidadesAngolanas = new ArrayList<>();
+    private static Comparator<Localidade> comparadorLocalidades, comparadorLocalidadesIndefinidas;
 
-    private static Comparator comparadorLocalidades, comparadorLocalidadesIndefinidas;
+    private static final Logger logger = LoggerFactory.getLogger(LocalidadeService.class);
 
-    private static final Logger logger = LoggerFactory.getLogger(LocalidadeService.class);  // ✔ CORRETO
-    
     public final String INDEFINIDO = "Indefinido";
     public final String INDEFINIDA = "Indefinida";
 
     @Autowired
     private LocalidadeRepository localidadeRepository;
-    
-    
-    public LocalidadeService(LocalidadeRepository localidadeRepository)
-    {
+
+    public LocalidadeService(LocalidadeRepository localidadeRepository) {
         this.localidadeRepository = localidadeRepository;
     }
 
     @PostConstruct
-    public void init()
-    {
-        initializeLocalidades();
-        localidadesInitialized = true;
-    }
-
-    private void initializeLocalidades()
-    {
-        List<Sitio> sitios = Arrays.asList(
-                // continentes
-                new Sitio("Africa"),
-                new Sitio("America"),
-                new Sitio("Europa"),
-                new Sitio("Asia"),
-                // continente indefinido
-                new Sitio("Indefinido"),
-                // paises
-                new Sitio("Angola", "Africa"),
-                new Sitio("Mocambique", "Africa"),
-                new Sitio("Africa do Sul", "Africa"),
-                new Sitio("Nigeria", "Africa"),
-                new Sitio("Brasil", "America"),
-                // provincias de Angola
-                new Sitio("Luanda", "Angola", "Africa"),
-                new Sitio("Cabinda", "Angola", "Africa"),
-                new Sitio("Zaire", "Angola", "Africa"),
-                new Sitio("Uige", "Angola", "Africa"),
-                new Sitio("Lunda-Norte", "Angola", "Africa"),
-                new Sitio("Lunda-Sul", "Angola", "Africa"),
-                new Sitio("Malange", "Angola", "Africa"),
-                new Sitio("Bengo", "Angola", "Africa"),
-                new Sitio("Kwanza-Norte", "Angola", "Africa"),
-                new Sitio("Kwanza-Sul", "Angola", "Africa"),
-                new Sitio("Huambo", "Angola", "Africa"),
-                new Sitio("Bie", "Angola", "Africa"),
-                new Sitio("Moxico", "Angola", "Africa"),
-                new Sitio("Kuando Kubango", "Angola", "Africa"),
-                new Sitio("Benguela", "Angola", "Africa"),
-                new Sitio("Huila", "Angola", "Africa"),
-                new Sitio("Cunene", "Angola", "Africa"),
-                new Sitio("Namibe", "Angola", "Africa"),
-                // provincia indefinida de Angola
-                new Sitio("Indefinida", "Angola", "Africa"),
-             /*
-                Municios de Luanda:
-                Belas, Cacuaco, Cazenga, Icolo e Bengo,
-                Luanda, Kissama, Kilamba Kiaxi, Talatona, Viana
-             */
-                new Sitio("Belas", "Luanda", "Angola"),
-                new Sitio("Cacuaco", "Luanda", "Angola"),
-                new Sitio("Cazenga", "Luanda", "Angola"),
-                new Sitio("Icolo e Bengo", "Luanda", "Angola"),
-                new Sitio("Luanda", "Luanda", "Angola"),
-                new Sitio("Kissama", "Luanda", "Angola"),
-                new Sitio("Kilamba Kiaxi", "Luanda", "Angola"),
-                new Sitio("Talatona", "Luanda", "Angola"),
-                new Sitio("Viana", "Luanda", "Angola"),
-                // municipio indefinido da provincia de Luanda
-                new Sitio("Indefinido", "Luanda", "Angola"),
-                // pais indefinido de Africa
-                new Sitio("Indefinido", "Africa"),
-                // pais indefinido da America
-                new Sitio("Indefinido", "America"),
-                // pais indefinido da Europa
-                new Sitio("Indefinido", "Europa"),
-                // pais indefinido da Asia
-                new Sitio("Indefinido", "Asia"),
-                // provincia indefinida de Mocambique
-                new Sitio("Indefinida", "Mocambique", "Africa"),
-                // provincia indefinida de Africa do Sul
-                new Sitio("Indefinida", "Africa do Sul", "Africa"),
-                // estado indefinido de Nigeria
-                new Sitio("Indefinido", "Nigeria", "Africa"),
-                // estado indefinido de Brasil
-                new Sitio("Indefinido", "Brasil", "America"),
-                // municipio indefinidos da provincia de Cabinda
-                new Sitio("Indefinido", "Cabinda", "Angola"),
-                // municipio indefinidos da provincia de Zaire
-                new Sitio("Indefinido", "Zaire", "Angola"),
-                // municipio indefinidos da provincia de Uige
-                new Sitio("Indefinido", "Uige", "Angola"),
-                // municipio indefinidos da provincia de Lunda-Norte
-                new Sitio("Indefinido", "Lunda-Norte", "Angola"),
-                // municipio indefinidos da provincia de Lunda-Sul
-                new Sitio("Indefinido", "Lunda-Sul", "Angola"),
-                // municipio indefinidos da provincia de Malange
-                new Sitio("Indefinido", "Malange", "Angola"),
-                // municipio indefinidos da provincia de Bengo
-                new Sitio("Indefinido", "Bengo", "Angola"),
-                // municipio indefinidos da provincia de Kwanza-Norte
-                new Sitio("Indefinido", "Kwanza-Norte", "Angola"),
-                // municipio indefinidos da provincia de Kwanza-Sul
-                new Sitio("Indefinido", "Kwanza-Sul", "Angola"),
-                // municipio indefinidos da provincia de Huambo
-                new Sitio("Indefinido", "Huambo", "Angola"),
-                // municipio indefinidos da provincia de Bie
-                new Sitio("Indefinido", "Bie", "Angola"),
-                // municipio indefinidos da provincia de Moxico
-                new Sitio("Indefinido", "Moxico", "Angola"),
-                // municipio indefinidos da provincia de Kuando Kubango
-                new Sitio("Indefinido", "Kuando Kubango", "Angola"),
-                // municipio indefinidos da provincia de Benguela
-                new Sitio("Indefinido", "Benguela", "Angola"),
-                // municipio indefinidos da provincia de Huila
-                new Sitio("Indefinido", "Huila", "Angola"),
-                // municipio indefinidos da provincia de Cunene
-                new Sitio("Indefinido", "Cunene", "Angola"),
-                // municipio indefinidos da provincia de Namibe
-                new Sitio("Indefinido", "Namibe", "Angola")
-        );
-
-        this.saveAll(sitios);
-    }
-
-    private void saveAll(List<Sitio> sitios)
-    {
-       Localidade  loc;
-        for (Sitio s : sitios)
-        {
-            logger.debug("s: " + s);
-            loc = generateLocalidade(s);
-//            logger.debug("loc1: " + loc);
-            loc = this.localidadeRepository.save(loc);
-//            logger.debug("loc4: " + loc);
+    public void init() {
+        try {
+            // Verificar se já há localidades no banco
+            long count = localidadeRepository.count();
+            logger.info("Total de localidades no banco: {}", count);
+            
+            if (count == 0) {
+                initializeLocalidades();
+            } else {
+                initLocalidadesCache();
+                criarLocalidadesAngolanas();
+            }
+            
+            localidadesInitialized = true;
+            logger.info("Localidades inicializadas com sucesso. Total: {}", 
+                       localidades != null ? localidades.size() : 0);
+        } catch (Exception e) {
+            logger.error("Erro ao inicializar localidades", e);
         }
     }
 
-public Localidade generateLocalidade(Sitio s) {
-    Localidade loc = new Localidade(s.getNome());
-    String pai = s.getPai();
-    String avo = s.getAvo();
+    private void initializeLocalidades() {
+        logger.info("Inicializando localidades...");
+        
+        // Primeiro, garantir que Angola existe
+        Localidade angola = localidadeRepository.findByNome("Angola")
+            .orElseGet(() -> {
+                logger.info("Criando localidade Angola...");
+                Localidade novaAngola = new Localidade();
+                novaAngola.setNome("Angola");
+                novaAngola.setTipo(TipoLocalidade.PAIS);
+                Localidade salva = localidadeRepository.save(novaAngola);
+                logger.info("Angola criada com ID: {}", salva.getPkLocalidade());
+                return salva;
+            });
+        
+        logger.info("Angola: ID={}, Nome={}", angola.getPkLocalidade(), angola.getNome());
 
-    // se não houver 'pai', então fkLocalidadePai fica null
-    if (pai == null) {
-        loc.setFkLocalidadePai(null);
-        return loc;
+        // Criar Luanda (província)
+        Localidade luanda = localidadeRepository.findByNomeAndLocalidadePai("Luanda", angola)
+            .orElseGet(() -> {
+                logger.info("Criando província Luanda...");
+                Localidade provLuanda = new Localidade();
+                provLuanda.setNome("Luanda");
+                provLuanda.setTipo(TipoLocalidade.PROVINCIA);
+                provLuanda.setLocalidadePai(angola);
+                Localidade salva = localidadeRepository.save(provLuanda);
+                logger.info("Luanda (província) criada com ID: {}", salva.getPkLocalidade());
+                return salva;
+            });
+
+        List<Sitio> sitios = Arrays.asList(
+                new Sitio("Belas", luanda.getNome(), angola.getNome(), "Rua Principal", "45"),
+                new Sitio("Cacuaco", luanda.getNome(), angola.getNome(), "Avenida Central", "120"),
+                new Sitio("Cazenga", luanda.getNome(), angola.getNome(), null, null),
+                new Sitio("Talatona", luanda.getNome(), angola.getNome(), "Rua do Mercado", "78"),
+                new Sitio("KilambaKiaxi", luanda.getNome(), angola.getNome(), null, null),
+                new Sitio("Viana", luanda.getNome(), angola.getNome(), null, null)
+        );
+
+        saveAll(sitios);
     }
 
-    // agora tentamos localizar o objeto pai no repositório
-    Localidade paiLocal = null;
-
-    if (avo == null) {
-        // procura por nome do pai (ex.: "Angola")
-        paiLocal = this.localidadeRepository.findByNome(pai).orElse(null);
-    } else {
-       
-        paiLocal = this.localidadeRepository
-                       .findByNomeAndFkLocalidadePaiNome(pai, avo)
-                       .orElse(null);
+    private void saveAll(List<Sitio> sitios) {
+        for (Sitio s : sitios) {
+            try {
+                Localidade loc = generateLocalidade(s);
+                if (loc != null) {
+                    Localidade salva = this.localidadeRepository.save(loc);
+                    logger.info("Localidade salva: {} (ID: {})", 
+                               salva.getNome(), salva.getPkLocalidade());
+                }
+            } catch (Exception e) {
+                logger.error("Erro ao salvar localidade {}: {}", s.getNome(), e.getMessage());
+            }
+        }
+        initLocalidadesCache();
+        criarLocalidadesAngolanas();
     }
 
-    loc.setFkLocalidadePai(paiLocal);
-    return loc;
-}
+    public Localidade generateLocalidade(Sitio s) {
+        try {
+            Localidade loc = new Localidade();
+            loc.setNome(s.getNome());
+            loc.setNomeRua(s.getNomeRua());
+//            loc.setNumero(s.getNumero());
 
+            String pai = s.getPai();
+            String avo = s.getAvo();
+
+            Localidade paiLocal = null;
+
+            if (pai != null) {
+                if (avo == null) {
+                    // Buscar apenas pelo nome do pai
+                    paiLocal = localidadeRepository.findByNome(pai).orElse(null);
+                } else {
+                    // Buscar pai com avô específico
+                    paiLocal = findLocalidadeByNomeAndAvo(pai, avo);
+                }
+                
+                if (paiLocal == null) {
+                    logger.warn("Localidade pai não encontrada: {} (avô: {})", pai, avo);
+                    return null;
+                }
+            }
+
+            loc.setLocalidadePai(paiLocal);
+
+            // 🔹 DEFINIÇÃO DO TIPO
+            if (paiLocal == null) {
+                loc.setTipo(TipoLocalidade.PAIS);
+            } else if ("Angola".equalsIgnoreCase(paiLocal.getNome())) {
+                loc.setTipo(TipoLocalidade.PROVINCIA);
+            } else if (paiLocal.getLocalidadePai() != null &&
+                       "Angola".equalsIgnoreCase(paiLocal.getLocalidadePai().getNome())) {
+                loc.setTipo(TipoLocalidade.MUNICIPIO);
+            } else {
+                loc.setTipo(TipoLocalidade.BAIRRO);
+            }
+
+            logger.debug("Localidade gerada: {} -> Tipo: {}", loc.getNome(), loc.getTipo());
+            return loc;
+            
+        } catch (Exception e) {
+            logger.error("Erro ao gerar localidade para {}: {}", s.getNome(), e.getMessage());
+            return null;
+        }
+    }
+
+    // Método auxiliar para buscar localidade por nome e avô
+    private Localidade findLocalidadeByNomeAndAvo(String nome, String avoNome) {
+        try {
+            // Buscar todas as localidades com o nome especificado
+            List<Localidade> localidadesComNome = localidadeRepository.findAllByNome(nome);
+            
+            if (localidadesComNome.isEmpty()) {
+                logger.warn("Nenhuma localidade encontrada com nome: {}", nome);
+                return null;
+            }
+            
+            // Filtrar aquelas cujo pai (avô) tem o nome especificado
+            for (Localidade loc : localidadesComNome) {
+                if (loc.getLocalidadePai() != null && 
+                    avoNome != null && 
+                    avoNome.equalsIgnoreCase(loc.getLocalidadePai().getNome())) {
+                    logger.debug("Localidade encontrada: {} (ID: {}) com pai {}", 
+                               loc.getNome(), loc.getPkLocalidade(), loc.getLocalidadePai().getNome());
+                    return loc;
+                }
+            }
+            
+            logger.warn("Localidade {} não encontrada com avô {}", nome, avoNome);
+            return null;
+            
+        } catch (Exception e) {
+            logger.error("Erro ao buscar localidade {} com avô {}: {}", 
+                        nome, avoNome, e.getMessage());
+            return null;
+        }
+    }
+
+    private void initLocalidadesCache() {
+        logger.info("Inicializando cache de localidades...");
+        
+        localidadesByPkLocalidadeCache = new HashMap<>();
+        localidades = this.localidadeRepository.findAll();
+
+        logger.info("Total de localidades carregadas: {}", localidades.size());
+        
+        for (Localidade l : localidades) {
+            localidadesByPkLocalidadeCache.put(l.getPkLocalidade(), l);
+        }
+
+        comparadorLocalidades = Comparator.comparing(Localidade::getNome, String.CASE_INSENSITIVE_ORDER);
+
+        comparadorLocalidadesIndefinidas = (s1, s2) -> {
+            if (s1.getLocalidadePai() == null) return 1;
+            if (s2.getLocalidadePai() == null) return -1;
+            return s1.getLocalidadePai().getNome().compareToIgnoreCase(s2.getLocalidadePai().getNome());
+        };
+
+        if (localidades != null && !localidades.isEmpty()) {
+            Collections.sort(localidades, comparadorLocalidades);
+            logger.info("Cache de localidades inicializado com {} registros", localidades.size());
+        }
+    }
+
+    private void criarLocalidadesAngolanas() {
+        if (localidades == null || localidades.isEmpty()) {
+            logger.warn("Nenhuma localidade para criar lista angolana");
+            return;
+        }
+
+        List<Localidade> copiaLocalidades = new ArrayList<>(localidades);
+        List<Localidade> angolanasTemp = new ArrayList<>();
+
+        for (Localidade localidade : copiaLocalidades) {
+            if (localidade.getLocalidadePai() != null &&
+                "Angola".equalsIgnoreCase(localidade.getLocalidadePai().getNome())) {
+
+                angolanasTemp.add(localidade);
+                adicionarFilhosSemModificarOriginal(localidade, angolanasTemp);
+            }
+        }
+
+        localidadesAngolanas.clear();
+        localidadesAngolanas.addAll(angolanasTemp);
+        
+        logger.info("Localidades angolanas criadas: {}", localidadesAngolanas.size());
+    }
 
     private void adicionarFilhosSemModificarOriginal(Localidade localidade, List<Localidade> listaTemp) {
         Queue<Localidade> fila = new LinkedList<>();
@@ -220,330 +263,137 @@ public Localidade generateLocalidade(Sitio s) {
         }
     }
 
-    private void criarLocalidadesAngolanas() {
-        if (localidades == null || localidades.isEmpty()) {
-            System.out.println("Nenhuma localidade carregada.");
-            return;
+    public Localidade escolherAleatoriamenteLocalidadeAngolana() {
+        if (localidadesAngolanas == null || localidadesAngolanas.isEmpty()) {
+            logger.warn("Nenhuma localidade angolana disponível");
+            return null;
         }
-
-        // Criação de uma cópia da lista 'localidades' para evitar a modificação enquanto itera
-        List<Localidade> copiaLocalidades = new ArrayList<>(localidades);  // Cópia da lista original
-        List<Localidade> angolanasTemp = new ArrayList<>(); // Lista temporária para evitar conflitos
-
-        for (Localidade localidade : copiaLocalidades) {  // Itera sobre a cópia
-            if (localidade.getFkLocalidadePai() != null &&
-                    localidade.getFkLocalidadePai().getNome().equalsIgnoreCase("Angola")) {
-
-                angolanasTemp.add(localidade); // Adiciona a localidade principal na lista temporária
-                adicionarFilhosSemModificarOriginal(localidade, angolanasTemp);  // Adiciona filhos
-            }
-        }
-
-        localidadesAngolanas.clear(); // Garante que a lista final está limpa antes de adicionar novos itens
-        localidadesAngolanas.addAll(angolanasTemp);
-
-        System.out.println("Localidades angolanas criadas: " + localidadesAngolanas.size());
-    }
-
-    public Localidade escolherAleatoriamenteLocalidadeAngolana()
-    {
-        int posicao, size;
-        size = localidadesAngolanas.size();
         Random random = new Random();
-        posicao = random.nextInt(size);
-
+        int size = localidadesAngolanas.size();
+        int posicao = random.nextInt(size);
         return localidadesAngolanas.get(posicao);
     }
 
-    private void initLocalidadesCache()
-    {
-        localidadesByPkLocalidadeCache = new HashMap<>();
-        localidades = this.localidadeRepository.findAll();
-
-        for (Localidade l : localidades)
-        {
-            localidadesByPkLocalidadeCache.put(l.getPkLocalidade(), l);
+    public List<Localidade> findAllFilhos(int pkLocalidadePai) {
+        List<Localidade> filhos = new ArrayList<>();
+        if (localidades == null) {
+            return filhos;
         }
-
-        // Comparador de duas Localidades à partir do campo nome
-        comparadorLocalidades = (o1, o2) ->
-        {
-            Localidade l1 = (Localidade) o1;
-            Localidade l2 = (Localidade) o2;
-            return l1.getNome().compareToIgnoreCase(l2.getNome());
-        };
-
-        // Comparador de duas Localidades Indefinidas
-        comparadorLocalidadesIndefinidas = (o1, o2) ->
-        {
-            Localidade s1 = (Localidade) o1;
-            Localidade s2 = (Localidade) o2;
-            if (s1.getFkLocalidadePai() == null)
-            {
-                return 1;
-            }
-            if (s2.getFkLocalidadePai() == null)
-            {
-                return -1;
-            }
-            return s1.getFkLocalidadePai().getNome().
-                    compareToIgnoreCase(s2.getFkLocalidadePai().getNome());
-        };
-
-        // ordenação da lista localidades
-        Collections.sort(localidades, comparadorLocalidades);
-    }
-
-    public List<Localidade> findAllFilhos(int pkLocalidadePai)
-    {
-        logger.debug("0: LocalidadeServices.findAllFilhos(int)\tpkLocalidadePai: " + pkLocalidadePai);
-//        List<Localidade> filhos = localidadeRepository.findAllFilhos(codigo);
-/*@Query("SELECT l FROM Localidade l WHERE l.fkLocalidadePai IS NOT NULL AND
-                    l.fkLocalidadePai.pkLocalidade = :pkLocalidade ORDER BY l.nome")*/
-        List<Localidade> filhos = new ArrayList();
-        for (Localidade l : localidades)
-        {
-            if (l.getFkLocalidadePai() == null)
-            {
-                continue;
-            }
-            if (l.getFkLocalidadePai().getPkLocalidade() == pkLocalidadePai)
-            {
+        
+        for (Localidade l : localidades) {
+            if (l.getLocalidadePai() != null &&
+                l.getLocalidadePai().getPkLocalidade() == pkLocalidadePai) {
                 filhos.add(l);
             }
         }
-        Collections.sort(localidades, comparadorLocalidades);
-        logger.debug("1: LocalidadeServices.findAllFilhos(int)\tfilhos1: " + filhos);
-        filhos = colocarLocalidadesIndefinidasNoFim(filhos);
-        logger.debug("2: LocalidadeServices.findAllFilhos(int)\tfilhos2: " + filhos);
-
-        return filhos;
+        
+        if (!filhos.isEmpty()) {
+            Collections.sort(filhos, comparadorLocalidades);
+        }
+        
+        return colocarLocalidadesIndefinidasNoFim(filhos);
     }
 
-    public List<Localidade> findAllFilhos(String nomePai)
-    {
-        logger.debug("0: LocalidadeServices.findAllFilhos(String)\tnomePai: " + nomePai);
-        /*@Query("SELECT l FROM Localidade l WHERE (l.fkLocalidadePai IS NOT NULL) AND
-        (l.fkLocalidadePai.fkLocalidadePai IS NULL) AND
-        (l.fkLocalidadePai.nome LIKE :nomePai) ORDER BY l.nome")*/
-//        List<Localidade> filhos = localidadeRepository.findAllFilhos(nomePai);
-        List<Localidade> filhos = new ArrayList();
-        for (Localidade l : localidades)
-        {
-            if (l.getFkLocalidadePai() == null)
-            {
-                continue;
-            }
-            if (l.getFkLocalidadePai().getFkLocalidadePai() != null)
-            {
-                continue;
-            }
-            if (l.getFkLocalidadePai().getNome().equalsIgnoreCase(nomePai))
-            {
-                filhos.add(l);
-            }
-        }
-        logger.debug("1: LocalidadeServices.findAllFilhos(String)\tfilhos1: " + filhos);
-        if (filhos.isEmpty())
-        {
-            List<Localidade> pais = findAllByNome(nomePai);
-            logger.debug("2: LocalidadeServices.findAllFilhos(String)\tpais: " + pais);
-            if (pais.isEmpty() || (pais.size() != 1))
-            {
-                return new ArrayList();
-            }
-            filhos = findAllFilhos(pais.get(0).getPkLocalidade());
-            logger.debug("3: LocalidadeServices.findAllFilhos(String)\tfilhos3: " + filhos);
-        }
-        Collections.sort(filhos, comparadorLocalidades);
-        logger.debug("4: LocalidadeServices.findAllFilhos(String)\tfilhos4: " + filhos);
-        filhos = colocarLocalidadesIndefinidasNoFim(filhos);
-        logger.debug("5: LocalidadeServices.findAllFilhos(String)\tfilhos5: " + filhos);
-        return filhos;
-    }
+    public List<Localidade> colocarLocalidadesIndefinidasNoFim(List<Localidade> lista) {
+        if (lista == null || lista.isEmpty()) return lista;
 
-    public List<Localidade> findAllFilhos(String nomePai, String nomeAvo)
-    {
-        /*
-        @Query("SELECT l FROM Localidade l WHERE (l.fkLocalidadePai IS NOT NULL) AND
-        (l.fkLocalidadePai.fkLocalidadePai IS NOT NULL) AND
-        (l.fkLocalidadePai.nome LIKE :nomePai)  AND
-        (l.fkLocalidadePai.fkLocalidadePai.nome LIKE :nomeAvo) ORDER BY l.nome")
-         */
-//        List<Localidade> filhos = localidadeRepository.findAllFilhos(nomePai, nomeAvo);
-        List<Localidade> filhos = new ArrayList();
-        for (Localidade l : localidades)
-        {
-            if (l.getFkLocalidadePai() == null)
-            {
-                continue;
-            }
-            if (l.getFkLocalidadePai().getFkLocalidadePai() == null)
-            {
-                continue;
-            }
-            if (!l.getFkLocalidadePai().getNome().equalsIgnoreCase(nomePai))
-            {
-                continue;
-            }
-            if (l.getFkLocalidadePai().getFkLocalidadePai().getNome().equalsIgnoreCase(nomeAvo))
-            {
-                filhos.add(l);
-            }
-        }
-        Collections.sort(filhos, comparadorLocalidades);
-        filhos = colocarLocalidadesIndefinidasNoFim(filhos);
-
-        return filhos;
-    }
-
-    public Localidade findFilhoIndefinido(int pkLocalidade)
-    {
-        /*
-        @Query("SELECT l FROM Localidade l WHERE (l.fkLocalidadePai IS NOT NULL) AND
-        (l.fkLocalidadePai.pkLocalidade = :pkLocalidade) AND
-        ((l.nome LIKE 'Indefinido') OR (l.nome LIKE 'Indefinida'))")
-         */
-//        return localidadeRepository.findFilhoIndefinido(pkLocalidade);
-        for (Localidade l : localidades)
-        {
-            if (l.getFkLocalidadePai() == null)
-            {
-                continue;
-            }
-            if (l.getFkLocalidadePai().getPkLocalidade() != pkLocalidade)
-            {
-                continue;
-            }
-            if (l.getNome().equalsIgnoreCase(INDEFINIDO) || l.getNome().equalsIgnoreCase(INDEFINIDA))
-            {
-                return l;
-            }
-        }
-        return null;
-    }
-
-    public List<Localidade> findAllContinentes()
-    {
-        /*
-        @Query("SELECT l FROM Localidade l WHERE (l.fkLocalidadePai IS NULL) ORDER BY l.nome")
-         */
-//        List<Localidade> continentes = localidadeRepository.findAllContinentes();
-        List<Localidade> continentes = new ArrayList();
-        for (Localidade l : localidades)
-        {
-            if (l.getFkLocalidadePai() != null)
-            {
-                continue;
-            }
-            continentes.add(l);
-        }
-        Collections.sort(continentes, comparadorLocalidades);
-        return colocarLocalidadesIndefinidasNoFim(continentes);
-    }
-
-    public List<Localidade> findAllPaises()
-    {
-        List<Localidade> continentes = findAllContinentes();
-        List<Localidade> paises = new ArrayList();
-
-        for (Localidade continente : continentes)
-        {
-            paises.addAll(findAllFilhos(continente.getPkLocalidade()));
-        }
-        sort(paises);
-        return colocarLocalidadesIndefinidasNoFim(paises);
-    }
-
-    public List<Localidade> colocarLocalidadesIndefinidasNoFim(List<Localidade> lista)
-    {
         List<Localidade> indefinidas = new ArrayList<>();
         List<Localidade> result = new ArrayList<>();
 
-        for (Localidade loc : lista)
-        {
-            if (loc.getNome().equals(INDEFINIDO)
-                    || loc.getNome().equals(INDEFINIDA))
-            {
+        for (Localidade loc : lista) {
+            if (INDEFINIDO.equalsIgnoreCase(loc.getNome()) || INDEFINIDA.equalsIgnoreCase(loc.getNome())) {
                 indefinidas.add(loc);
-            } else
-            {
+            } else {
                 result.add(loc);
             }
         }
 
-        if (!indefinidas.isEmpty())
-        {
-            indefinidas = sortIndefinidas(indefinidas);
-
+        if (!indefinidas.isEmpty()) {
+            indefinidas.sort(comparadorLocalidadesIndefinidas);
             result.addAll(indefinidas);
         }
+
         return result;
     }
 
-    public List<Localidade> sort(List<Localidade> lista)
-    {
-        Collections.sort(lista, comparadorLocalidades);
-        return lista;
-    }
-
-    public List<Localidade> sortIndefinidas(List<Localidade> indefinidas)
-    {
-        Collections.sort(indefinidas, comparadorLocalidadesIndefinidas);
-        return indefinidas;
-    }
-
-    public List<Localidade> findAllByNome(String nome)
-    {
-        List<Localidade> lista = new ArrayList();
-        for (Localidade l : localidades)
-        {
-            if (l.getNome().equalsIgnoreCase(nome))
-            {
-                lista.add(l);
-            }
+    public List<Localidade> listarTodas() {
+        if (localidades == null || localidades.isEmpty()) {
+            localidades = localidadeRepository.findAll();
+            initLocalidadesCache();
         }
-        Collections.sort(lista, comparadorLocalidades);
-        return lista;
+        return localidades;
     }
-public Localidade salvar(Localidade localidade) {
-    return localidadeRepository.save(localidade);
-}
 
-public List<Localidade> listarTodas() {
-    // Se quiseres cache, usa 'localidades'; senão, busca do repositório
-    if (localidades == null || localidades.isEmpty()) {
-        localidades = localidadeRepository.findAll();
+    public Optional<Localidade> buscarPorId(Integer id) {
+        if (localidadesByPkLocalidadeCache != null && localidadesByPkLocalidadeCache.containsKey(id)) {
+            return Optional.of(localidadesByPkLocalidadeCache.get(id));
+        }
+        return localidadeRepository.findById(id);
     }
-    return localidades;
-}
 
-public Optional<Localidade> buscarPorId(Integer id) {
-    // Se cache estiver inicializada
-    if (localidadesByPkLocalidadeCache != null && localidadesByPkLocalidadeCache.containsKey(id)) {
-        return Optional.of(localidadesByPkLocalidadeCache.get(id));
+    public Localidade salvar(Localidade localidade) {
+        Localidade locSalva = localidadeRepository.save(localidade);
+        if (localidades != null) localidades.add(locSalva);
+        if (localidadesByPkLocalidadeCache != null) localidadesByPkLocalidadeCache.put(locSalva.getPkLocalidade(), locSalva);
+        return locSalva;
     }
-    return localidadeRepository.findById(id);
-}
 
-public void eliminar(Integer id) {
-    localidadeRepository.deleteById(id);
-    // Atualiza cache se necessário
-    if (localidadesByPkLocalidadeCache != null) {
-        localidadesByPkLocalidadeCache.remove(id);
+    public void eliminar(Integer id) {
+        localidadeRepository.deleteById(id);
+        if (localidadesByPkLocalidadeCache != null) localidadesByPkLocalidadeCache.remove(id);
+        if (localidades != null) localidades.removeIf(l -> l.getPkLocalidade() == id);
     }
-    if (localidades != null) {
-        localidades.removeIf(l -> l.getPkLocalidade() == id);
+
+    public List<Localidade> listarPorLocalidadePai(Integer idPai) {
+        return findAllFilhos(idPai);
+    }
+    
+    // Métodos adicionais para suportar o DTO
+    public Localidade findOrCreateMunicipio(String nomeMunicipio) {
+        // Primeiro, buscar Angola
+        Localidade angola = localidadeRepository.findByNome("Angola")
+            .orElseGet(() -> {
+                Localidade novaAngola = new Localidade();
+                novaAngola.setNome("Angola");
+                novaAngola.setTipo(TipoLocalidade.PAIS);
+                return localidadeRepository.save(novaAngola);
+            });
+        
+        // Buscar município
+        return localidadeRepository.findByNomeAndLocalidadePai(nomeMunicipio, angola)
+            .orElseGet(() -> {
+                Localidade municipio = new Localidade();
+                municipio.setNome(nomeMunicipio);
+                municipio.setTipo(TipoLocalidade.MUNICIPIO);
+                municipio.setLocalidadePai(angola);
+                return localidadeRepository.save(municipio);
+            });
+    }
+    
+    public Localidade findOrCreateBairro(String nomeBairro, String nomeRua, Localidade municipio) {
+        // Buscar bairro
+        return localidadeRepository.findByNomeAndLocalidadePai(nomeBairro, municipio)
+            .orElseGet(() -> {
+                Localidade bairro = new Localidade();
+                bairro.setNome(nomeBairro);
+                bairro.setNomeRua(nomeRua);
+                bairro.setTipo(TipoLocalidade.BAIRRO);
+                bairro.setLocalidadePai(municipio);
+                return localidadeRepository.save(bairro);
+            });
+    }
+    
+    // Método para buscar município por nome
+    public Optional<Localidade> findMunicipioByNome(String nomeMunicipio) {
+        return localidadeRepository.findByNomeAndTipo(nomeMunicipio, TipoLocalidade.MUNICIPIO);
+    }
+    
+    // Método para buscar bairro por nome e município
+    public Optional<Localidade> findBairroByNomeAndMunicipio(String nomeBairro, String nomeMunicipio) {
+        Optional<Localidade> municipio = findMunicipioByNome(nomeMunicipio);
+        if (municipio.isPresent()) {
+            return localidadeRepository.findByNomeAndLocalidadePai(nomeBairro, municipio.get());
+        }
+        return Optional.empty();
     }
 }
-
-public List<Localidade> listarPorLocalidadePai(Integer idPai) {
-    return findAllFilhos(idPai); // Usa o método que já existe no service
-}
-
-
-
-}
-
-
-

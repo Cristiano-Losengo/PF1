@@ -6,18 +6,18 @@ import com.ucan.plataformadenuncias.dto.ContaPerfilDTO;
 import com.ucan.plataformadenuncias.dto.FuncionalidadeDTO;
 import com.ucan.plataformadenuncias.dto.FuncionalidadePerfilDTO;
 import com.ucan.plataformadenuncias.entities.*;
+import com.ucan.plataformadenuncias.enumerable.TipoContaEnum;
 import com.ucan.plataformadenuncias.initializer.TipoFuncionalidadeLoader;
 import com.ucan.plataformadenuncias.repositories.*;
 import com.ucan.plataformadenuncias.services.VersaoService;
-import jakarta.validation.Valid;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -35,12 +35,15 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 
 @RestController
-@RequestMapping("/api/seguranca")  
-@CrossOrigin(origins = "*")    
+@RequestMapping("/api/seguranca")
+@CrossOrigin(origins = "*")
 public class SegurancaController {
 
     @Autowired
     private ContaRepository contaRepository;
+
+    @Autowired
+    private PessoaRepository pessoaRepository;
 
     @Autowired
     private PerfilRepository perfilRepository;
@@ -87,82 +90,108 @@ public class SegurancaController {
     }
 
     @GetMapping("/funcionalidade_listar")
+    @Transactional(readOnly = true)  // ADICIONADO: Para resolver LazyInitializationException
     public ResponseEntity<?> listarFuncionalidade() {
         try {
             List<Funcionalidade> funcionalidades = funcionalidadeRepository.findAll();
-            
-            if (funcionalidades.isEmpty()) {
+
+            if (funcionalidades == null || funcionalidades.isEmpty()) {
                 Map<String, Object> response = new HashMap<>();
                 response.put("sucesso", true);
                 response.put("mensagem", "Nenhuma funcionalidade encontrada");
                 response.put("dados", new ArrayList<>());
+                response.put("total", 0);
                 return ResponseEntity.ok(response);
             }
-            
+
             List<FuncionalidadeDTO> listaFuncionalidade = new ArrayList<>();
-            
+
             for (Funcionalidade funcionalidade : funcionalidades) {
-                FuncionalidadeDTO funcionalidadeDTO = new FuncionalidadeDTO();
-                funcionalidadeDTO.setPkFuncionalidade(funcionalidade.getPkFuncionalidade());
-                funcionalidadeDTO.setDesignacao(funcionalidade.getDesignacao());
-                funcionalidadeDTO.setDescricao(funcionalidade.getDescricao());
-                funcionalidadeDTO.setCreatedAt(funcionalidade.getCreatedAt());
-                funcionalidadeDTO.setUpdatedAt(funcionalidade.getUpdatedAt());
-                funcionalidadeDTO.setUrl(funcionalidade.getUrl());
-                funcionalidadeDTO.setGrupo(funcionalidade.getGrupo());
-                funcionalidadeDTO.setFuncionalidadesPartilhadas(funcionalidade.getFuncionalidadesPartilhadas());
-                
-                // Tipo de funcionalidade
-                if (funcionalidade.getFkTipoFuncionalidade() != null) {
-                    funcionalidadeDTO.setFkTipoFuncionalidade(funcionalidade.getFkTipoFuncionalidade().getPkTipoFuncionalidade());
-                    funcionalidadeDTO.setDesignacaoTipoFuncionalidade(funcionalidade.getFkTipoFuncionalidade().getDesignacao());
+                try {
+                    FuncionalidadeDTO funcionalidadeDTO = new FuncionalidadeDTO();
+                    funcionalidadeDTO.setPkFuncionalidade(funcionalidade.getPkFuncionalidade());
+                    funcionalidadeDTO.setDesignacao(funcionalidade.getDesignacao() != null ? funcionalidade.getDesignacao() : "");
+                    funcionalidadeDTO.setDescricao(funcionalidade.getDescricao() != null ? funcionalidade.getDescricao() : "");
+                    funcionalidadeDTO.setCreatedAt(funcionalidade.getCreatedAt());
+                    funcionalidadeDTO.setUpdatedAt(funcionalidade.getUpdatedAt());
+                    funcionalidadeDTO.setUrl(funcionalidade.getUrl() != null ? funcionalidade.getUrl() : "");
+
+                    // Usar getters/setters padrão para evitar nulos
+                    if (funcionalidade.getGrupo() != null) {
+                        funcionalidadeDTO.setGrupo(funcionalidade.getGrupo());
+                    }
+
+                    if (funcionalidade.getFuncionalidadesPartilhadas() != null) {
+                        funcionalidadeDTO.setFuncionalidadesPartilhadas(funcionalidade.getFuncionalidadesPartilhadas());
+                    }
+
+                    // Tipo de funcionalidade - tratamento para nulo
+                    if (funcionalidade.getFkTipoFuncionalidade() != null) {
+                        funcionalidadeDTO.setFkTipoFuncionalidade(funcionalidade.getFkTipoFuncionalidade().getPkTipoFuncionalidade());
+                        funcionalidadeDTO.setDesignacaoTipoFuncionalidade(
+                                funcionalidade.getFkTipoFuncionalidade().getDesignacao() != null
+                                ? funcionalidade.getFkTipoFuncionalidade().getDesignacao() : ""
+                        );
+                    } else {
+                        funcionalidadeDTO.setDesignacaoTipoFuncionalidade("Sem tipo");
+                    }
+
+                    // Funcionalidade pai (se houver) - tratamento para nulo
+                    if (funcionalidade.getFkFuncionalidade() != null) {
+                        funcionalidadeDTO.setFkFuncionalidade(funcionalidade.getFkFuncionalidade().getPkFuncionalidade());
+                    }
+
+                    listaFuncionalidade.add(funcionalidadeDTO);
+                } catch (Exception e) {
+                    System.err.println("Erro ao processar funcionalidade ID " + funcionalidade.getPkFuncionalidade() + ": " + e.getMessage());
+                    e.printStackTrace();
+                    // Continue processando outras funcionalidades
                 }
-                
-                // Funcionalidade pai (se houver)
-                if (funcionalidade.getFkFuncionalidade() != null) {
-                    funcionalidadeDTO.setFkFuncionalidade(funcionalidade.getFkFuncionalidade().getPkFuncionalidade());
-                }
-                
-                listaFuncionalidade.add(funcionalidadeDTO);
             }
-            
+
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", true);
             response.put("mensagem", "Funcionalidades listadas com sucesso");
             response.put("dados", listaFuncionalidade);
             response.put("total", listaFuncionalidade.size());
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
+            System.err.println("Erro grave em funcionalidade_listar: " + e.getMessage());
+            e.printStackTrace();
+
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", false);
-            response.put("mensagem", "Erro ao listar funcionalidades: " + e.getMessage());
+            response.put("mensagem", "Erro interno ao listar funcionalidades");
+            response.put("erroDetalhado", e.getMessage());
+            response.put("erroTipo", e.getClass().getName());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
     @GetMapping("/tipos_funcionalidade_listar")
+    @Transactional(readOnly = true)  // ADICIONADO: Para consistência
     public ResponseEntity<?> listarTiposFuncionalidade() {
         try {
             List<TipoFuncionalidade> tipos = tipoFuncionalidadeRepository.findAll();
-            
+
             List<Map<String, Object>> tiposList = tipos.stream()
-                .map(tipo -> {
-                    Map<String, Object> tipoMap = new HashMap<>();
-                    tipoMap.put("pkTipoFuncionalidade", tipo.getPkTipoFuncionalidade());
-                    tipoMap.put("designacao", tipo.getDesignacao());
-                    return tipoMap;
-                })
-                .collect(Collectors.toList());
-            
+                    .map(tipo -> {
+                        Map<String, Object> tipoMap = new HashMap<>();
+                        tipoMap.put("pkTipoFuncionalidade", tipo.getPkTipoFuncionalidade());
+                        tipoMap.put("designacao", tipo.getDesignacao());
+                        return tipoMap;
+                    })
+                    .collect(Collectors.toList());
+
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", true);
             response.put("dados", tiposList);
             response.put("total", tiposList.size());
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", false);
@@ -172,6 +201,7 @@ public class SegurancaController {
     }
 
     @GetMapping("/conta_listar")
+    @Transactional(readOnly = true)  // ADICIONADO: Para consistência
     public ResponseEntity<?> listarConta() {
         try {
             List<Conta> contas = contaRepository.findAll();
@@ -185,6 +215,7 @@ public class SegurancaController {
     }
 
     @GetMapping("/perfil_listar")
+    @Transactional(readOnly = true)  // ADICIONADO: Para consistência
     public ResponseEntity<?> listarPerfil() {
         try {
             List<Perfil> perfis = perfilRepository.findAll();
@@ -198,6 +229,7 @@ public class SegurancaController {
     }
 
     @GetMapping("/conta_perfil_listar")
+    @Transactional(readOnly = true)  // ADICIONADO: Para consistência
     public ResponseEntity<?> listarContaPerfil() {
         try {
             List<ContaPerfil> contaPerfis = contaPerfilRepository.findAll();
@@ -212,14 +244,13 @@ public class SegurancaController {
                 contaPerfilDTO.setEmail(contaPerfil.getFkConta().getEmail());
                 contaPerfilDTO.setTipoConta(contaPerfil.getFkConta().getTipoConta().name());
                 //contaPerfilDTO.setNomeCompleto(contaPerfil.getFkConta().getNomeCompleto());
-                contaPerfilDTO.setEstado(contaPerfil.getStatus());
-                contaPerfilDTO.setDesignacaoPerfil(contaPerfil.getFkPerfil().getDesignacao());
+                contaPerfilDTO.setEstado(contaPerfil.getEstado());
 
                 listContaPerfil.add(contaPerfilDTO);
             }
 
             return ResponseEntity.ok(listContaPerfil);
-            
+
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", false);
@@ -229,6 +260,7 @@ public class SegurancaController {
     }
 
     @GetMapping("/funcionalidade_perfil_listar")
+    @Transactional(readOnly = true)  // ADICIONADO: Para evitar LazyInitializationException
     public ResponseEntity<?> listarFuncionalidadePerfil() {
         try {
             List<FuncionalidadePerfil> funcionalidadePerfis = funcionalidadePerfilRepository.findAll();
@@ -250,7 +282,7 @@ public class SegurancaController {
                 funcionalidadePerfilDTO.setDetalheFuncionalidade(funcionalidadePerfilModel.getFkFuncionalidade().getDescricao());
 
                 funcionalidadePerfilDTO.setPaiFuncionalidade(funcionalidadePerfilModel.getFkPerfil().getDesignacao());
-                
+
                 // CORREÇÃO: Converter estado inteiro para string
                 Integer estadoInt = funcionalidadePerfilModel.getFkPerfil().getEstado();
                 String estadoStr = converterEstadoPerfil(estadoInt);
@@ -260,7 +292,7 @@ public class SegurancaController {
             }
 
             return ResponseEntity.ok(listFuncionalidadePerfil);
-            
+
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", false);
@@ -270,65 +302,97 @@ public class SegurancaController {
     }
 
     @PostMapping("/conta_cadastrar")
-    public ResponseEntity<?> cadastrarConta(@RequestBody Conta conta) {
+    public ResponseEntity<?> cadastrarConta(@RequestBody ContaPerfilDTO contaPerfilDTO) {
+
         try {
-            Conta contaModel = contaRepository.save(conta);
+
+            Pessoa pessoaModel = new Pessoa();
+            Conta contaModel = new Conta();
+            ContaPerfil contaPerfil = new ContaPerfil();
+            Perfil perfilModel = perfilRepository.findByPkPerfil(contaPerfilDTO.getFkPerfil());
+
+            pessoaModel.setNome(contaPerfilDTO.getNomeCompleto());
+            pessoaModel.setIdentificacao(contaPerfilDTO.getIdentificacao());
+            pessoaModel.setFkGenero(new Genero(contaPerfilDTO.getFkGenero()));
+            pessoaModel.setFkEstadoCivil(new EstadoCivil(contaPerfilDTO.getFkEstadoCivil()));
+
+            System.out.println(contaPerfilDTO);
+
+            String[] dataArray = contaPerfilDTO.getDataNascimento().split("-");
+            LocalDate localDate = LocalDate.of(
+                    Integer.parseInt(dataArray[0]),
+                    Integer.parseInt(dataArray[1]),
+                    Integer.parseInt(dataArray[2]));
+
+            pessoaModel.setDataNascimento(localDate);
+
+            contaModel.setEmail(contaPerfilDTO.getEmail());
+            contaModel.setPasswordHash(contaPerfilDTO.getPasswordHash());
+            contaModel.setTipoConta(TipoContaEnum.ADMIN);
+
+            pessoaModel = pessoaRepository.save(pessoaModel);
+
+            contaModel.setFkPessoa(pessoaModel);
+
+            contaModel = contaRepository.save(contaModel);
+
+            contaPerfil.setFkConta(contaModel);
+            contaPerfil.setFkPerfil(perfilModel);
             
+            contaPerfilRepository.save(contaPerfil);
+
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", true);
             response.put("mensagem", "Conta cadastrada com sucesso");
             response.put("conta", contaModel);
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", false);
             response.put("mensagem", "Erro ao cadastrar conta: " + e.getMessage());
             return ResponseEntity.badRequest().body(response);
         }
+
     }
 
     @PostMapping("/perfil_cadastrar")
     public ResponseEntity<?> cadastrarPerfil(@RequestBody Perfil perfil) {
-        
+
         Map<String, String> erros = new HashMap<>();
-        
+
         // Validação da designação
         if (perfil.getDesignacao() == null || perfil.getDesignacao().trim().isEmpty()) {
             erros.put("designacao", "A designação é obrigatória");
         } else {
             String designacao = perfil.getDesignacao().trim();
-            
+
             // Verificar tamanho
             if (designacao.length() < 3) {
                 erros.put("designacao", "A designação deve ter no mínimo 3 caracteres");
             } else if (designacao.length() > 50) {
                 erros.put("designacao", "A designação não pode exceder 50 caracteres");
-            }
-            
-            // Verificar padrão de caracteres
+            } // Verificar padrão de caracteres
             else if (!DESIGNACAO_PATTERN.matcher(designacao).matches()) {
                 erros.put("designacao", "A designação não pode conter números ou caracteres especiais");
-            }
-            
-            // Verificar se designação já existe
+            } // Verificar se designação já existe
             else if (perfilRepository.existsByDesignacaoIgnoreCase(designacao)) {
                 erros.put("designacao", "Esta designação já está em uso");
             }
         }
-        
+
         // Validação da descrição - SÓ VALIDA SE TIVER CONTEÚDO
         if (perfil.getDescricao() != null && !perfil.getDescricao().trim().isEmpty()) {
             String descricao = perfil.getDescricao().trim();
-            
+
             if (descricao.length() > 200) {
                 erros.put("descricao", "A descrição não pode exceder 200 caracteres");
             } else if (!DESCRICAO_PATTERN.matcher(descricao).matches()) {
                 erros.put("descricao", "A descrição contém caracteres inválidos");
             }
         }
-        
+
         // Se houver erros, retornar com status 400
         if (!erros.isEmpty()) {
             Map<String, Object> response = new HashMap<>();
@@ -337,22 +401,22 @@ public class SegurancaController {
             response.put("erros", erros);
             return ResponseEntity.badRequest().body(response);
         }
-        
+
         try {
             // Se estado não for fornecido, definir como ativo (1)
             if (perfil.getEstado() == null) {
                 perfil.setEstado(1);
             }
-            
+
             Perfil perfilModel = perfilRepository.save(perfil);
-            
+
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", true);
             response.put("mensagem", "Perfil cadastrado com sucesso");
             response.put("perfil", perfilModel);
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", false);
@@ -370,7 +434,7 @@ public class SegurancaController {
 
             perfilModel.setPkPerfil(contaPerfilDTO.getFkPerfil());
             contaModel.setPkConta(contaPerfilDTO.getFkConta());
-           // contaModel.setNomeCompleto(contaPerfilDTO.getNomeCompleto());
+            // contaModel.setNomeCompleto(contaPerfilDTO.getNomeCompleto());
             contaModel.setEmail(contaPerfilDTO.getEmail());
 
             contaPerfilModel.setFkPerfil(perfilModel);
@@ -382,9 +446,9 @@ public class SegurancaController {
             response.put("sucesso", true);
             response.put("mensagem", "Conta-Perfil cadastrado com sucesso");
             response.put("contaPerfil", contaPerfilModelAux);
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", false);
@@ -394,6 +458,7 @@ public class SegurancaController {
     }
 
     @PostMapping("/funcionalidade_cadastrar")
+    @Transactional  // ADICIONADO: Para operações de escrita
     public ResponseEntity<?> cadastrarFuncionalidade(@RequestBody Funcionalidade funcionalidade) {
         try {
             Funcionalidade funcionalidadeModel = funcionalidadeRepository.save(funcionalidade);
@@ -402,9 +467,9 @@ public class SegurancaController {
             response.put("sucesso", true);
             response.put("mensagem", "Funcionalidade cadastrada com sucesso");
             response.put("funcionalidade", funcionalidadeModel);
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", false);
@@ -414,6 +479,7 @@ public class SegurancaController {
     }
 
     @PostMapping("/funcionalidade_perfil_cadastrar")
+    @Transactional  // ADICIONADO: Para operações de escrita
     public ResponseEntity<?> cadastrarFuncionalidadePerfil(@RequestBody FuncionalidadePerfilDTO funcionalidadePerfilDTO) {
         try {
             Funcionalidade funcionalidadeModel = new Funcionalidade();
@@ -433,9 +499,9 @@ public class SegurancaController {
             response.put("sucesso", true);
             response.put("mensagem", "Funcionalidade-Perfil cadastrado com sucesso");
             response.put("funcionalidadePerfil", funcionalidadePerfilModel);
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", false);
@@ -445,18 +511,19 @@ public class SegurancaController {
     }
 
     @PutMapping("/funcionalidade_editar/{id}")
+    @Transactional  // ADICIONADO: Para operações de escrita
     public ResponseEntity<?> editarFuncionalidade(@PathVariable int id, @RequestBody Funcionalidade funcionalidade) {
         try {
             funcionalidade.setPkFuncionalidade(id);
             Funcionalidade funcionalidadeAtualizada = funcionalidadeRepository.save(funcionalidade);
-            
+
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", true);
             response.put("mensagem", "Funcionalidade editada com sucesso");
             response.put("funcionalidade", funcionalidadeAtualizada);
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", false);
@@ -466,15 +533,16 @@ public class SegurancaController {
     }
 
     @PostMapping("/funcionalidade_importar")
+    @Transactional  // ADICIONADO: Para operações de escrita
     public ResponseEntity<?> importar(@RequestParam("file") MultipartFile file) {
         System.out.println("=== INICIANDO IMPORTAÇÃO DE DUAS FOLHAS ===");
-        
+
         try {
             Map<String, Object> resultado = TipoFuncionalidadeLoader.insertBothSheets(
-                file, tipoFuncionalidadeRepository, funcionalidadeRepository, versaoService);
-            
+                    file, tipoFuncionalidadeRepository, funcionalidadeRepository, versaoService);
+
             return ResponseEntity.ok(resultado);
-            
+
         } catch (Exception e) {
             Map<String, Object> erro = new HashMap<>();
             erro.put("erro", "❌ Erro durante a importação: " + e.getMessage());
@@ -484,34 +552,36 @@ public class SegurancaController {
     }
 
     @GetMapping("/versoes_atuais")
+    @Transactional(readOnly = true)  // ADICIONADO: Para consistência
     public ResponseEntity<?> obterVersoesAtuais() {
         Map<String, Object> resultado = new HashMap<>();
-        
+
         Versao versaoTipos = versaoService.obterVersao(Defs.TIPO_FUNCIONALIDADE);
         Versao versaoFunc = versaoService.obterVersao(Defs.FUNCIONALIDADE);
-        
+
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-        
+
         if (versaoTipos != null) {
             resultado.put("tipos_funcionalidade", sdf.format(versaoTipos.getData()));
         } else {
             resultado.put("tipos_funcionalidade", "Nunca importado");
         }
-        
+
         if (versaoFunc != null) {
             resultado.put("funcionalidades", sdf.format(versaoFunc.getData()));
         } else {
             resultado.put("funcionalidades", "Nunca importado");
         }
-        
+
         return ResponseEntity.ok(resultado);
     }
 
     @PutMapping("/perfil_editar/{id}")
+    @Transactional  // ADICIONADO: Para operações de escrita
     public ResponseEntity<?> editarPerfil(@PathVariable Integer id, @RequestBody Perfil perfil) {
-        
+
         Map<String, String> erros = new HashMap<>();
-        
+
         Optional<Perfil> perfilExistente = perfilRepository.findById(id);
         if (!perfilExistente.isPresent()) {
             Map<String, Object> response = new HashMap<>();
@@ -519,12 +589,12 @@ public class SegurancaController {
             response.put("mensagem", "Perfil não encontrado");
             return ResponseEntity.badRequest().body(response);
         }
-        
+
         if (perfil.getDesignacao() == null || perfil.getDesignacao().trim().isEmpty()) {
             erros.put("designacao", "A designação é obrigatória");
         } else {
             String designacao = perfil.getDesignacao().trim();
-            
+
             if (designacao.length() < 3) {
                 erros.put("designacao", "A designação deve ter no mínimo 3 caracteres");
             } else if (designacao.length() > 50) {
@@ -535,17 +605,17 @@ public class SegurancaController {
                 erros.put("designacao", "Esta designação já está em uso por outro perfil");
             }
         }
-        
+
         if (perfil.getDescricao() != null && !perfil.getDescricao().trim().isEmpty()) {
             String descricao = perfil.getDescricao().trim();
-            
+
             if (descricao.length() > 200) {
                 erros.put("descricao", "A descrição não pode exceder 200 caracteres");
             } else if (!DESCRICAO_PATTERN.matcher(descricao).matches()) {
                 erros.put("descricao", "A descrição contém caracteres inválidos");
             }
         }
-        
+
         if (!erros.isEmpty()) {
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", false);
@@ -553,22 +623,22 @@ public class SegurancaController {
             response.put("erros", erros);
             return ResponseEntity.badRequest().body(response);
         }
-        
+
         try {
             Perfil perfilAtual = perfilExistente.get();
             perfilAtual.setDesignacao(perfil.getDesignacao().trim());
             perfilAtual.setDescricao(perfil.getDescricao() != null ? perfil.getDescricao().trim() : null);
             perfilAtual.setEstado(perfil.getEstado());
-            
+
             Perfil perfilModel = perfilRepository.save(perfilAtual);
-            
+
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", true);
             response.put("mensagem", "Perfil atualizado com sucesso");
             response.put("perfil", perfilModel);
-            
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", false);
@@ -578,10 +648,11 @@ public class SegurancaController {
     }
 
     @GetMapping("/perfil_buscar/{id}")
+    @Transactional(readOnly = true)  // ADICIONADO: Para evitar LazyInitializationException
     public ResponseEntity<?> buscarPerfil(@PathVariable Integer id) {
         try {
             Optional<Perfil> perfil = perfilRepository.findById(id);
-            
+
             if (perfil.isPresent()) {
                 return ResponseEntity.ok(perfil.get());
             } else {
@@ -599,10 +670,11 @@ public class SegurancaController {
     }
 
     @GetMapping("/perfil_historico/{id}")
+    @Transactional(readOnly = true)  // ADICIONADO: Para consistência
     public ResponseEntity<?> historicoPerfil(@PathVariable Integer id) {
         try {
             List<Map<String, Object>> historico = new ArrayList<>();
-            
+
             Map<String, Object> item1 = new HashMap<>();
             item1.put("id", 1);
             item1.put("acao", "Cadastro");
@@ -610,7 +682,7 @@ public class SegurancaController {
             item1.put("data", LocalDateTime.now().minusDays(2));
             item1.put("detalhes", "Perfil criado inicialmente");
             historico.add(item1);
-            
+
             Map<String, Object> item2 = new HashMap<>();
             item2.put("id", 2);
             item2.put("acao", "Atualização");
@@ -618,7 +690,7 @@ public class SegurancaController {
             item2.put("data", LocalDateTime.now().minusDays(1));
             item2.put("detalhes", "Estado alterado para ATIVO");
             historico.add(item2);
-            
+
             Map<String, Object> item3 = new HashMap<>();
             item3.put("id", 3);
             item3.put("acao", "Atualização");
@@ -626,7 +698,7 @@ public class SegurancaController {
             item3.put("data", LocalDateTime.now());
             item3.put("detalhes", "Descrição atualizada");
             historico.add(item3);
-            
+
             return ResponseEntity.ok(historico);
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
@@ -637,42 +709,43 @@ public class SegurancaController {
     }
 
     @DeleteMapping("/perfil_excluir/{id}")
+    @Transactional  // ADICIONADO: Para operações de escrita
     public ResponseEntity<?> excluirPerfil(@PathVariable Integer id) {
         Map<String, Object> response = new HashMap<>();
-        
+
         try {
             Optional<Perfil> perfilExistente = perfilRepository.findById(id);
-            
+
             if (!perfilExistente.isPresent()) {
                 response.put("sucesso", false);
                 response.put("mensagem", "Perfil não encontrado");
                 return ResponseEntity.badRequest().body(response);
             }
-            
+
             Perfil perfil = perfilExistente.get();
-            
+
             Long countContas = contaPerfilRepository.countByFkPerfil(perfil);
             if (countContas != null && countContas > 0) {
                 response.put("sucesso", false);
-                response.put("mensagem", "Não é possível excluir o perfil pois está associado a " + 
-                           countContas + " conta(s)");
+                response.put("mensagem", "Não é possível excluir o perfil pois está associado a "
+                        + countContas + " conta(s)");
                 return ResponseEntity.badRequest().body(response);
             }
-            
+
             Long countFuncionalidades = funcionalidadePerfilRepository.countByFkPerfil(perfil);
             if (countFuncionalidades != null && countFuncionalidades > 0) {
                 response.put("sucesso", false);
-                response.put("mensagem", "Não é possível excluir o perfil pois está associado a " + 
-                           countFuncionalidades + " funcionalidade(s)");
+                response.put("mensagem", "Não é possível excluir o perfil pois está associado a "
+                        + countFuncionalidades + " funcionalidade(s)");
                 return ResponseEntity.badRequest().body(response);
             }
-            
+
             perfilRepository.deleteById(id);
-            
+
             response.put("sucesso", true);
             response.put("mensagem", "Perfil excluído com sucesso");
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             response.put("sucesso", false);
             response.put("mensagem", "Erro ao excluir perfil: " + e.getMessage());
@@ -681,25 +754,26 @@ public class SegurancaController {
     }
 
     @DeleteMapping("/funcionalidade_perfil_excluir")
+    @Transactional  // ADICIONADO: Para operações de escrita
     public ResponseEntity<?> excluirFuncionalidadePerfil(@RequestBody FuncionalidadePerfilDTO funcionalidadePerfilDTO) {
         Map<String, Object> response = new HashMap<>();
-        
+
         try {
             // Buscar a associação específica
             Optional<Perfil> perfilOpt = perfilRepository.findById(funcionalidadePerfilDTO.getFkPerfil());
             Optional<Funcionalidade> funcionalidadeOpt = funcionalidadeRepository.findById(funcionalidadePerfilDTO.getFkFuncionalidade());
-            
+
             if (!perfilOpt.isPresent() || !funcionalidadeOpt.isPresent()) {
                 response.put("sucesso", false);
                 response.put("mensagem", "Perfil ou funcionalidade não encontrados");
                 return ResponseEntity.badRequest().body(response);
             }
-            
+
             Perfil perfil = perfilOpt.get();
             Funcionalidade funcionalidade = funcionalidadeOpt.get();
-            
+
             List<FuncionalidadePerfil> associacoes = funcionalidadePerfilRepository.findByFkPerfil(perfil);
-            
+
             FuncionalidadePerfil associacaoParaExcluir = null;
             for (FuncionalidadePerfil fp : associacoes) {
                 if (fp.getFkFuncionalidade().getPkFuncionalidade().equals(funcionalidade.getPkFuncionalidade())) {
@@ -707,19 +781,19 @@ public class SegurancaController {
                     break;
                 }
             }
-            
+
             if (associacaoParaExcluir == null) {
                 response.put("sucesso", false);
                 response.put("mensagem", "Associação não encontrada");
                 return ResponseEntity.badRequest().body(response);
             }
-            
+
             funcionalidadePerfilRepository.delete(associacaoParaExcluir);
-            
+
             response.put("sucesso", true);
             response.put("mensagem", "Funcionalidade removida do perfil com sucesso");
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             response.put("sucesso", false);
             response.put("mensagem", "Erro ao remover funcionalidade do perfil: " + e.getMessage());
@@ -730,21 +804,20 @@ public class SegurancaController {
     @PostMapping("/verificar_estrutura_arquivo")
     public ResponseEntity<?> verificarEstruturaArquivo(@RequestParam("file") MultipartFile file) {
         Map<String, Object> resultado = new HashMap<>();
-        
-        try (InputStream is = file.getInputStream();
-             Workbook workbook = WorkbookFactory.create(is)) {
-            
+
+        try ( InputStream is = file.getInputStream();  Workbook workbook = WorkbookFactory.create(is)) {
+
             resultado.put("total_folhas", workbook.getNumberOfSheets());
-            
+
             List<Map<String, Object>> infoFolhas = new ArrayList<>();
-            
+
             for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
                 Sheet sheet = workbook.getSheetAt(i);
                 Map<String, Object> infoFolha = new HashMap<>();
                 infoFolha.put("indice", i);
                 infoFolha.put("nome", workbook.getSheetName(i));
                 infoFolha.put("total_linhas", sheet.getLastRowNum() + 1);
-                
+
                 List<List<String>> primeirasLinhas = new ArrayList<>();
                 for (int j = 0; j < Math.min(5, sheet.getLastRowNum() + 1); j++) {
                     Row row = sheet.getRow(j);
@@ -758,15 +831,15 @@ public class SegurancaController {
                     primeirasLinhas.add(linha);
                 }
                 infoFolha.put("primeiras_linhas", primeirasLinhas);
-                
+
                 infoFolhas.add(infoFolha);
             }
-            
+
             resultado.put("folhas", infoFolhas);
             resultado.put("sucesso", true);
-            
+
             return ResponseEntity.ok(resultado);
-            
+
         } catch (Exception e) {
             resultado.put("erro", "Erro ao verificar arquivo: " + e.getMessage());
             resultado.put("sucesso", false);

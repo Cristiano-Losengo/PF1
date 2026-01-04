@@ -1,25 +1,26 @@
-
 package com.ucan.plataformadenuncias.utils;
 
+import com.ucan.plataformadenuncias.enumerable.TipoLocalidade;
 import java.io.Serializable;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- *
- * @author cristiano
- */
 @Getter
 @Setter
+@NoArgsConstructor
 public class Sitio implements Serializable {
 
-    private String nome, pai, avo;
+    private static final long serialVersionUID = 1L;
 
-    // Construtores
-    public Sitio() {
-    }
+    private String nome;        
+    private String pai;         
+    private String avo;         
+    private String nomeRua;     
+    private String numero;      
+    private TipoLocalidade tipo;
 
+    // Construtores auxiliares
     public Sitio(String nome) {
         this.nome = nome;
     }
@@ -35,4 +36,20 @@ public class Sitio implements Serializable {
         this.avo = avo;
     }
 
+    public Sitio(String nome, String pai, String avo, String nomeRua, String numero) {
+        this.nome = nome;
+        this.pai = pai;
+        this.avo = avo;
+        this.nomeRua = nomeRua;
+        this.numero = numero;
+    }
+
+    public Sitio(String nome, String pai, String avo, String nomeRua, String numero, TipoLocalidade tipo) {
+        this.nome = nome;
+        this.pai = pai;
+        this.avo = avo;
+        this.nomeRua = nomeRua;
+        this.numero = numero;
+        this.tipo = tipo;
+    }
 }

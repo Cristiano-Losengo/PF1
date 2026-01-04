@@ -23,31 +23,35 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "categoria")
-public class Categoria {
+
+@Table(name = "genero")
+public class Genero {
 
     @Id
     @GeneratedValue
-    @Column(name = "pk_categoria")
-    private Integer pkCategoria;
+    @Column(name = "pk_genero")
+    private Integer pkGenero;
 
     @NotBlank(message = "O nome não pode estar em branco")
     @Size(max = 150, message = "O nome deve ter no máximo 150 caracteres")
     @Column(name = "nome", nullable = false, length = 150)
     private String nome;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-        name = "fk_localidade",
-        referencedColumnName = "pk_localidade",
-        nullable = false
-    )
-    private Localidade localidade;
+    public Genero() {
+    }
 
-    @OneToMany(
-        mappedBy = "categoria",
-        cascade = CascadeType.ALL,
-        orphanRemoval = true
-    )
-    private List<Denuncia> denuncias;
+    
+    public Genero(Integer pkGenero) {
+        this.pkGenero = pkGenero;
+    }
+
+    public Genero(Integer pkGenero, String nome) {
+        this.pkGenero = pkGenero;
+        this.nome = nome;
+    }
+    
+    
+
+
+
 }

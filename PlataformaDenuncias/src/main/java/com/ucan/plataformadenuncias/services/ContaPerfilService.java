@@ -1,33 +1,46 @@
 package com.ucan.plataformadenuncias.services;
 
-import com.ucan.plataformadenuncias.entities.ContaFuncionalidadeAcrestadoRemovido;
+import com.ucan.plataformadenuncias.dto.ContaPerfilDTO;
 import com.ucan.plataformadenuncias.entities.ContaPerfil;
-import com.ucan.plataformadenuncias.repositories.ContaFuncionalidadeAcrestadoRemovidoRepository;
 import com.ucan.plataformadenuncias.repositories.ContaPerfilRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.Optional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-/**
- *
- * @author cristiano
- */
+
 @Service
 public class ContaPerfilService {
 
-    @Autowired
-    private ContaPerfilRepository repository;
+    private final ContaPerfilRepository repository;
 
-    public ContaPerfil salvar(ContaPerfil obj) {
-        return repository.save(obj);
+    public ContaPerfilService(ContaPerfilRepository repository) {
+        this.repository = repository;
     }
 
-    public List<ContaPerfil> listarTodos() {
-        return repository.findAll();
+    @Transactional(readOnly = true)
+    public List<ContaPerfilDTO> listarContaPerfis() {
+        return repository.findAllWithContaPessoa()
+                .stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
+    private ContaPerfilDTO toDTO(ContaPerfil cp) {
+        ContaPerfilDTO dto = new ContaPerfilDTO();
+        dto.setNomeCompleto(cp.getFkConta().getFkPessoa().getNome());
+        dto.setEmail(cp.getFkConta().getEmail());
+        dto.setTipoConta(cp.getFkConta().getTipoConta().name());
+        dto.setEstado(cp.getEstado());
+        return dto;
     }
 
     public Optional<ContaPerfil> buscarPorId(Integer id) {
         return repository.findById(id);
+    }
+
+    public ContaPerfil salvar(ContaPerfil entity) {
+        return repository.save(entity);
     }
 
     public void remover(Integer id) {

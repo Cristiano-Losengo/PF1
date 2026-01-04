@@ -30,12 +30,12 @@ public class Resposta {
 
     
     @ManyToOne
-    @JoinColumn(name = "fk_denuncia", referencedColumnName = "pk_denuncia")
+    @JoinColumn(name = "fk_denuncia", nullable = false, referencedColumnName = "pk_denuncia")
     private Denuncia denuncia;
     
-    @ManyToOne
-    @JoinColumn(name = "fk_utilizador", referencedColumnName = "pk_utilizador")
-    private Utilizador utilizador;
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "fk_conta", nullable = false)
+    private Conta conta;
     
     
 }

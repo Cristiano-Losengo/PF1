@@ -22,9 +22,7 @@ public class HistoricoActividade {
     @Column(name = "pk_historico_actividade")
     private Integer pkHistoricoActividade;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private Utilizador utilizador;
+
 
     @Column(name = "data_login", nullable = false)
     private LocalDateTime dataLogin;
@@ -55,9 +53,8 @@ public class HistoricoActividade {
 
     @Override
     public String toString() {
-        return "HistoricoActividadeModel{" +
+        return "HistoricoActividade{" +
                 "pkHistoricoActividade=" + pkHistoricoActividade +
-                ", userId=" + (utilizador != null ? utilizador.getPkUtilizador() : "null") +
                 ", dataLogin=" + dataLogin +
                 ", dataLogout=" + dataLogout +
                 '}';

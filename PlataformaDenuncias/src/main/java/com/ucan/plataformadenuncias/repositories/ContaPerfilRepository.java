@@ -17,4 +17,13 @@ public interface ContaPerfilRepository extends JpaRepository<ContaPerfil, Intege
     
     List<ContaPerfil> findByFkPerfil(Perfil perfil);
     
+
+    @Query("""
+        SELECT cp
+        FROM ContaPerfil cp
+        JOIN FETCH cp.fkConta c
+        JOIN FETCH c.fkPessoa p
+    """)
+    List<ContaPerfil> findAllWithContaPessoa();
+    
 }

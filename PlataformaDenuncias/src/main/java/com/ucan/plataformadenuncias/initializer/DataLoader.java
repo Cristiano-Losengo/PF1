@@ -15,29 +15,32 @@ import java.time.LocalDateTime;
 public class DataLoader implements CommandLineRunner {
 
     private final PessoaRepository pessoaRepository;
-    private final UtilizadorRepository utilizadorRepository;
     private final FuncionalidadeRepository funcionalidadeRepository;
     private final FuncionalidadePerfilRepository funcionalidadePerfilRepository;
     private final PerfilRepository perfilRepository;
     private final ContaRepository contaRepository;
     private final TelefoneRepository telefoneRepository;
-
-
+    
+    private final GeneroRepository generoRepository;
+    private final EstadoCivilRepository estadoCivilRepository;
+    
+    
     public DataLoader(PessoaRepository pessoaRepository,
-                      UtilizadorRepository utilizadorRepository,
                       FuncionalidadeRepository funcionalidadeRepository,
                       FuncionalidadePerfilRepository funcionalidadePerfilRepository,
                       PerfilRepository perfilRepository,
                       ContaRepository contaRepository,
-                      TelefoneRepository telefoneRepository ) {
+                      TelefoneRepository telefoneRepository ,
+                      GeneroRepository generoRepository,EstadoCivilRepository estadoCivilRepository) {
 
         this.pessoaRepository = pessoaRepository;
-        this.utilizadorRepository = utilizadorRepository;
         this.funcionalidadeRepository = funcionalidadeRepository;
         this.funcionalidadePerfilRepository = funcionalidadePerfilRepository;
         this.perfilRepository = perfilRepository;
         this.contaRepository = contaRepository;
         this.telefoneRepository = telefoneRepository;
+        this.generoRepository = generoRepository;
+        this.estadoCivilRepository = estadoCivilRepository;
         
     }
 
@@ -161,6 +164,15 @@ public class DataLoader implements CommandLineRunner {
             System.out.println("Autorities. Nenhum dado inicial carregado.");
         }
     */
+    
+    generoRepository.save(new Genero(1, "Masculino"));
+    generoRepository.save(new Genero(2, "Feminino"));
+
+    estadoCivilRepository.save(new EstadoCivil(1, "SOLTEIRO"));
+    estadoCivilRepository.save(new EstadoCivil(2, "CASADO"));
+    estadoCivilRepository.save(new EstadoCivil(3, "DIVORCIADO"));
+    estadoCivilRepository.save(new EstadoCivil(4, "VIUVO"));
+    estadoCivilRepository.save(new EstadoCivil(5, "UNIAO_DE_FACTO"));
 
     }
 

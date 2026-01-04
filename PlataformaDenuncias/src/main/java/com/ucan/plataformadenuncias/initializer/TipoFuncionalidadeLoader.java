@@ -867,7 +867,12 @@ public class TipoFuncionalidadeLoader {
             // Ordenar funcionalidades para resolver dependências
             List<FuncionalidadeData> funcionalidadesOrdenadas = ordenarPorDependencia(funcionalidadesData);
 
-            // Processar e salvar funcionalidades
+            System.out.println("=== PRIMEIRA PASSAGEM: Criando funcionalidades sem relações pai-filho ===");
+            
+            // PRIMEIRA PASSAGEM: Criar todas as funcionalidades sem relações pai-filho
+            Map<Integer, Funcionalidade> funcionalidadesTemporarias = new HashMap<>();
+            Map<Integer, Integer> relacoesPaiFilho = new HashMap<>(); // Mapa: filho -> pai
+            
             for (FuncionalidadeData funcData : funcionalidadesOrdenadas) {
                 try {
                     // Verificar se o tipo de funcionalidade existe
@@ -879,17 +884,96 @@ public class TipoFuncionalidadeLoader {
                         continue;
                     }
                     
-                    Funcionalidade funcionalidade = criarFuncionalidadeDeData(funcData, tipoFuncionalidadeRepository);
-                    funcionalidadeRepository.save(funcionalidade);
+                    System.out.println("Processando funcionalidade ID: " + funcData.pkFuncionalidade + 
+                                     ", Pai ID: " + funcData.fkFuncionalidade);
+                    
+                    // Criar funcionalidade sem a relação pai
+                    Funcionalidade funcionalidade = new Funcionalidade();
+                    
+                    if (funcData.pkFuncionalidade > 0) {
+                        funcionalidade.setPkFuncionalidade(funcData.pkFuncionalidade);
+                    }
+                    
+                    funcionalidade.setDesignacao(funcData.designacao);
+                    funcionalidade.setDescricao(funcData.descricao);
+                    
+                    // Buscar tipo de funcionalidade do banco
+                    TipoFuncionalidade tipo = tipoFuncionalidadeRepository.findById(funcData.fkTipoFuncionalidade)
+                        .orElseThrow(() -> new RuntimeException("Tipo de funcionalidade não encontrado: " + funcData.fkTipoFuncionalidade));
+                    
+                    funcionalidade.setFkTipoFuncionalidade(tipo);
+                    funcionalidade.setGrupo(funcData.grupo);
+                    
+                    if (funcData.funcionalidadesPartilhadas != null) {
+                        funcionalidade.setFuncionalidadesPartilhadas(funcData.funcionalidadesPartilhadas);
+                    }
+                    
+                    if (funcData.url != null) {
+                        funcionalidade.setUrl(funcData.url);
+                    }
+                    
+                    // Salvar sem pai por enquanto
+                    Funcionalidade funcSalva = funcionalidadeRepository.save(funcionalidade);
+                    funcionalidadesTemporarias.put(funcData.pkFuncionalidade, funcSalva);
+                    
+                    // Armazenar relação pai-filho para segunda passagem
+                    if (funcData.fkFuncionalidade != null && funcData.fkFuncionalidade > 0) {
+                        relacoesPaiFilho.put(funcData.pkFuncionalidade, funcData.fkFuncionalidade);
+                        System.out.println("  ↳ Relação pai-filho registrada: " + funcData.pkFuncionalidade + " -> " + funcData.fkFuncionalidade);
+                    }
                     
                 } catch (Exception e) {
                     erros.add(criarDetalheErro("1", "A", "geral", 
                         String.valueOf(funcData.pkFuncionalidade), 
                         "Erro ao processar funcionalidade ID " + funcData.pkFuncionalidade + ": " + e.getMessage()));
+                    e.printStackTrace();
                 }
             }
 
             // Se houver erros durante o processamento, retornar
+            if (!erros.isEmpty()) {
+                return erros;
+            }
+
+            System.out.println("=== SEGUNDA PASSAGEM: Atualizando relações pai-filho ===");
+            
+            // SEGUNDA PASSAGEM: Atualizar relações pai-filho
+            for (Map.Entry<Integer, Integer> relacao : relacoesPaiFilho.entrySet()) {
+                Integer filhoId = relacao.getKey();
+                Integer paiId = relacao.getValue();
+                
+                System.out.println("Atualizando relação: filho ID " + filhoId + " -> pai ID " + paiId);
+                
+                Optional<Funcionalidade> funcFilhoOpt = funcionalidadeRepository.findById(filhoId);
+                Optional<Funcionalidade> funcPaiOpt = funcionalidadeRepository.findById(paiId);
+                
+                if (funcFilhoOpt.isPresent() && funcPaiOpt.isPresent()) {
+                    Funcionalidade funcFilho = funcFilhoOpt.get();
+                    Funcionalidade funcPai = funcPaiOpt.get();
+                    
+                    // Definir relação pai-filho
+                    funcFilho.setFkFuncionalidade(funcPai);
+                    funcionalidadeRepository.save(funcFilho);
+                    
+                    System.out.println("  ✅ Relação atualizada: " + filhoId + " -> " + paiId);
+                } else {
+                    String mensagemErro;
+                    if (!funcFilhoOpt.isPresent()) {
+                        mensagemErro = "Funcionalidade filho ID " + filhoId + " não encontrada";
+                    } else {
+                        mensagemErro = "Funcionalidade pai ID " + paiId + " não encontrada";
+                    }
+                    System.out.println("  ❌ " + mensagemErro);
+                    
+                    // Adicionar erro detalhado
+                    erros.add(criarDetalheErro("1", "F", "fk_funcionalidade", 
+                        String.valueOf(paiId), 
+                        "Não foi possível estabelecer relação pai-filho. " + mensagemErro + 
+                        ". Filho ID: " + filhoId + ", Pai ID: " + paiId));
+                }
+            }
+
+            // Se houver erros durante a segunda passagem, retornar
             if (!erros.isEmpty()) {
                 return erros;
             }
@@ -1579,38 +1663,6 @@ public class TipoFuncionalidadeLoader {
         } catch (Exception e) {
             throw new RuntimeException("Erro ao processar linha: " + e.getMessage(), e);
         }
-    }
-
-    /**
-     * Cria funcionalidade a partir de dados (com tipo de funcionalidade)
-     */
-    private static Funcionalidade criarFuncionalidadeDeData(FuncionalidadeData data, TipoFuncionalidadeRepository tipoFuncionalidadeRepository) {
-        Funcionalidade funcionalidade = new Funcionalidade();
-        
-        if (data.pkFuncionalidade > 0) {
-            funcionalidade.setPkFuncionalidade(data.pkFuncionalidade);
-        }
-        
-        funcionalidade.setDesignacao(data.designacao);
-        funcionalidade.setDescricao(data.descricao);
-        
-        // Buscar tipo de funcionalidade do banco
-        TipoFuncionalidade tipo = tipoFuncionalidadeRepository.findById(data.fkTipoFuncionalidade)
-            .orElseThrow(() -> new RuntimeException("Tipo de funcionalidade não encontrado: " + data.fkTipoFuncionalidade));
-        
-        funcionalidade.setFkTipoFuncionalidade(tipo);
-        
-        funcionalidade.setGrupo(data.grupo);
-        
-        if (data.funcionalidadesPartilhadas != null) {
-            funcionalidade.setFuncionalidadesPartilhadas(data.funcionalidadesPartilhadas);
-        }
-        
-        if (data.url != null) {
-            funcionalidade.setUrl(data.url);
-        }
-        
-        return funcionalidade;
     }
 
     // Classes auxiliares e métodos auxiliares

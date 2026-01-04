@@ -1,7 +1,7 @@
 
 package com.ucan.plataformadenuncias.repositories;
 
-import com.ucan.plataformadenuncias.entities.Categoria;
+import com.ucan.plataformadenuncias.entities.Genero;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -11,10 +11,10 @@ import org.springframework.stereotype.Repository;
  * @author cristiano
  */
 @Repository
-public interface CategoriaRepository extends JpaRepository<Categoria, Integer> {
+public interface GeneroRepository extends JpaRepository<Genero, Integer> {
 
 
-    Optional<Categoria> findByNome(String nome);
+    Optional<Genero> findByNome(String nome);
 
 }
 

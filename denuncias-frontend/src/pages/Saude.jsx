@@ -1,26 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  FaMapMarkerAlt, FaCalendarAlt, FaExclamationCircle, FaUser, FaPhoneAlt,
-  FaFileAlt, FaStethoscope, FaHeartbeat, FaListAlt, FaPaperclip, FaHospital, FaComments, FaCheckCircle, FaHourglassHalf
+  FaMapMarkerAlt, FaCalendarAlt, FaExclamationCircle, FaUser, FaPhoneAlt, FaEnvelope,
+  FaFileAlt, FaStethoscope, FaHeartbeat, FaListAlt, FaPaperclip, FaHospital, FaComments, 
+  FaCheckCircle, FaHourglassHalf, FaClock
 } from 'react-icons/fa';
 import { useParams } from 'react-router-dom';
+
 export default function Saude() {
   const { tipo } = useParams();
   const [anonimo, setAnonimo] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    unidade: 'centro-de-saude',   // ✅ Valor padrão
-    municipio: 'Cazenga',         // ✅ Valor padrão
-    bairro: 'Hoji-ya-Henda',      // ✅ Valor padrão
+    unidade: 'centro-de-saude',
+    municipio: 'Cazenga',
+    bairro: 'Hoji-ya-Henda',
     rua: '',
     local: '',
     data: '',
-    subtipo: 'nao-atendido',      // ✅ Valor padrão
+    subtipo: 'nao-atendido',
     descricao: '',
     nome: '',
     contacto: '',
+    email: '',
     anexo: null
   });
   const [errors, setErrors] = useState({});
+  
+  // Estado para denúncias (AGORA ARMAZENANDO LOCALMENTE)
+  const [denuncias, setDenuncias] = useState(() => {
+    // Recupera denúncias salvas no localStorage
+    const saved = localStorage.getItem('denunciasSaude');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   // Lista de municípios e bairros
   const municipios = [
@@ -40,23 +51,112 @@ export default function Saude() {
     Quicama: ["Mumbondo", "Demba Chio", "Muxima"]
   };
 
-  // Mock para "Minhas Denúncias"
-  const denunciasSaudeMock = [
-    {
-      id: 1,
-      subtipo: "Tempo de Espera Excessivo",
-      descricao: "Fiquei 6 horas sem ser atendido no Hospital Geral.",
-      status: "Pendente",
-      comentario: "Sua denúncia foi recebida e será analisada."
-    },
-    {
-      id: 2,
-      subtipo: "Medicamentos em Falta",
-      descricao: "Não havia antibióticos disponíveis no centro de saúde.",
-      status: "Resolvido",
-      comentario: "O abastecimento foi regularizado esta semana."
+  // Função para formatar contacto
+  const formatarContacto = (contacto) => {
+    if (!contacto) return '—';
+    return contacto;
+  };
+
+  // Função para renderizar badge de status
+  const renderStatusBadge = (denuncia) => {
+    const status = denuncia.status || 'Pendente';
+    switch(status.toLowerCase()) {
+      case 'resolvido':
+        return (
+          <span className="badge bg-success">
+            <FaCheckCircle className="me-1" /> Resolvido
+          </span>
+        );
+      case 'em_andamento':
+        return (
+          <span className="badge bg-info">
+            <FaHourglassHalf className="me-1" /> Em andamento
+          </span>
+        );
+      case 'pendente':
+        return (
+          <span className="badge bg-warning text-dark">
+            <FaHourglassHalf className="me-1" /> Pendente
+          </span>
+        );
+      default:
+        return (
+          <span className="badge bg-secondary">
+            {status}
+          </span>
+        );
     }
-  ];
+  };
+
+  // ✅ Funções de validação atualizadas
+  const validarNome = (nome) => {
+    const regex = /^[A-Za-zÀ-ÿ\s]+$/; // Apenas letras e espaços
+    return regex.test(nome) && nome.trim().length > 0;
+  };
+
+  const validarContacto = (contacto) => {
+    const regex = /^[0-9+\s()-]+$/; // Apenas números e caracteres de telefone
+    return regex.test(contacto) && contacto.trim().length >= 8;
+  };
+
+  const validarEmail = (email) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email) || email.trim() === '';
+  };
+
+  const validarLocalDescricao = (texto) => {
+    if (!texto.trim()) return false;
+    
+    // Verifica se contém apenas caracteres especiais e números
+    const regexSomenteEspeciaisNumeros = /^[\d\s\W_]+$/;
+    if (regexSomenteEspeciaisNumeros.test(texto.trim())) {
+      return false;
+    }
+    
+    // Verifica se contém pelo menos uma letra
+    const regexLetras = /[A-Za-zÀ-ÿ]/;
+    return regexLetras.test(texto);
+  };
+
+  const validarRua = (rua) => {
+    if (!rua.trim()) return false;
+    
+    // Permite letras, números, espaços e alguns caracteres especiais comuns em endereços
+    const regex = /^[A-Za-zÀ-ÿ0-9\s\-\/,\.ºª]+$/;
+    return regex.test(rua);
+  };
+
+  // ✅ Função para validar data (não pode ser futura - CORRIGIDA)
+  const validarData = (data) => {
+    if (!data) return false;
+    
+    const dataSelecionada = new Date(data);
+    const hoje = new Date();
+    
+    // Zerar horas para comparar apenas a data
+    dataSelecionada.setHours(0, 0, 0, 0);
+    hoje.setHours(0, 0, 0, 0);
+    
+    // Permite hoje mas não amanhã
+    return dataSelecionada <= hoje;
+  };
+
+  // Carregar denúncias (simulação)
+  useEffect(() => {
+    if (tipo === "minhas") {
+      setLoading(true);
+      
+      // Simulando chamada à API com timeout
+      setTimeout(() => {
+        setLoading(false);
+      }, 500);
+    }
+  }, [tipo]);
+
+  // Salvar denúncias no localStorage sempre que atualizar
+  useEffect(() => {
+    localStorage.setItem('denunciasSaude', JSON.stringify(denuncias));
+  }, [denuncias]);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -64,30 +164,132 @@ export default function Saude() {
       ...prev,
       [name]: files ? files[0] : value
     }));
+    
+    // Limpar erro quando o usuário começa a digitar
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
+    
     const newErrors = {};
+    
+    // Validações básicas
     if (!formData.unidade.trim()) newErrors.unidade = 'Selecione a unidade de saúde.';
     if (!formData.municipio.trim()) newErrors.municipio = 'Selecione o município.';
     if (!formData.bairro.trim()) newErrors.bairro = 'Selecione o bairro.';
-    if (!formData.rua.trim()) newErrors.rua = 'Informe a rua ou número.';
-    if (!formData.local.trim()) newErrors.local = 'Informe o local da ocorrência.';
-    if (!formData.data.trim()) newErrors.data = 'Informe a data.';
-    if (!formData.subtipo.trim()) newErrors.subtipo = 'Escolha o tipo de problema.';
-    if (!formData.descricao.trim()) newErrors.descricao = 'Descreva o problema.';
-    if (!anonimo) {
-      if (!formData.nome.trim()) newErrors.nome = 'Informe o nome.';
-      if (!formData.contacto.trim()) newErrors.contacto = 'Informe o contacto.';
+    
+    // ✅ Validação da Rua (modificada)
+    if (!formData.rua.trim()) {
+      newErrors.rua = 'Informe a rua ou número.';
+    } else if (!validarRua(formData.rua)) {
+      newErrors.rua = 'Informe um nome de rua válido.';
     }
-
+    
+    // ✅ Validação da Data (não pode ser futura - CORRIGIDA)
+    if (!formData.data.trim()) {
+      newErrors.data = 'Informe a data.';
+    } else if (!validarData(formData.data)) {
+      newErrors.data = 'A data não pode ser futura (incluindo hoje é permitido).';
+    }
+    
+    if (!formData.subtipo.trim()) newErrors.subtipo = 'Escolha o tipo de problema.';
+    
+    // ✅ Validação do Local da Ocorrência (mensagem atualizada)
+    if (!formData.local.trim()) {
+      newErrors.local = 'Informe o local da ocorrência.';
+    } else if (!validarLocalDescricao(formData.local)) {
+      newErrors.local = 'O local não pode conter apenas caracteres especiais e números.';
+    }
+    
+    // ✅ Validação da Descrição Detalhada (mensagem atualizada)
+    if (!formData.descricao.trim()) {
+      newErrors.descricao = 'Descreva o problema.';
+    } else if (!validarLocalDescricao(formData.descricao)) {
+      newErrors.descricao = 'A descrição não pode conter apenas caracteres especiais e números.';
+    }
+    
+    // Validações do denunciante (se não for anônimo)
+    if (!anonimo) {
+      // ✅ Validação do Nome
+      if (!formData.nome.trim()) {
+        newErrors.nome = 'Informe o nome.';
+      } else if (!validarNome(formData.nome)) {
+        newErrors.nome = 'O nome deve conter apenas letras.';
+      }
+      
+      // ✅ Validação do Contacto
+      if (!formData.contacto.trim()) {
+        newErrors.contacto = 'Informe o contacto.';
+      } else if (!validarContacto(formData.contacto)) {
+        newErrors.contacto = 'Contacto inválido. Use apenas números.';
+      }
+      
+      // ✅ Validação do Email (opcional)
+      if (formData.email.trim() && !validarEmail(formData.email)) {
+        newErrors.email = 'Email inválido.';
+      }
+    }
+    
     setErrors(newErrors);
-
+    
     if (Object.keys(newErrors).length === 0) {
-      console.log("Denúncia enviada:", formData);
+      // Criar nova denúncia
+      const novaDenuncia = {
+        id: Date.now(), // ID único baseado no timestamp
+        unidade: formData.unidade === 'hospital-publico' ? 'Hospital Público' : 'Centro de Saúde',
+        municipio: formData.municipio,
+        bairro: formData.bairro,
+        nomeRua: formData.rua,
+        localEspecifico: formData.local,
+        subtipo: formData.subtipo,
+        descricao: formData.descricao,
+        status: 'Pendente',
+        comentario: 'Aguardando análise',
+        dataRegistro: new Date().toISOString(),
+        dataOcorrencia: formData.data,
+        // Dados do denunciante (se não for anônimo)
+        ...(!anonimo && {
+          nome: formData.nome,
+          contacto: formData.contacto,
+          email: formData.email
+        }),
+        // Se for anônimo, não salva dados pessoais
+        ...(anonimo && {
+          nome: 'Anônimo',
+          contacto: '—',
+          email: '—'
+        })
+      };
+      
+      console.log("Denúncia enviada:", novaDenuncia);
+      
+      // ✅ ADICIONAR À LISTA DE DENÚNCIAS
+      setDenuncias(prev => [novaDenuncia, ...prev]);
+      
       alert("Denúncia registrada com sucesso!");
+      
+      // Limpar o formulário após envio
+      setFormData({
+        unidade: 'centro-de-saude',
+        municipio: 'Cazenga',
+        bairro: 'Hoji-ya-Henda',
+        rua: '',
+        local: '',
+        data: '',
+        subtipo: 'nao-atendido',
+        descricao: '',
+        nome: '',
+        contacto: '',
+        email: '',
+        anexo: null
+      });
+      setAnonimo(false);
     }
   };
 
@@ -180,7 +382,7 @@ export default function Saude() {
                   {errors.rua && <div className="invalid-feedback">{errors.rua}</div>}
                 </div>
 
-                {/* Local */}
+                {/* Local da Ocorrência */}
                 <div className="col-md-12">
                   <label htmlFor="local" className="form-label">
                     <FaMapMarkerAlt className="me-2" /> Local da Ocorrência
@@ -195,6 +397,7 @@ export default function Saude() {
                     placeholder="Ex: Urgência, consultório, triagem..."
                   />
                   {errors.local && <div className="invalid-feedback">{errors.local}</div>}
+                  <small className="text-muted">Não pode conter apenas caracteres especiais e números.</small>
                 </div>
               </div>
 
@@ -213,8 +416,10 @@ export default function Saude() {
                     value={formData.data}
                     onChange={handleChange}
                     className={`form-control ${errors.data ? 'is-invalid' : ''}`}
+                    max={new Date().toISOString().split('T')[0]} // ✅ Impede seleção de datas futuras
                   />
                   {errors.data && <div className="invalid-feedback">{errors.data}</div>}
+                  <small className="text-muted">Não é permitido selecionar datas futuras.</small>
                 </div>
 
                 <div className="col-md-6">
@@ -243,7 +448,7 @@ export default function Saude() {
                 </div>
               </div>
 
-              {/* Descrição */}
+              {/* Descrição Detalhada */}
               <div className="mt-3">
                 <label htmlFor="descricao" className="form-label">
                   <FaFileAlt className="me-2" /> Descrição Detalhada
@@ -258,9 +463,10 @@ export default function Saude() {
                   placeholder="Descreva com detalhes o que aconteceu..."
                 />
                 {errors.descricao && <div className="invalid-feedback">{errors.descricao}</div>}
+                <small className="text-muted">Não pode conter apenas caracteres especiais e números.</small>
               </div>
 
-              {/* Nome e Contacto */}
+              {/* Nome, Contacto e Email */}
               {!anonimo && (
                 <div className="row g-3 mt-3">
                   <div className="col-md-6">
@@ -274,8 +480,10 @@ export default function Saude() {
                       value={formData.nome}
                       onChange={handleChange}
                       className={`form-control ${errors.nome ? 'is-invalid' : ''}`}
+                      placeholder="Digite seu nome completo"
                     />
                     {errors.nome && <div className="invalid-feedback">{errors.nome}</div>}
+                    <small className="text-muted">Apenas letras e espaços.</small>
                   </div>
 
                   <div className="col-md-6">
@@ -289,8 +497,27 @@ export default function Saude() {
                       value={formData.contacto}
                       onChange={handleChange}
                       className={`form-control ${errors.contacto ? 'is-invalid' : ''}`}
+                      placeholder="Ex: +244 123 456 789"
                     />
                     {errors.contacto && <div className="invalid-feedback">{errors.contacto}</div>}
+                    <small className="text-muted">Apenas números e caracteres de telefone.</small>
+                  </div>
+
+                  {/* Campo Email */}
+                  <div className="col-md-6">
+                    <label htmlFor="email" className="form-label">
+                      <FaEnvelope className="me-2" /> Email (opcional)
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                      placeholder="seu.email@exemplo.com"
+                    />
+                    {errors.email && <div className="invalid-feedback">{errors.email}</div>}
                   </div>
                 </div>
               )}
@@ -300,7 +527,13 @@ export default function Saude() {
                 <label htmlFor="anexo" className="form-label">
                   <FaPaperclip className="me-2" /> Anexo (opcional)
                 </label>
-                <input type="file" id="anexo" name="anexo" onChange={handleChange} className="form-control" />
+                <input 
+                  type="file" 
+                  id="anexo" 
+                  name="anexo" 
+                  onChange={handleChange} 
+                  className="form-control" 
+                />
               </div>
 
               {/* Anônimo */}
@@ -310,7 +543,18 @@ export default function Saude() {
                   type="checkbox"
                   id="anonimo"
                   checked={anonimo}
-                  onChange={(e) => setAnonimo(e.target.checked)}
+                  onChange={(e) => {
+                    setAnonimo(e.target.checked);
+                    if (e.target.checked) {
+                      // Limpar erros relacionados ao denunciante
+                      setErrors((prev) => ({
+                        ...prev,
+                        nome: '',
+                        contacto: '',
+                        email: ''
+                      }));
+                    }
+                  }}
                 />
                 <label className="form-check-label" htmlFor="anonimo">
                   Deseja permanecer anônimo?
@@ -318,8 +562,6 @@ export default function Saude() {
               </div>
 
               <button type="submit" className="btn btn-primary w-100">Cadastrar Denúncia</button>
-
-
             </form>
           )}
 
@@ -330,36 +572,130 @@ export default function Saude() {
                 <FaListAlt className="me-2" /> Minhas Denúncias - Setor de Saúde
               </h2>
 
-              {denunciasSaudeMock.length === 0 ? (
-                <p className="text-muted">Você ainda não realizou nenhuma denúncia.</p>
+              {loading ? (
+                <div className="text-center">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Carregando...</span>
+                  </div>
+                  <p className="mt-2">Carregando denúncias...</p>
+                </div>
+              ) : denuncias.length === 0 ? (
+                <div className="alert alert-info">
+                  <FaExclamationCircle className="me-2" />
+                  Ainda não existem denúncias registadas para o setor de saúde.
+                </div>
               ) : (
                 <div className="table-responsive">
-                  <table className="table table-bordered table-striped">
+                  <table className="table table-bordered table-striped table-hover">
                     <thead className="table-light">
                       <tr>
                         <th><FaExclamationCircle className="me-2 text-danger" /> Problema</th>
                         <th><FaFileAlt className="me-2 text-primary" /> Descrição</th>
+                        <th><FaMapMarkerAlt className="me-2" /> Localização</th>
+                        <th><FaCalendarAlt className="me-2" /> Data e hora da Ocorrência</th>
                         <th><FaCheckCircle className="me-2 text-success" /> Status</th>
-                        <th><FaComments className="me-2 text-info" /> Comentário</th>
+                        <th><FaComments className="me-2 text-info" /> Comentário / Resposta</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {denunciasSaudeMock.map((denuncia) => (
-                        <tr key={denuncia.id}>
-                          <td>{denuncia.subtipo}</td>
-                          <td>{denuncia.descricao}</td>
+                      {denuncias.map((d) => (
+                        <tr key={d.id}>
                           <td>
-                            {denuncia.status === "Resolvido" ? (
-                              <span className="badge bg-success">
-                                <FaCheckCircle className="me-1" /> {denuncia.status}
-                              </span>
-                            ) : (
-                              <span className="badge bg-warning text-dark">
-                                <FaHourglassHalf className="me-1" /> {denuncia.status}
-                              </span>
-                            )}
+                            <strong>
+                              {d.subtipo === 'nao-atendido' ? 'Paciente não foi atendido' :
+                                d.subtipo === 'diagnostico-errado' ? 'Diagnóstico incorreto' :
+                                  d.subtipo === 'espera' ? 'Tempo de Espera Excessivo' :
+                                    d.subtipo === 'pagamento' ? 'Corrupção ou Pagamento Indevido' :
+                                      d.subtipo === 'sem-medicamentos' ? 'Medicamentos em Falta' :
+                                        d.subtipo === 'negligencia' ? 'Negligência Médica' :
+                                          d.subtipo === 'sem-enfermeiros' ? 'Falta de Enfermeiros' :
+                                            d.subtipo === 'sem-medicos' ? 'Falta de Médicos' :
+                                              d.subtipo === 'abandono' ? 'Abandono durante o atendimento' :
+                                                d.subtipo || 'Não especificado'}
+                            </strong>
                           </td>
-                          <td><em>{denuncia.comentario}</em></td>
+
+                          <td style={{ maxWidth: 300 }}>
+                            <div className="text-truncate" title={d.descricao}>
+                              {d.descricao}
+                            </div>
+                          </td>
+
+                          <td>
+                            <div className="location-info">
+                              <div className="mb-2">
+                                <span className="fw-semibold">Unidade:</span> {d.unidade || '—'}
+                              </div>
+                              <div className="mb-2">
+                                <span className="fw-semibold">Município:</span> {d.municipio || '—'}
+                              </div>
+                              <div className="mb-2">
+                                <span className="fw-semibold">Bairro:</span> {d.bairro || '—'}
+                              </div>
+                              <div className="mb-2">
+                                <span className="fw-semibold">Rua:</span> {d.nomeRua || '—'}
+                              </div>
+                              <div className="mb-3">
+                                <span className="fw-semibold">Local:</span> {d.localEspecifico || '—'}
+                              </div>
+
+                              {d.email && d.email !== '—' && (
+                                <div className="mb-2 text-muted">
+                                  <FaEnvelope className="me-1" />
+                                  email: {d.email}
+                                </div>
+                              )}
+
+                              {d.contacto && d.contacto !== '—' && (
+                                <div className="mb-2 text-muted">
+                                  <FaPhoneAlt className="me-1" />
+                                  contacto: {formatarContacto(d.contacto)}
+                                </div>
+                              )}
+
+                              {d.nome && d.nome !== 'Anônimo' && (
+                                <div className="mb-2 text-muted">
+                                  <FaUser className="me-1" />
+                                  denunciante: {d.nome}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+
+                               
+                          {/* Data do Registro */}
+                          <td>
+                            <div className="datetime-info">
+                              {d.dataRegistro ? (
+                                <>
+                                  <div>
+                                    {new Date(d.dataRegistro).toLocaleDateString('pt-AO', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      year: 'numeric'
+                                    })}
+                                  </div>
+                                  <div className="small text-muted">
+                                    <FaClock className="me-1" />
+                                    {new Date(d.dataRegistro).toLocaleTimeString('pt-AO', {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      hour12: false
+                                    })}
+                                  </div>
+                                </>
+                              ) : (
+                                '—'
+                              )}
+                            </div>
+                          </td>
+
+                          {/* COLUNA STATUS */}
+                          <td>{renderStatusBadge(d)}</td>
+
+                          <td>
+                            <em>{d.comentario || 'Aguardando resposta...'}</em>
+                          </td>
                         </tr>
                       ))}
                     </tbody>

@@ -3,8 +3,10 @@ package com.ucan.plataformadenuncias.services;
 import com.ucan.plataformadenuncias.entities.Denuncia;
 import com.ucan.plataformadenuncias.repositories.DenunciaRepository;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional; // 🔧 IMPORTANTE
 
 /**
  *
@@ -12,12 +14,21 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class DenunciaService {
+
     @Autowired
-    private DenunciaRepository denunciaRepo;
+    private DenunciaRepository denunciaRepository;
+
+    // 🔧 ADICIONE @Transactional(readOnly = true) E USE O MÉTODO COM RELAÇÕES
+    @Transactional(readOnly = true)
     public List<Denuncia> listarTodas() {
-        return denunciaRepo.findAll();
+        return denunciaRepository.findAllComRelacoes(); // Use o novo método
     }
+
     public Denuncia salvar(Denuncia denuncia) {
-        return denunciaRepo.save(denuncia);
+        return denunciaRepository.save(denuncia);
+    }
+
+    public Optional<Denuncia> buscarPorId(Integer id) {
+        return denunciaRepository.findByIdWithRelations(id);
     }
 }

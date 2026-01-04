@@ -1,23 +1,13 @@
 package com.ucan.plataformadenuncias.entities;
 
-
 import com.ucan.plataformadenuncias.enumerable.TipoContaEnum;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.Column;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-
 
 @Entity
 @Getter
@@ -33,38 +23,43 @@ public class Conta {
     @Column(name = "pk_conta")
     private Integer pkConta;
 
-    @Column(name = "tipo_conta")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_conta", nullable = false)
     private TipoContaEnum tipoConta;
 
-  
-    @Column(name = "email", unique = true, nullable = false, length = 50)
+    @Column(name = "email", nullable = false, unique = true, length = 50)
     private String email;
 
-     @Column(name = "password_hash", nullable = false, length = 255)
+    @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
-     
-     @Column(name = "estado")
+
+    @Column(name = "estado" )
     private Integer estado;
-     
-    /*
-    @Column(name = "fk_pessoa", nullable = false)
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "fk_pessoa")
     private Pessoa fkPessoa;
-    */
+
+    @OneToMany(mappedBy = "fkConta", fetch = FetchType.LAZY)
+    private List<ContaPerfil> contaPerfis;
 
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof Conta)) return false;
         Conta conta = (Conta) o;
         return Objects.equals(pkConta, conta.pkConta);
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(pkConta);
+    }
 }

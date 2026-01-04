@@ -8,7 +8,7 @@ export default function ContaListar() {
 
   const carregarContas = async () => {
     try {
-      const response = await fetch("http://localhost:9090/api/seguranca/conta_listar");
+      const response = await fetch("hhttp://localhost:9090/api/conta_perfis/listar_conta_perfil");
       const data = await response.json();
       setContas(data || []);
     } catch (error) {

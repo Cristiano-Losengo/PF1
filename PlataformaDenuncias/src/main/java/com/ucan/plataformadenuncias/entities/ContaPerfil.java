@@ -1,19 +1,18 @@
 package com.ucan.plataformadenuncias.entities;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.Objects;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
-import java.util.Objects;
-
+@Entity
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
 @Table(name = "conta_perfil")
 public class ContaPerfil {
 
@@ -22,23 +21,34 @@ public class ContaPerfil {
     @Column(name = "pk_conta_perfil")
     private Integer pkContaPerfil;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_conta", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "fk_conta")
     private Conta fkConta;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_perfil", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "fk_perfil")
     private Perfil fkPerfil;
 
-    @Column(name = "status", nullable = false)
-    private Boolean status = true;
+    @Column(nullable = false)
+    private int estado = 1;
 
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ContaPerfil)) return false;
+        ContaPerfil that = (ContaPerfil) o;
+        return Objects.equals(pkContaPerfil, that.pkContaPerfil);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(pkContaPerfil);
+    }
 }
