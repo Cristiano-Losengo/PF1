@@ -47,8 +47,6 @@ public class Localidade implements Serializable {
     @Column(name = "nome_rua_ou_numero_rua")
     private String nomeRua;
 
-   /* @Column(name = "numero_rua")
-    private String numero;*/
 
     @JsonManagedReference
     @OneToMany(mappedBy = "localidadePai", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
@@ -83,7 +81,6 @@ public class Localidade implements Serializable {
                 ", nome='" + nome + '\'' +
                 ", tipo=" + tipo +
                 ", nomeRua='" + nomeRua + '\'' +
-               // ", numero='" + numero + '\'' +
                 '}';
     }
 }

@@ -1,7 +1,6 @@
 package com.ucan.plataformadenuncias.controllers;
 
 import com.ucan.plataformadenuncias.dto.LoginDTO;
-import com.ucan.plataformadenuncias.dto.UtilizadorDTO;
 import com.ucan.plataformadenuncias.entities.Telefone;
 import com.ucan.plataformadenuncias.repositories.ContaRepository;
 import com.ucan.plataformadenuncias.repositories.TelefoneRepository;

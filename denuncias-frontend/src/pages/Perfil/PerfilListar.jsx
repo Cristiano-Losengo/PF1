@@ -244,7 +244,7 @@ export default function PerfilListar() {
         </button>
       </div>
 
-      {/* Mensagem de erro/sucesso */}
+   
       {mensagem && (
         <div
           className={`alert alert-${mensagem.tipo} alert-dismissible fade show mb-4`}

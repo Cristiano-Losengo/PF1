@@ -1,5 +1,6 @@
 package com.ucan.plataformadenuncias.entities;
 
+import com.ucan.plataformadenuncias.enumerable.TipoTelefoneEnum; // ADICIONE ESTE IMPORT
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -10,11 +11,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 import java.util.Objects;
-
-/**
- *
- * @author cristiano
- */
 
 @Getter
 @Setter
@@ -27,7 +23,7 @@ public class Telefone {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-     @Column(name = "pk_telefone")
+    @Column(name = "pk_telefone")
     private Integer pkTelefone;
 
     @NotBlank(message = "O número de telefone não pode estar em branco")
@@ -51,7 +47,7 @@ public class Telefone {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo", length = 15)
-    private TipoTelefone tipo;
+    private TipoTelefoneEnum tipo;  // ADICIONE ESTE CAMPO - CORREÇÃO AQUI
 
     @Column(name = "principal", nullable = false)
     private Boolean principal = false;
@@ -77,12 +73,5 @@ public class Telefone {
                 ", pessoaId=" + (fkPessoa != null ? fkPessoa.hashCode() : "null") +
                 ", tipo=" + tipo +
                 '}';
-    }
-
-    public enum TipoTelefone {
-        CELULAR,
-        RESIDENCIAL,
-        COMERCIAL,
-        WHATSAPP
     }
 }

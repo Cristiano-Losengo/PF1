@@ -56,11 +56,11 @@ public class DenunciaRequestDTO {
         this.anexo = denuncia.getAnexo();
         this.localEspecificoDaOcorrencia = denuncia.getLocalEspecificoDaOcorrencia();
         this.anonima = denuncia.isAnonima();
-        this.contacto = denuncia.getContacto();
+//        this.contacto = denuncia.getContacto();
         this.email = denuncia.getEmail();
         this.dataOcorrecia = denuncia.getDataOcorrecia();
         this.dataRegistro = denuncia.getDataRegistro();
-        this.provincia = denuncia.getProvincia();
+  //      this.provincia = denuncia.getProvincia();
         
         // Extrair informações da localidade
         if (denuncia.getLocalidade() != null) {

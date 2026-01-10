@@ -36,6 +36,9 @@ public class DenunciaController {
     @Autowired
     private PessoaRepository pessoaRepository;
 
+    @Autowired
+    private GeneroRepository generoRepository; // ADICIONADO: Repositório para buscar gêneros
+
     // 🔧 ADICIONE @Transactional(readOnly = true) AQUI
     @GetMapping
     @Transactional(readOnly = true)
@@ -77,7 +80,7 @@ public class DenunciaController {
             System.out.println("✅ Data do registro definida: " + LocalDateTime.now());
 
             if (!requestDTO.isAnonima()) {
-                denuncia.setContacto(requestDTO.getContacto());
+       //         denuncia.setContacto(requestDTO.getContacto());
                 
                 // ✅✅✅ CORREÇÃO CRÍTICA: Processar email corretamente
                 if (requestDTO.getEmail() != null && !requestDTO.getEmail().trim().isEmpty()) {
@@ -96,7 +99,7 @@ public class DenunciaController {
             } else {
                 // Se for anônimo, garantir que email seja null
                 denuncia.setEmail(null);
-                denuncia.setContacto(null);
+     //           denuncia.setContacto(null);
                 System.out.println("ℹ️ Denúncia anônima - email e contacto não serão salvos");
             }
 
@@ -189,9 +192,9 @@ public class DenunciaController {
             System.out.println("✅ Email salvo: " + denunciaSalva.getEmail());
             System.out.println("✅ Tipo Específico salvo: " + denunciaSalva.getTipoEspecifico());
             System.out.println("✅ Subtipo salvo: " + denunciaSalva.getSubtipo());
-            System.out.println("✅ Contacto salvo na denúncia: " + denunciaSalva.getContacto());
+          //  System.out.println("✅ Contacto salvo na denúncia: " + denunciaSalva.getContacto());
             System.out.println("✅ DataRegistro salvo: " + denunciaSalva.getDataRegistro());
-            System.out.println("✅ Província salva: " + denunciaSalva.getProvincia());
+//            System.out.println("✅ Província salva: " + denunciaSalva.getProvincia());
             
             // Retornar o DTO
             DenunciaResponseDTO responseDTO = converterParaDTO(denunciaSalva);
@@ -381,7 +384,7 @@ public class DenunciaController {
         dto.setAnexo(denuncia.getAnexo());
         dto.setLocalEspecificoDaOcorrencia(denuncia.getLocalEspecificoDaOcorrencia());
         dto.setAnonima(denuncia.isAnonima());
-        dto.setContacto(denuncia.getContacto());
+//        dto.setContacto(denuncia.getContacto());
         dto.setEmail(denuncia.getEmail()); 
         dto.setDataOcorrecia(denuncia.getDataOcorrecia());
         
@@ -390,8 +393,8 @@ public class DenunciaController {
         System.out.println("📤 Enviando dataRegistro no DTO: " + denuncia.getDataRegistro());
         
         // ✅✅✅ CORREÇÃO CRÍTICA: Enviar província no DTO
-        dto.setProvincia(denuncia.getProvincia());
-        System.out.println("📤 Enviando província no DTO: " + denuncia.getProvincia());
+//        dto.setProvincia(denuncia.getProvincia());
+  //      System.out.println("📤 Enviando província no DTO: " + denuncia.getProvincia());
         
         // 🔧 ADICIONE TRY-CATCH PARA EVITAR LAZYINITIALIZATIONEXCEPTION
         try {
@@ -442,8 +445,8 @@ public class DenunciaController {
     // 🔧 MÉTODO PARA DETECTAR GÊNERO PELO NOME (HEURÍSTICA SIMPLES)
     private String detectarGenero(String nomeCompleto) {
         if (nomeCompleto == null || nomeCompleto.trim().isEmpty()) {
-            System.out.println("ℹ️ Nome vazio, usando 'N' (Não especificado)");
-            return "N";
+            System.out.println("ℹ️ Nome vazio, usando 'Não informado'");
+            return "Não informado";
         }
         
         String primeiroNome = nomeCompleto.trim().split(" ")[0];
@@ -466,10 +469,10 @@ public class DenunciaController {
             // Exceções: nomes masculinos que terminam com 'a'
             if (nomeNormalizado.matches("(joshua|jona|aníbal|anibal|isaias|jeremias|mateus|nicolau|saul|tiago|joaquim|elias|matias|silas)$")) {
                 System.out.println("✅ Exceção: nome masculino com terminação 'a'");
-                return "M";
+                return "Masculino";
             }
             System.out.println("✅ Por terminação, provavelmente Feminino");
-            return "F";
+            return "Feminino";
         }
         
         // Terminações MASCULINAS comuns em português
@@ -477,25 +480,55 @@ public class DenunciaController {
             // Exceções: nomes femininos que terminam com 'o'
             if (nomeNormalizado.matches("(cleo|dália|dalila|flávio|glória|indio|júlio|lídio|mário|nívio|ótavio|otavio)$")) {
                 System.out.println("✅ Exceção: nome feminino com terminação 'o'");
-                return "F";
+                return "Feminino";
             }
             System.out.println("✅ Por terminação, provavelmente Masculino");
-            return "M";
+            return "Masculino";
         }
         
         // Nomes específicos comuns em Angola/Portugal
         if (nomeNormalizado.matches("(maria|ana|sofia|isabel|rita|carla|luisa|luísa|joana|marta|teresa|catarina)$")) {
             System.out.println("✅ Nome feminino conhecido");
-            return "F";
+            return "Feminino";
         }
         
         if (nomeNormalizado.matches("(joão|jose|josé|antonio|antónio|francisco|carlos|manuel|paulo|pedro|luis|luís|miguel)$")) {
             System.out.println("✅ Nome masculino conhecido");
-            return "M";
+            return "Masculino";
         }
         
-        System.out.println("⚠️ Não foi possível determinar gênero, usando 'N'");
-        return "N";
+        System.out.println("⚠️ Não foi possível determinar gênero, usando 'Não informado'");
+        return "Não informado";
+    }
+
+    // 🔧 MÉTODO PARA OBTER OU CRIAR GÊNERO NO BANCO DE DADOS
+    private Genero obterOuCriarGenero(String nomeGenero) {
+        if (nomeGenero == null || nomeGenero.trim().isEmpty()) {
+            nomeGenero = "Não informado";
+        }
+        
+        try {
+            // Buscar gênero pelo nome
+            Optional<Genero> generoExistente = generoRepository.findByNome(nomeGenero.trim());
+            if (generoExistente.isPresent()) {
+                return generoExistente.get();
+            }
+            
+            // Se não existir, criar novo gênero
+            Genero novoGenero = new Genero();
+            novoGenero.setNome(nomeGenero.trim());
+            return generoRepository.save(novoGenero);
+            
+        } catch (Exception e) {
+            System.err.println("❌ Erro ao obter/criar gênero: " + e.getMessage());
+            // Fallback: criar gênero com ID 1 (deve existir no banco)
+            return generoRepository.findById(1)
+                .orElseGet(() -> {
+                    Genero generoPadrao = new Genero();
+                    generoPadrao.setNome("Não informado");
+                    return generoRepository.save(generoPadrao);
+                });
+        }
     }
 
     // 🔧 MÉTODO ATUALIZADO: Buscar ou criar pessoa (SEM contacto, apenas nome/email)
@@ -519,35 +552,48 @@ public class DenunciaController {
             
             // Estratégia de busca simplificada (sem contacto, pois Pessoa não tem contacto)
             
-            // 1. Buscar por email (se houver email)
-            if (email != null && !email.isEmpty()) {
-                // Buscar todas as pessoas e verificar email manualmente
-                List<Pessoa> todasPessoas = pessoaRepository.findAll();
-                for (Pessoa p : todasPessoas) {
-                    // Nota: A entidade Pessoa não tem campo email no seu código atual
-                    // Se você quiser adicionar email à Pessoa, precisará atualizar a entidade
-                    // Por enquanto, vamos buscar apenas por nome
-                }
-            }
-            
-            // 2. Buscar por nome exato
+            // 1. Buscar por nome exato
             Optional<Pessoa> pessoaPorNome = pessoaRepository.findByNome(nome);
             if (pessoaPorNome.isPresent()) {
                 pessoaExistente = pessoaPorNome.get();
                 System.out.println("✅ Pessoa encontrada por nome exato: " + pessoaExistente.getNome());
+                
+                // ✅ CORREÇÃO: Verificar se fkGenero não é null
+                if (pessoaExistente.getFkGenero() == null) {
+                    System.out.println("⚠️ Pessoa encontrada mas fkGenero é null. Atualizando...");
+                    String generoDetectado = detectarGenero(nome);
+                    Genero genero = obterOuCriarGenero(generoDetectado);
+                    pessoaExistente.setFkGenero(genero);
+                    pessoaExistente = pessoaRepository.save(pessoaExistente);
+                    System.out.println("✅ Gênero atualizado para: " + genero.getNome());
+                } else {
+                    System.out.println("✅ Gênero atual: " + pessoaExistente.getFkGenero().getNome());
+                }
             }
             
-            // 3. Se não encontrou por nome exato, buscar por nome similar
+            // 2. Se não encontrou por nome exato, buscar por nome similar
             if (pessoaExistente == null) {
                 List<Pessoa> todasPessoas = pessoaRepository.findAll();
                 String primeiroNome = nome.split(" ")[0].toLowerCase();
                 
                 for (Pessoa p : todasPessoas) {
-                    if (p.getNome() != null) {
+                    if (p.getNome() != null && p.getNome().trim().length() > 0) {
                         String primeiroNomeExistente = p.getNome().split(" ")[0].toLowerCase();
                         if (primeiroNomeExistente.equals(primeiroNome)) {
                             pessoaExistente = p;
                             System.out.println("✅ Pessoa encontrada por nome similar: " + p.getNome());
+                            
+                            // ✅ CORREÇÃO: Verificar se fkGenero não é null
+                            if (pessoaExistente.getFkGenero() == null) {
+                                System.out.println("⚠️ Pessoa encontrada (similar) mas fkGenero é null. Atualizando...");
+                                String generoDetectado = detectarGenero(nome);
+                                Genero genero = obterOuCriarGenero(generoDetectado);
+                                pessoaExistente.setFkGenero(genero);
+                                pessoaExistente = pessoaRepository.save(pessoaExistente);
+                                System.out.println("✅ Gênero atualizado para: " + genero.getNome());
+                            } else {
+                                System.out.println("✅ Gênero atual: " + pessoaExistente.getFkGenero().getNome());
+                            }
                             break;
                         }
                     }
@@ -557,11 +603,10 @@ public class DenunciaController {
             if (pessoaExistente != null) {
                 System.out.println("✅ Pessoa encontrada: " + pessoaExistente.getNome() + 
                                  " (ID: " + pessoaExistente.getPkPessoa() + ")");
-                System.out.println("✅ Gênero atual: " + pessoaExistente.getFkGenero().getNome());
                 
                 boolean atualizou = false;
                 
-                // Atualizar nome se for diferente (geralmente não, se encontramos por nome)
+                // Atualizar nome se for diferente
                 if (!pessoaExistente.getNome().equalsIgnoreCase(nome)) {
                     System.out.println("🔄 Atualizando nome da pessoa de '" + 
                                      pessoaExistente.getNome() + "' para '" + nome + "'");
@@ -570,19 +615,17 @@ public class DenunciaController {
                 }
                 
                 // ✅ Atualizar gênero baseado no novo nome
+                String generoDetectado = detectarGenero(nome);
+                String generoAtual = pessoaExistente.getFkGenero() != null ? 
+                                     pessoaExistente.getFkGenero().getNome() : "Não informado";
                 
-//                String novoGenero = detectarGenero(nome);
-//                if (!novoGenero.equals(pessoaExistente.getSexo())) {
-//                    System.out.println("🔄 Atualizando gênero de '" + 
-//                                     pessoaExistente.getFkGenero().getNome()+ "' para '" + novoGenero + "'");
-//                    pessoaExistente.setFkGenero(new Genero(Integer.BYTES));
-//                    atualizou = true;
-//                }
-                
-                // Nota: Pessoa não tem campo email no seu código atual
-                // Se quiser adicionar email à Pessoa, você precisará:
-                // 1. Adicionar campo email na entidade Pessoa
-                // 2. Atualizar este código
+                if (!generoDetectado.equalsIgnoreCase(generoAtual)) {
+                    System.out.println("🔄 Atualizando gênero de '" + 
+                                     generoAtual + "' para '" + generoDetectado + "'");
+                    Genero genero = obterOuCriarGenero(generoDetectado);
+                    pessoaExistente.setFkGenero(genero);
+                    atualizou = true;
+                }
                 
                 if (atualizou) {
                     pessoaExistente = pessoaRepository.save(pessoaExistente);
@@ -602,24 +645,36 @@ public class DenunciaController {
         novaPessoa.setNome(nome);
         
         // ✅ DETECTAR E DEFINIR GÊNERO AUTOMATICAMENTE
-        String genero = detectarGenero(nome);
-//        novaPessoa.setFkGenero(new );
-        System.out.println("✅ Gênero detectado: " + novaPessoa.getFkGenero().getNome());
+        String generoDetectado = detectarGenero(nome);
+        Genero genero = obterOuCriarGenero(generoDetectado);
+        novaPessoa.setFkGenero(genero);
+        System.out.println("✅ Gênero detectado: " + genero.getNome());
         
-        // Nota: A entidade Pessoa não tem campos email ou contacto
-        // Se quiser salvar email na Pessoa, adicione o campo primeiro
+        // Definir identificação com base no nome e data (apenas para não deixar null)
+        String identificacao = "DEN-" + nome.replaceAll("\\s+", "-").toUpperCase() + 
+                              "-" + System.currentTimeMillis();
+        novaPessoa.setIdentificacao(identificacao);
         
+        // Definir data de nascimento padrão (25 anos atrás)
         novaPessoa.setDataNascimento(LocalDate.now().minusYears(25));
+        
+        // Definir localidade padrão
         novaPessoa.setLocalidade(obterOuCriarLocalidadePadrao());
+        
+        // ✅ CORREÇÃO: Inicializar a lista de telefones para evitar NullPointerException
+        novaPessoa.setTelefones(new ArrayList<>());
         
         try {
             Pessoa pessoaSalva = pessoaRepository.save(novaPessoa);
             System.out.println("✅ Nova pessoa criada: " + pessoaSalva.getNome() + 
                              " (ID: " + pessoaSalva.getPkPessoa() + ")");
-//            System.out.println("✅ Gênero salvo na base de dados: " + pessoaSalva.getSexo());
+            System.out.println("✅ Gênero salvo: " + 
+                              (pessoaSalva.getFkGenero() != null ? 
+                               pessoaSalva.getFkGenero().getNome() : "null"));
             return pessoaSalva;
         } catch (Exception e) {
             System.err.println("❌ Erro ao criar nova pessoa: " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }

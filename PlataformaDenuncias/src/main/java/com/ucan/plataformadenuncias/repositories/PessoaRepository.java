@@ -1,6 +1,5 @@
 package com.ucan.plataformadenuncias.repositories;
 
-
 import com.ucan.plataformadenuncias.entities.Pessoa;
 import java.util.List;
 import java.util.Optional;
@@ -16,14 +15,17 @@ public interface PessoaRepository extends JpaRepository<Pessoa, Integer> {
     
     Optional<Pessoa> findByNome(String nome);
     
-    // ✅ NOVO método (opcional) - busca por nome exato
     @Query("SELECT p FROM Pessoa p WHERE p.nome = :nome")
     Pessoa findByNomeExato(@Param("nome") String nome);
     
-    // ✅ Buscar por nome contendo (case insensitive)
     @Query("SELECT p FROM Pessoa p WHERE LOWER(p.nome) LIKE LOWER(CONCAT('%', :nome, '%'))")
     List<Pessoa> findByNomeContendo(@Param("nome") String nome);
-
+    
+    Optional<Pessoa> findByIdentificacao(String identificacao);
+    
+    boolean existsByIdentificacao(String identificacao);
+    
+    @Query("SELECT CASE WHEN COUNT(p) > 0 THEN TRUE ELSE FALSE END FROM Pessoa p WHERE p.identificacao = :identificacao")
+    boolean verificarIdentificacaoExistente(@Param("identificacao") String identificacao);
 
 }
-

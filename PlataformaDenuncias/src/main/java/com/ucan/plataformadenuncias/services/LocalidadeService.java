@@ -11,8 +11,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional(readOnly = true)
 public class LocalidadeService {
 
     public static boolean localidadesInitialized = false;
@@ -330,7 +332,8 @@ public class LocalidadeService {
         }
         return localidadeRepository.findById(id);
     }
-
+    
+    @Transactional
     public Localidade salvar(Localidade localidade) {
         Localidade locSalva = localidadeRepository.save(localidade);
         if (localidades != null) localidades.add(locSalva);

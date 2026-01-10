@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import lombok.*;
@@ -63,6 +64,9 @@ public class Pessoa {
 
     @OneToMany(mappedBy = "fkPessoa", fetch = FetchType.LAZY)
     private List<Conta> contas;
+    
+    @OneToMany(mappedBy = "fkPessoa", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<Telefone> telefones = new ArrayList<>();
 
     @Override
     public boolean equals(Object o) {

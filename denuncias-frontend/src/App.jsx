@@ -317,9 +317,10 @@ function App() {
                         >
                           <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/contas/cadastrar" onClick={closeAll}>➕ Cadastrar</Link></li>
                           <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/contas/listar" onClick={closeAll}>📋 Listar</Link></li>
-                          <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/contas/atribuir" onClick={closeAll}>⚙️ Atribuir Perfil as Contas</Link></li>
+                            {/* <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/contas/atribuir" onClick={closeAll}>⚙️ Atribuir Perfil as Contas</Link></li>
                           <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/contas/atribuir_listar" onClick={closeAll}>📋 Listar Perfil atribuidas as Contas</Link></li>
-                        </ul>
+                              */}
+                          </ul>
                       </li>
 
                     </ul>
@@ -363,6 +364,10 @@ function App() {
           <Route path="/seguranca/contas/atribuir" element={loggedIn ? <ContaPerfilCadastrar /> : <Navigate to="/login" />} />
           <Route path="/seguranca/contas/atribuir_listar" element={loggedIn ? <ContaPerfilListar /> : <Navigate to="/login" />} />
 
+<Route path="/conta/cadastrar/:id?" element={<ContaCadastrar />} />
+<Route path="/conta/listar" element={<ContaListar />} />
+   {/*/<Route path="/" element={<Navigate to="/conta/listar" replace />} />
+*/}
           <Route path="/login" element={<Login setLoggedIn={setLoggedIn} />} />
         </Routes>
       </main>

@@ -39,11 +39,12 @@ public class Denuncia {
 
     private boolean anonima;
 
-    private String contacto;
+    //private String contacto;
     private String email;
 
     private LocalDateTime dataRegistro = LocalDateTime.now();
-    private String provincia;
+    
+   // private String provincia;
     
     @NotNull
     @Past
