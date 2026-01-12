@@ -282,7 +282,7 @@ public class TipoFuncionalidadeLoader {
 
     /**
      * Verifica diferenças entre a data/hora do arquivo e do sistema
-     * Retorna erros se houver diferenças - MELHORADO
+     * Retorna erros separados para data e hora - MELHORADO COM MAIOR PRECISÃO
      */
     private static List<Map<String, Object>> verificarDiferencasDataHora(
             Date dataArquivo, Date dataAtual, String tipo) {
@@ -298,24 +298,96 @@ public class TipoFuncionalidadeLoader {
         SimpleDateFormat sdfHora = new SimpleDateFormat("HH:mm");
         SimpleDateFormat sdfCompleto = new SimpleDateFormat("yyyy-MM-dd HH:mm");
         
-        // Verificar se a data é FUTURA
-        if (dataArquivo.after(dataAtual)) {
-            StringBuilder motivo = new StringBuilder();
-            motivo.append("DATA FUTURA: O arquivo de ").append(tipo).append(" possui uma data do FUTURO.\n");
-            motivo.append("  📅 Data/Hora do arquivo: ").append(sdfCompleto.format(dataArquivo)).append("\n");
-            motivo.append("  📅 Data/Hora atual do sistema: ").append(sdfCompleto.format(dataAtual)).append("\n");
-            motivo.append("  ⚠️ A data/hora do arquivo NÃO PODE SER FUTURA em relação ao sistema.\n");
-            motivo.append("  ℹ️ Por favor, ajuste a data/hora do arquivo para a data/hora atual ou anterior.");
-            
-            erros.add(criarDetalheErro("1", "B", "data", sdfCompleto.format(dataArquivo), motivo.toString()));
-            return erros;
+        String dataArquivoStr = sdfData.format(dataArquivo);
+        String horaArquivoStr = sdfHora.format(dataArquivo);
+        String dataAtualStr = sdfData.format(dataAtual);
+        String horaAtualStr = sdfHora.format(dataAtual);
+        
+        boolean dataFutura = false;
+        boolean dataPassada = false;
+        boolean horaFutura = false;
+        boolean horaPassada = false;
+        boolean dataDiferente = false;
+        boolean horaDiferente = false;
+        
+        // VERIFICAÇÕES DE DATA
+        // 1. Data futura (qualquer componente da data no futuro)
+        if (calArquivo.get(Calendar.YEAR) > calAtual.get(Calendar.YEAR)) {
+            dataFutura = true;
+        } else if (calArquivo.get(Calendar.YEAR) == calAtual.get(Calendar.YEAR)) {
+            if (calArquivo.get(Calendar.MONTH) > calAtual.get(Calendar.MONTH)) {
+                dataFutura = true;
+            } else if (calArquivo.get(Calendar.MONTH) == calAtual.get(Calendar.MONTH)) {
+                if (calArquivo.get(Calendar.DAY_OF_MONTH) > calAtual.get(Calendar.DAY_OF_MONTH)) {
+                    dataFutura = true;
+                }
+            }
         }
         
-        // Verificar se a data é MUITO ANTIGA (mais de 2 horas)
+        // 2. Data passada (muito antiga - mais de 2 horas)
         long diferencaEmMillis = dataAtual.getTime() - dataArquivo.getTime();
         long diferencaEmMinutos = diferencaEmMillis / (1000 * 60);
         
         if (diferencaEmMinutos > TEMPO_LIMITE_EM_MINUTOS) {
+            dataPassada = true;
+        }
+        
+        // 3. Data diferente (mesmo dentro do limite de 2 horas)
+        dataDiferente = calArquivo.get(Calendar.YEAR) != calAtual.get(Calendar.YEAR) ||
+                       calArquivo.get(Calendar.MONTH) != calAtual.get(Calendar.MONTH) ||
+                       calArquivo.get(Calendar.DAY_OF_MONTH) != calAtual.get(Calendar.DAY_OF_MONTH);
+        
+        // VERIFICAÇÕES DE HORA (apenas se for o mesmo dia)
+        if (!dataDiferente) {
+            // 4. Hora futura (mesmo dia, hora no futuro)
+            if (calArquivo.get(Calendar.HOUR_OF_DAY) > calAtual.get(Calendar.HOUR_OF_DAY)) {
+                horaFutura = true;
+            } else if (calArquivo.get(Calendar.HOUR_OF_DAY) == calAtual.get(Calendar.HOUR_OF_DAY)) {
+                if (calArquivo.get(Calendar.MINUTE) > calAtual.get(Calendar.MINUTE)) {
+                    horaFutura = true;
+                }
+            }
+            
+            // 5. Hora passada (mesmo dia, hora no passado, considerando diferença > 5 minutos)
+            if (calArquivo.before(calAtual)) {
+                Calendar calArquivoHora = (Calendar) calArquivo.clone();
+                Calendar calAtualHora = (Calendar) calAtual.clone();
+                
+                // Zerar as datas para comparar apenas horas
+                calArquivoHora.set(Calendar.YEAR, calAtual.get(Calendar.YEAR));
+                calArquivoHora.set(Calendar.MONTH, calAtual.get(Calendar.MONTH));
+                calArquivoHora.set(Calendar.DAY_OF_MONTH, calAtual.get(Calendar.DAY_OF_MONTH));
+                
+                long diffHoraMillis = Math.abs(calAtualHora.getTimeInMillis() - calArquivoHora.getTimeInMillis());
+                long diffHoraMinutos = diffHoraMillis / (1000 * 60);
+                
+                if (diffHoraMinutos > 5) {
+                    horaPassada = true;
+                }
+            }
+            
+            // 6. Hora diferente (mesmo dia, diferença pequena)
+            horaDiferente = calArquivo.get(Calendar.HOUR_OF_DAY) != calAtual.get(Calendar.HOUR_OF_DAY) ||
+                           calArquivo.get(Calendar.MINUTE) != calAtual.get(Calendar.MINUTE);
+        }
+        
+        // GERAR MENSAGENS DE ERRO ESPECÍFICAS
+        
+        // ERRO 1: DATA FUTURA (crítico - retorna imediatamente)
+        if (dataFutura) {
+            StringBuilder motivo = new StringBuilder();
+            motivo.append("DATA FUTURA: O arquivo de ").append(tipo).append(" possui uma data do FUTURO.\n");
+            motivo.append("  📅 Data do arquivo: ").append(dataArquivoStr).append("\n");
+            motivo.append("  📅 Data atual do sistema: ").append(dataAtualStr).append("\n");
+            motivo.append("  ⚠️ A data do arquivo NÃO PODE SER FUTURA em relação ao sistema.\n");
+            motivo.append("  ℹ️ Por favor, ajuste a data do arquivo para a data atual ou anterior.");
+            
+            erros.add(criarDetalheErro("1", "B", "data", dataArquivoStr, motivo.toString()));
+            return erros;
+        }
+        
+        // ERRO 2: DATA MUITO ANTIGA (mais de 2 horas)
+        if (dataPassada) {
             StringBuilder motivo = new StringBuilder();
             motivo.append("DATA MUITO ANTIGA: O arquivo de ").append(tipo).append(" possui uma data muito antiga.\n");
             motivo.append("  📅 Data/Hora do arquivo: ").append(sdfCompleto.format(dataArquivo)).append("\n");
@@ -328,70 +400,263 @@ public class TipoFuncionalidadeLoader {
             return erros;
         }
         
-        // Verificar diferenças específicas de data e hora
-        boolean dataDiferente = calArquivo.get(Calendar.YEAR) != calAtual.get(Calendar.YEAR) ||
-                               calArquivo.get(Calendar.MONTH) != calAtual.get(Calendar.MONTH) ||
-                               calArquivo.get(Calendar.DAY_OF_MONTH) != calAtual.get(Calendar.DAY_OF_MONTH);
-        
-        boolean horaDiferente = calArquivo.get(Calendar.HOUR_OF_DAY) != calAtual.get(Calendar.HOUR_OF_DAY) ||
-                               calArquivo.get(Calendar.MINUTE) != calAtual.get(Calendar.MINUTE);
-        
-        String dataArquivoStr = sdfData.format(dataArquivo);
-        String horaArquivoStr = sdfHora.format(dataArquivo);
-        String dataAtualStr = sdfData.format(dataAtual);
-        String horaAtualStr = sdfHora.format(dataAtual);
-        
-        // Se tanto data quanto hora forem diferentes (mas dentro do limite de 2 horas)
-        if (dataDiferente && horaDiferente && diferencaEmMinutos <= TEMPO_LIMITE_EM_MINUTOS) {
-            StringBuilder motivo = new StringBuilder();
-            motivo.append("DATA E HORA DIFERENTES: A data e hora do arquivo de ").append(tipo).append(" estão diferentes do sistema.\n");
-            motivo.append("  📅 Data do arquivo: ").append(dataArquivoStr).append(" | Hora: ").append(horaArquivoStr).append("\n");
-            motivo.append("  📅 Data do sistema: ").append(dataAtualStr).append(" | Hora: ").append(horaAtualStr).append("\n");
-            motivo.append("  ⏰ Diferença: ").append(diferencaEmMinutos).append(" minutos\n");
-            motivo.append("  ⚠️ A data/hora do arquivo deve ser IGUAL à data/hora atual do sistema.\n");
-            motivo.append("  ℹ️ Por favor, atualize a data/hora do arquivo para: ").append(sdfCompleto.format(dataAtual));
-            
-            erros.add(criarDetalheErro("1", "B", "data", dataArquivoStr + " " + horaArquivoStr, motivo.toString()));
-        }
-        // Se apenas a data for diferente (mas dentro do limite de 2 horas)
-        else if (dataDiferente && diferencaEmMinutos <= TEMPO_LIMITE_EM_MINUTOS) {
+        // ERRO 3: DATA DIFERENTE (mas dentro do limite de 2 horas)
+        if (dataDiferente && diferencaEmMinutos <= TEMPO_LIMITE_EM_MINUTOS) {
             StringBuilder motivo = new StringBuilder();
             motivo.append("DATA DIFERENTE: A data do arquivo de ").append(tipo).append(" está diferente do sistema.\n");
             motivo.append("  📅 Data do arquivo: ").append(dataArquivoStr).append(" | Hora: ").append(horaArquivoStr).append("\n");
             motivo.append("  📅 Data do sistema: ").append(dataAtualStr).append(" | Hora: ").append(horaAtualStr).append("\n");
+            motivo.append("  ⏰ Diferença: ").append(diferencaEmMinutos).append(" minutos\n");
             motivo.append("  ⚠️ A DATA do arquivo deve ser IGUAL à data atual do sistema.\n");
             motivo.append("  ℹ️ Por favor, atualize a data do arquivo para: ").append(dataAtualStr);
             
             erros.add(criarDetalheErro("1", "B", "data", dataArquivoStr, motivo.toString()));
         }
-        // Se apenas a hora for diferente (mas a data é a mesma)
-        else if (horaDiferente && !dataDiferente) {
+        
+        // ERRO 4: HORA FUTURA (mesmo dia)
+        if (horaFutura) {
+            // Calcular diferença em minutos apenas para a hora
+            Calendar calArquivoHora = (Calendar) calArquivo.clone();
+            Calendar calAtualHora = (Calendar) calAtual.clone();
+            
+            // Zerar as datas para comparar apenas horas
+            calArquivoHora.set(Calendar.YEAR, calAtual.get(Calendar.YEAR));
+            calArquivoHora.set(Calendar.MONTH, calAtual.get(Calendar.MONTH));
+            calArquivoHora.set(Calendar.DAY_OF_MONTH, calAtual.get(Calendar.DAY_OF_MONTH));
+            
+            long diffHoraMillis = Math.abs(calAtualHora.getTimeInMillis() - calArquivoHora.getTimeInMillis());
+            long diffHoraMinutos = diffHoraMillis / (1000 * 60);
+            
             StringBuilder motivo = new StringBuilder();
-            motivo.append("HORA DIFERENTE: A hora do arquivo de ").append(tipo).append(" está diferente do sistema.\n");
+            motivo.append("HORA FUTURA: A hora do arquivo de ").append(tipo).append(" é do FUTURO (mesmo dia).\n");
             motivo.append("  📅 Data: ").append(dataArquivoStr).append(" | Hora do arquivo: ").append(horaArquivoStr).append("\n");
             motivo.append("  📅 Data: ").append(dataAtualStr).append(" | Hora do sistema: ").append(horaAtualStr).append("\n");
-            motivo.append("  ⚠️ A HORA do arquivo deve ser IGUAL à hora atual do sistema.\n");
+            motivo.append("  ⏰ Diferença: ").append(diffHoraMinutos).append(" minutos\n");
+            motivo.append("  ⚠️ A HORA do arquivo NÃO PODE SER FUTURA em relação ao sistema.\n");
+            motivo.append("  ℹ️ Por favor, ajuste a hora do arquivo para: ").append(horaAtualStr);
+            
+            erros.add(criarDetalheErro("1", "B", "hora", horaArquivoStr, motivo.toString()));
+        }
+        
+        // ERRO 5: HORA PASSADA (mesmo dia, diferença > 5 minutos)
+        if (horaPassada && !horaFutura) {
+            Calendar calArquivoHora = (Calendar) calArquivo.clone();
+            Calendar calAtualHora = (Calendar) calAtual.clone();
+            
+            // Zerar as datas para comparar apenas horas
+            calArquivoHora.set(Calendar.YEAR, calAtual.get(Calendar.YEAR));
+            calArquivoHora.set(Calendar.MONTH, calAtual.get(Calendar.MONTH));
+            calArquivoHora.set(Calendar.DAY_OF_MONTH, calAtual.get(Calendar.DAY_OF_MONTH));
+            
+            long diffHoraMillis = Math.abs(calAtualHora.getTimeInMillis() - calArquivoHora.getTimeInMillis());
+            long diffHoraMinutos = diffHoraMillis / (1000 * 60);
+            
+            StringBuilder motivo = new StringBuilder();
+            motivo.append("HORA ANTERIOR: A hora do arquivo de ").append(tipo).append(" está no PASSADO em relação ao sistema.\n");
+            motivo.append("  📅 Data: ").append(dataArquivoStr).append(" | Hora do arquivo: ").append(horaArquivoStr).append("\n");
+            motivo.append("  📅 Data: ").append(dataAtualStr).append(" | Hora do sistema: ").append(horaAtualStr).append("\n");
+            motivo.append("  ⏰ Diferença: ").append(diffHoraMinutos).append(" minutos\n");
+            motivo.append("  ⚠️ A HORA do arquivo está PASSADA em relação ao sistema.\n");
             motivo.append("  ℹ️ Por favor, atualize a hora do arquivo para: ").append(horaAtualStr);
             
-            erros.add(criarDetalheErro("1", "B", "data", horaArquivoStr, motivo.toString()));
+            erros.add(criarDetalheErro("1", "B", "hora", horaArquivoStr, motivo.toString()));
+        }
+        
+        // ERRO 6: HORA DIFERENTE (diferença pequena, mesmo dia, não coberta pelos casos anteriores)
+        if (!dataDiferente && horaDiferente && !horaFutura && !horaPassada) {
+            Calendar calArquivoHora = (Calendar) calArquivo.clone();
+            Calendar calAtualHora = (Calendar) calAtual.clone();
+            
+            // Zerar as datas para comparar apenas horas
+            calArquivoHora.set(Calendar.YEAR, calAtual.get(Calendar.YEAR));
+            calArquivoHora.set(Calendar.MONTH, calAtual.get(Calendar.MONTH));
+            calArquivoHora.set(Calendar.DAY_OF_MONTH, calAtual.get(Calendar.DAY_OF_MONTH));
+            
+            long diffHoraMillis = Math.abs(calAtualHora.getTimeInMillis() - calArquivoHora.getTimeInMillis());
+            long diffHoraMinutos = diffHoraMillis / (1000 * 60);
+            
+            if (diffHoraMinutos > 0) {
+                StringBuilder motivo = new StringBuilder();
+                motivo.append("HORA DIFERENTE: A hora do arquivo de ").append(tipo).append(" está ligeiramente diferente.\n");
+                motivo.append("  📅 Data: ").append(dataArquivoStr).append(" | Hora do arquivo: ").append(horaArquivoStr).append("\n");
+                motivo.append("  📅 Data: ").append(dataAtualStr).append(" | Hora do sistema: ").append(horaAtualStr).append("\n");
+                motivo.append("  ⏰ Diferença: ").append(diffHoraMinutos).append(" minutos\n");
+                motivo.append("  ℹ️ A hora do arquivo deve ser igual à hora atual do sistema.");
+                
+                erros.add(criarDetalheErro("1", "B", "hora", horaArquivoStr, motivo.toString()));
+            }
+        }
+        
+        // ERRO 7: DATA/HORA COMPLETAMENTE DIFERENTE (data e hora diferentes simultaneamente)
+        if (dataDiferente && horaDiferente && diferencaEmMinutos <= TEMPO_LIMITE_EM_MINUTOS) {
+            StringBuilder motivo = new StringBuilder();
+            motivo.append("DATA/HORA DIFERENTES: A data e hora do arquivo de ").append(tipo).append(" estão diferentes do sistema.\n");
+            motivo.append("  📅 Data/Hora do arquivo: ").append(sdfCompleto.format(dataArquivo)).append("\n");
+            motivo.append("  📅 Data/Hora do sistema: ").append(sdfCompleto.format(dataAtual)).append("\n");
+            motivo.append("  ⏰ Diferença total: ").append(diferencaEmMinutos).append(" minutos\n");
+            motivo.append("  ⚠️ A DATA e HORA do arquivo devem ser IGUAIS às do sistema.\n");
+            motivo.append("  ℹ️ Por favor, atualize para: ").append(sdfCompleto.format(dataAtual));
+            
+            erros.add(criarDetalheErro("1", "B", "data_hora", sdfCompleto.format(dataArquivo), motivo.toString()));
         }
         
         return erros;
     }
 
     /**
-     * Verifica se a data do arquivo é válida - VERSÃO SIMPLIFICADA
-     * Agora usa a função verificarDiferencasDataHora acima
+     * Valida APENAS a data do arquivo (separado da hora)
+     */
+    private static List<Map<String, Object>> validarApenasData(
+            Date dataArquivo, Date dataAtual, String tipo) {
+        
+        List<Map<String, Object>> erros = new ArrayList<>();
+        Calendar calArquivo = Calendar.getInstance();
+        calArquivo.setTime(dataArquivo);
+        
+        Calendar calAtual = Calendar.getInstance();
+        calAtual.setTime(dataAtual);
+        
+        SimpleDateFormat sdfData = new SimpleDateFormat("yyyy-MM-dd");
+        
+        // Verificar se data é futura
+        if (calArquivo.get(Calendar.YEAR) > calAtual.get(Calendar.YEAR) ||
+            (calArquivo.get(Calendar.YEAR) == calAtual.get(Calendar.YEAR) && 
+             calArquivo.get(Calendar.MONTH) > calAtual.get(Calendar.MONTH)) ||
+            (calArquivo.get(Calendar.YEAR) == calAtual.get(Calendar.YEAR) && 
+             calArquivo.get(Calendar.MONTH) == calAtual.get(Calendar.MONTH) && 
+             calArquivo.get(Calendar.DAY_OF_MONTH) > calAtual.get(Calendar.DAY_OF_MONTH))) {
+            
+            StringBuilder motivo = new StringBuilder();
+            motivo.append("DATA FUTURA: O arquivo de ").append(tipo).append(" possui uma data do FUTURO.\n");
+            motivo.append("  📅 Data do arquivo: ").append(sdfData.format(dataArquivo)).append("\n");
+            motivo.append("  📅 Data atual: ").append(sdfData.format(dataAtual)).append("\n");
+            motivo.append("  ⚠️ A data NÃO PODE SER FUTURA.");
+            
+            erros.add(criarDetalheErro("1", "B", "data", sdfData.format(dataArquivo), motivo.toString()));
+            return erros;
+        }
+        
+        // Verificar se data é passada (muito antiga)
+        long diferencaDias = (calAtual.getTimeInMillis() - calArquivo.getTimeInMillis()) / (1000 * 60 * 60 * 24);
+        if (diferencaDias > 1) { // Mais de 1 dia de diferença
+            StringBuilder motivo = new StringBuilder();
+            motivo.append("DATA MUITO ANTIGA: O arquivo de ").append(tipo).append(" possui uma data muito antiga.\n");
+            motivo.append("  📅 Data do arquivo: ").append(sdfData.format(dataArquivo)).append("\n");
+            motivo.append("  📅 Data atual: ").append(sdfData.format(dataAtual)).append("\n");
+            motivo.append("  ⏰ Diferença: ").append(diferencaDias).append(" dias\n");
+            motivo.append("  ⚠️ A data deve ser ATUAL.");
+            
+            erros.add(criarDetalheErro("1", "B", "data", sdfData.format(dataArquivo), motivo.toString()));
+            return erros;
+        }
+        
+        // Verificar se data é diferente (mesmo sendo do mesmo dia ou próximo)
+        if (calArquivo.get(Calendar.YEAR) != calAtual.get(Calendar.YEAR) ||
+            calArquivo.get(Calendar.MONTH) != calAtual.get(Calendar.MONTH) ||
+            calArquivo.get(Calendar.DAY_OF_MONTH) != calAtual.get(Calendar.DAY_OF_MONTH)) {
+            
+            StringBuilder motivo = new StringBuilder();
+            motivo.append("DATA DIFERENTE: A data do arquivo de ").append(tipo).append(" está diferente.\n");
+            motivo.append("  📅 Data do arquivo: ").append(sdfData.format(dataArquivo)).append("\n");
+            motivo.append("  📅 Data atual: ").append(sdfData.format(dataAtual)).append("\n");
+            motivo.append("  ℹ️ A data deve ser igual à data atual.");
+            
+            erros.add(criarDetalheErro("1", "B", "data", sdfData.format(dataArquivo), motivo.toString()));
+        }
+        
+        return erros;
+    }
+
+    /**
+     * Valida APENAS a hora do arquivo (assumindo que a data é a mesma)
+     */
+    private static List<Map<String, Object>> validarApenasHora(
+            Date dataArquivo, Date dataAtual, String tipo) {
+        
+        List<Map<String, Object>> erros = new ArrayList<>();
+        Calendar calArquivo = Calendar.getInstance();
+        calArquivo.setTime(dataArquivo);
+        
+        Calendar calAtual = Calendar.getInstance();
+        calAtual.setTime(dataAtual);
+        
+        SimpleDateFormat sdfHora = new SimpleDateFormat("HH:mm");
+        
+        // Verificar se é o mesmo dia
+        boolean mesmoDia = calArquivo.get(Calendar.YEAR) == calAtual.get(Calendar.YEAR) &&
+                          calArquivo.get(Calendar.MONTH) == calAtual.get(Calendar.MONTH) &&
+                          calArquivo.get(Calendar.DAY_OF_MONTH) == calAtual.get(Calendar.DAY_OF_MONTH);
+        
+        if (!mesmoDia) {
+            // Se não for o mesmo dia, não faz sentido validar apenas a hora
+            return erros;
+        }
+        
+        // Verificar se hora é futura
+        if (calArquivo.get(Calendar.HOUR_OF_DAY) > calAtual.get(Calendar.HOUR_OF_DAY) ||
+            (calArquivo.get(Calendar.HOUR_OF_DAY) == calAtual.get(Calendar.HOUR_OF_DAY) &&
+             calArquivo.get(Calendar.MINUTE) > calAtual.get(Calendar.MINUTE))) {
+            
+            StringBuilder motivo = new StringBuilder();
+            motivo.append("HORA FUTURA: A hora do arquivo de ").append(tipo).append(" é do FUTURO.\n");
+            motivo.append("  🕒 Hora do arquivo: ").append(sdfHora.format(dataArquivo)).append("\n");
+            motivo.append("  🕒 Hora atual: ").append(sdfHora.format(dataAtual)).append("\n");
+            motivo.append("  ⚠️ A hora NÃO PODE SER FUTURA.");
+            
+            erros.add(criarDetalheErro("1", "B", "hora", sdfHora.format(dataArquivo), motivo.toString()));
+            return erros;
+        }
+        
+        // Verificar se hora é passada (mais de 5 minutos)
+        long diferencaMillis = calAtual.getTimeInMillis() - calArquivo.getTimeInMillis();
+        long diferencaMinutos = diferencaMillis / (1000 * 60);
+        
+        if (diferencaMinutos > 5) {
+            StringBuilder motivo = new StringBuilder();
+            motivo.append("HORA ANTERIOR: A hora do arquivo de ").append(tipo).append(" está no PASSADO.\n");
+            motivo.append("  🕒 Hora do arquivo: ").append(sdfHora.format(dataArquivo)).append("\n");
+            motivo.append("  🕒 Hora atual: ").append(sdfHora.format(dataAtual)).append("\n");
+            motivo.append("  ⏰ Diferença: ").append(diferencaMinutos).append(" minutos\n");
+            motivo.append("  ⚠️ A hora está muito atrasada.");
+            
+            erros.add(criarDetalheErro("1", "B", "hora", sdfHora.format(dataArquivo), motivo.toString()));
+            return erros;
+        }
+        
+        // Verificar se hora é diferente (pequena diferença)
+        if (calArquivo.get(Calendar.HOUR_OF_DAY) != calAtual.get(Calendar.HOUR_OF_DAY) ||
+            calArquivo.get(Calendar.MINUTE) != calAtual.get(Calendar.MINUTE)) {
+            
+            StringBuilder motivo = new StringBuilder();
+            motivo.append("HORA DIFERENTE: A hora do arquivo de ").append(tipo).append(" está diferente.\n");
+            motivo.append("  🕒 Hora do arquivo: ").append(sdfHora.format(dataArquivo)).append("\n");
+            motivo.append("  🕒 Hora atual: ").append(sdfHora.format(dataAtual)).append("\n");
+            motivo.append("  ℹ️ A hora deve ser igual à hora atual.");
+            
+            erros.add(criarDetalheErro("1", "B", "hora", sdfHora.format(dataArquivo), motivo.toString()));
+        }
+        
+        return erros;
+    }
+
+    /**
+     * Verifica se a data do arquivo é válida - VERSÃO MELHORADA COM VALIDAÇÕES SEPARADAS
      */
     private static List<Map<String, Object>> validarDataArquivo(Date dataArquivo, String tipo, VersaoService versaoService) {
         List<Map<String, Object>> erros = new ArrayList<>();
         Date dataAtual = new Date();
         
-        // Usar a nova função melhorada para verificar data/hora
+        // Usar a função melhorada para verificar data/hora com maior precisão
         List<Map<String, Object>> errosDataHora = verificarDiferencasDataHora(dataArquivo, dataAtual, tipo);
         if (!errosDataHora.isEmpty()) {
             return errosDataHora;
         }
+        
+        // Opcional: também pode usar as validações separadas
+        // List<Map<String, Object>> errosApenasData = validarApenasData(dataArquivo, dataAtual, tipo);
+        // List<Map<String, Object>> errosApenasHora = validarApenasHora(dataArquivo, dataAtual, tipo);
+        // erros.addAll(errosApenasData);
+        // erros.addAll(errosApenasHora);
         
         // Verificar se já existe uma versão com a mesma data
         Versao versaoAtual = versaoService.obterVersao(
