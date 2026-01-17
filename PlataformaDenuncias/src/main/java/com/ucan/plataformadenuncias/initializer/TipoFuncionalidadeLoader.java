@@ -22,13 +22,10 @@ import java.util.regex.Pattern;
 public class TipoFuncionalidadeLoader {
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd-HH-mm");
-    private static final long TEMPO_LIMITE_EM_MINUTOS = 120; // 2 horas em minutos
     
-    // Patterns para validação - CORRIGIDO para melhor suporte a Unicode
     private static final Pattern LETTERS_ONLY_PATTERN = 
         Pattern.compile("^[\\p{L}\\p{M}\\s\\-.,;:?!'\"()\\[\\]{}_/]+$", Pattern.UNICODE_CHARACTER_CLASS);
     private static final Pattern INTEGER_PATTERN = Pattern.compile("^\\d+$");
-    // CORREÇÃO: Permitir o valor 1000 específico, com ou sem ponto e vírgula
     private static final Pattern SHARED_FUNCS_PATTERN = Pattern.compile("^1000;?$|^\\d+(;\\d+)*$|^$");
     private static final Pattern URL_PATTERN = Pattern.compile("^[\\p{L}\\p{N}\\s\\-._~:/?#\\[\\]@!$&'()*+,;=]+$");
 
@@ -161,11 +158,9 @@ public class TipoFuncionalidadeLoader {
                 return resultado;
             }
             
-            // Obter contagens
             long totalTipos = tipoFuncionalidadeRepository.count();
             long totalFunc = funcionalidadeRepository.count();
             
-            // Mensagem de sucesso
             StringBuilder mensagem = new StringBuilder();
             mensagem.append("✅ IMPORTACAO COMPLETA COM SUCESSO!\n");
             mensagem.append("📊 RESUMO:\n");
@@ -178,7 +173,6 @@ public class TipoFuncionalidadeLoader {
             
             mensagem.append("   • Funcionalidades: ").append(totalFunc).append("\n");
             
-            // Obter versões atualizadas
             Versao versaoTipos = versaoService.obterVersao(Defs.TIPO_FUNCIONALIDADE);
             Versao versaoFunc = versaoService.obterVersao(Defs.FUNCIONALIDADE);
             
@@ -210,9 +204,7 @@ public class TipoFuncionalidadeLoader {
         return resultado;
     }
 
-    /**
-     * Cria estrutura de erro no formato melhorado
-     */
+  
     private static List<String> criarEstruturaErro(String codigo, String status, String mensagemServidor, 
                                                    List<Map<String, Object>> detalhesErros, int totalErros) {
         
@@ -267,455 +259,203 @@ public class TipoFuncionalidadeLoader {
         return errosFormatados;
     }
 
-    /**
-     * Cria um detalhe de erro individual MELHORADO
-     */
-    private static Map<String, Object> criarDetalheErro(String linha, String coluna, String campo, String valor, String motivo) {
-        Map<String, Object> erro = new HashMap<>();
-        erro.put("linha", linha);
-        erro.put("coluna", coluna);
-        erro.put("campo", campo);
-        erro.put("valor", valor);
-        erro.put("motivo", motivo);
-        return erro;
-    }
+ 
 
-    /**
-     * Verifica diferenças entre a data/hora do arquivo e do sistema
-     * Retorna erros separados para data e hora - MELHORADO COM MAIOR PRECISÃO
-     */
-    private static List<Map<String, Object>> verificarDiferencasDataHora(
-            Date dataArquivo, Date dataAtual, String tipo) {
+   
+
+// MÉTODO REMOVIDO: Primeira versão (antiga) do validarDataArquivoVersao
+// Este método foi removido conforme solicitado
+
+// MÉTODO MANTIDO: Segunda versão (nova) do validarDataArquivoVersao
+// Este método JÁ TEM a validação de data futura
+
+private static List<Map<String, Object>> validarDataArquivoVersao(
+       Date dataArquivo, String tipo, VersaoService versaoService) {
+    
+    List<Map<String, Object>> erros = new ArrayList<>();
+    SimpleDateFormat sdfCompleto = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+    SimpleDateFormat sdfData = new SimpleDateFormat("yyyy-MM-dd");
+    SimpleDateFormat sdfHora = new SimpleDateFormat("HH:mm");
+    
+    String dataArquivoStr = sdfCompleto.format(dataArquivo);
+    
+    // VERIFICAR SE A DATA É FUTURA (em relação à data atual)
+    Date dataAtual = new Date();
+    if (dataArquivo.after(dataAtual)) {
+        StringBuilder motivo = new StringBuilder();
+        motivo.append("ERRO: Data/Hora do arquivo é FUTURA em relação à data atual.\n");
+        motivo.append("  📅 Data/Hora do arquivo: ").append(dataArquivoStr).append("\n");
+        motivo.append("  📅 Data/Hora atual do sistema: ").append(sdfCompleto.format(dataAtual)).append("\n");
+        motivo.append("  ⚠️ Não é permitido importar arquivos com data/hora futura.\n");
+        motivo.append("  ℹ️ Ajuste a data/hora do arquivo para um valor igual ou anterior à data atual.");
         
-        List<Map<String, Object>> erros = new ArrayList<>();
-        Calendar calArquivo = Calendar.getInstance();
-        calArquivo.setTime(dataArquivo);
+        Map<String, Object> erro = criarDetalheErro("1", "D", "data_hora", dataArquivoStr, motivo.toString());
+        erro.put("linha", "1");
+        erro.put("coluna", "D");
+        erros.add(erro);
+        return erros;
+    }
+    
+    // Obter a última versão importada
+    Versao versaoAtual = versaoService.obterVersao(
+        tipo.equals("tipos de funcionalidade") ? Defs.TIPO_FUNCIONALIDADE : Defs.FUNCIONALIDADE
+    );
+    
+    // ERRO CRÍTICO: Não existe versão anterior
+    if (versaoAtual == null) {
+        StringBuilder motivo = new StringBuilder();
+        motivo.append("ERRO: Não há versão anterior de ").append(tipo).append(" registrada.\n");
+        motivo.append("  📅 Data/Hora do arquivo: ").append(dataArquivoStr).append("\n");
+        motivo.append("  ❌ Não é possível importar sem uma versão anterior existente.\n");
+        motivo.append("  ℹ️ É necessário primeiro criar uma versão inicial do sistema.");
         
-        Calendar calAtual = Calendar.getInstance();
-        calAtual.setTime(dataAtual);
-        
-        SimpleDateFormat sdfData = new SimpleDateFormat("yyyy-MM-dd");
-        SimpleDateFormat sdfHora = new SimpleDateFormat("HH:mm");
-        SimpleDateFormat sdfCompleto = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-        
-        String dataArquivoStr = sdfData.format(dataArquivo);
-        String horaArquivoStr = sdfHora.format(dataArquivo);
-        String dataAtualStr = sdfData.format(dataAtual);
-        String horaAtualStr = sdfHora.format(dataAtual);
-        
-        boolean dataFutura = false;
-        boolean dataPassada = false;
-        boolean horaFutura = false;
-        boolean horaPassada = false;
-        boolean dataDiferente = false;
-        boolean horaDiferente = false;
-        
-        // VERIFICAÇÕES DE DATA
-        // 1. Data futura (qualquer componente da data no futuro)
-        if (calArquivo.get(Calendar.YEAR) > calAtual.get(Calendar.YEAR)) {
-            dataFutura = true;
-        } else if (calArquivo.get(Calendar.YEAR) == calAtual.get(Calendar.YEAR)) {
-            if (calArquivo.get(Calendar.MONTH) > calAtual.get(Calendar.MONTH)) {
-                dataFutura = true;
-            } else if (calArquivo.get(Calendar.MONTH) == calAtual.get(Calendar.MONTH)) {
-                if (calArquivo.get(Calendar.DAY_OF_MONTH) > calAtual.get(Calendar.DAY_OF_MONTH)) {
-                    dataFutura = true;
-                }
-            }
+        Map<String, Object> erro = criarDetalheErro("1", "D", "data_hora", dataArquivoStr, motivo.toString());
+        erro.put("linha", "1");
+        erro.put("coluna", "D");
+        erros.add(erro);
+        return erros;
+    }
+    
+    Date dataVersaoAtual = versaoAtual.getData();
+    String dataVersaoStr = sdfCompleto.format(dataVersaoAtual);
+    String dataArquivoDataStr = sdfData.format(dataArquivo);
+    String dataVersaoDataStr = sdfData.format(dataVersaoAtual);
+    String dataArquivoHoraStr = sdfHora.format(dataArquivo);
+    String dataVersaoHoraStr = sdfHora.format(dataVersaoAtual);
+    
+    // Criar calendários para comparação detalhada
+    Calendar calArquivo = Calendar.getInstance();
+    calArquivo.setTime(dataArquivo);
+    
+    Calendar calVersao = Calendar.getInstance();
+    calVersao.setTime(dataVersaoAtual);
+    
+    // Extrair componentes individuais
+    int anoArquivo = calArquivo.get(Calendar.YEAR);
+    int mesArquivo = calArquivo.get(Calendar.MONTH);
+    int diaArquivo = calArquivo.get(Calendar.DAY_OF_MONTH);
+    int horaArquivo = calArquivo.get(Calendar.HOUR_OF_DAY);
+    int minutoArquivo = calArquivo.get(Calendar.MINUTE);
+    
+    int anoVersao = calVersao.get(Calendar.YEAR);
+    int mesVersao = calVersao.get(Calendar.MONTH);
+    int diaVersao = calVersao.get(Calendar.DAY_OF_MONTH);
+    int horaVersao = calVersao.get(Calendar.HOUR_OF_DAY);
+    int minutoVersao = calVersao.get(Calendar.MINUTE);
+    
+    // Verificar se é o mesmo dia
+    boolean mesmoDia = (anoArquivo == anoVersao && mesArquivo == mesVersao && diaArquivo == diaVersao);
+    
+    // Verificar se é a mesma hora
+    boolean mesmaHora = (horaArquivo == horaVersao && minutoArquivo == minutoVersao);
+    
+    // Verificar se DATA é anterior
+    boolean dataAnterior = false;
+    if (anoArquivo < anoVersao) {
+        dataAnterior = true;
+    } else if (anoArquivo == anoVersao && mesArquivo < mesVersao) {
+        dataAnterior = true;
+    } else if (anoArquivo == anoVersao && mesArquivo == mesVersao && diaArquivo < diaVersao) {
+        dataAnterior = true;
+    }
+    
+    // Verificar se HORA é anterior (apenas se for o mesmo dia)
+    boolean horaAnterior = false;
+    if (mesmoDia) {
+        if (horaArquivo < horaVersao) {
+            horaAnterior = true;
+        } else if (horaArquivo == horaVersao && minutoArquivo < minutoVersao) {
+            horaAnterior = true;
         }
+    }
+    
+    // CASO 1: Data e Hora IGUAIS
+    if (mesmoDia && mesmaHora) {
+        StringBuilder motivo = new StringBuilder();
+        motivo.append("ERRO: Data e Hora são IGUAIS à última importação.\n");
+        motivo.append("  📅 Data/Hora do arquivo: ").append(dataArquivoStr).append("\n");
+        motivo.append("  📅 Data/Hora da última importação: ").append(dataVersaoStr).append("\n");
+        motivo.append("  ⚠️ DATA e HORA devem ser MAIORES (não podem ser iguais).\n");
+        motivo.append("  ℹ️ Para importar, atualize a DATA e/ou HORA do arquivo.");
         
-        // 2. Data passada (muito antiga - mais de 2 horas)
-        long diferencaEmMillis = dataAtual.getTime() - dataArquivo.getTime();
-        long diferencaEmMinutos = diferencaEmMillis / (1000 * 60);
+        Map<String, Object> erro = criarDetalheErro("1", "D", "data_hora", dataArquivoStr, motivo.toString());
+        erro.put("linha", "1");
+        erro.put("coluna", "D");
+        erros.add(erro);
+        return erros;
+    }
+    
+    // CASO 2: Mesmo dia mas HORA anterior
+    if (mesmoDia && horaAnterior) {
+        long diffMinutos = calcularDiferencaMinutos(dataArquivo, dataVersaoAtual);
         
-        if (diferencaEmMinutos > TEMPO_LIMITE_EM_MINUTOS) {
-            dataPassada = true;
+        StringBuilder motivo = new StringBuilder();
+        motivo.append("ERRO: Hora é ANTERIOR à última importação (mesma data).\n");
+        motivo.append("  📅 Data: ").append(dataArquivoDataStr).append(" (mesmo dia)\n");
+        motivo.append("  🕒 Hora do arquivo: ").append(dataArquivoHoraStr).append("\n");
+        motivo.append("  🕒 Hora da última importação: ").append(dataVersaoHoraStr).append("\n");
+        motivo.append("  ⏰ Diferença: ").append(diffMinutos).append(" minutos mais cedo\n");
+        motivo.append("  ⚠️ A HORA deve ser MAIOR que a última importação.\n");
+        motivo.append("  ℹ️ Para importar, use um arquivo com hora posterior a: ").append(dataVersaoHoraStr);
+        
+        Map<String, Object> erro = criarDetalheErro("1", "D", "hora", dataArquivoHoraStr, motivo.toString());
+        erro.put("linha", "1");
+        erro.put("coluna", "D");
+        erros.add(erro);
+        return erros;
+    }
+    
+    // CASO 3: DATA anterior (independente da hora)
+    if (dataAnterior) {
+        long diffDias = calcularDiferencaDias(dataArquivo, dataVersaoAtual);
+        
+        StringBuilder motivo = new StringBuilder();
+        motivo.append("ERRO: Data é ANTERIOR à última importação.\n");
+        if (mesmoDia) {
+            motivo.append("  📅 Data do arquivo: ").append(dataArquivoDataStr).append(" (mesmo dia)\n");
+        } else {
+            motivo.append("  📅 Data do arquivo: ").append(dataArquivoDataStr).append("\n");
+            motivo.append("  📅 Data da última importação: ").append(dataVersaoDataStr).append("\n");
         }
+        motivo.append("  ⏳ Diferença: ").append(diffDias).append(" dia(s) atrás\n");
+        motivo.append("  ⚠️ A DATA deve ser MAIOR que a última importação.\n");
+        motivo.append("  ℹ️ Para importar, use um arquivo com data posterior a: ").append(dataVersaoDataStr);
         
-        // 3. Data diferente (mesmo dentro do limite de 2 horas)
-        dataDiferente = calArquivo.get(Calendar.YEAR) != calAtual.get(Calendar.YEAR) ||
-                       calArquivo.get(Calendar.MONTH) != calAtual.get(Calendar.MONTH) ||
-                       calArquivo.get(Calendar.DAY_OF_MONTH) != calAtual.get(Calendar.DAY_OF_MONTH);
-        
-        // VERIFICAÇÕES DE HORA (apenas se for o mesmo dia)
-        if (!dataDiferente) {
-            // 4. Hora futura (mesmo dia, hora no futuro)
-            if (calArquivo.get(Calendar.HOUR_OF_DAY) > calAtual.get(Calendar.HOUR_OF_DAY)) {
-                horaFutura = true;
-            } else if (calArquivo.get(Calendar.HOUR_OF_DAY) == calAtual.get(Calendar.HOUR_OF_DAY)) {
-                if (calArquivo.get(Calendar.MINUTE) > calAtual.get(Calendar.MINUTE)) {
-                    horaFutura = true;
-                }
-            }
-            
-            // 5. Hora passada (mesmo dia, hora no passado, considerando diferença > 5 minutos)
-            if (calArquivo.before(calAtual)) {
-                Calendar calArquivoHora = (Calendar) calArquivo.clone();
-                Calendar calAtualHora = (Calendar) calAtual.clone();
-                
-                // Zerar as datas para comparar apenas horas
-                calArquivoHora.set(Calendar.YEAR, calAtual.get(Calendar.YEAR));
-                calArquivoHora.set(Calendar.MONTH, calAtual.get(Calendar.MONTH));
-                calArquivoHora.set(Calendar.DAY_OF_MONTH, calAtual.get(Calendar.DAY_OF_MONTH));
-                
-                long diffHoraMillis = Math.abs(calAtualHora.getTimeInMillis() - calArquivoHora.getTimeInMillis());
-                long diffHoraMinutos = diffHoraMillis / (1000 * 60);
-                
-                if (diffHoraMinutos > 5) {
-                    horaPassada = true;
-                }
-            }
-            
-            // 6. Hora diferente (mesmo dia, diferença pequena)
-            horaDiferente = calArquivo.get(Calendar.HOUR_OF_DAY) != calAtual.get(Calendar.HOUR_OF_DAY) ||
-                           calArquivo.get(Calendar.MINUTE) != calAtual.get(Calendar.MINUTE);
-        }
-        
-        // GERAR MENSAGENS DE ERRO ESPECÍFICAS
-        
-        // ERRO 1: DATA FUTURA (crítico - retorna imediatamente)
-        if (dataFutura) {
-            StringBuilder motivo = new StringBuilder();
-            motivo.append("DATA FUTURA: O arquivo de ").append(tipo).append(" possui uma data do FUTURO.\n");
-            motivo.append("  📅 Data do arquivo: ").append(dataArquivoStr).append("\n");
-            motivo.append("  📅 Data atual do sistema: ").append(dataAtualStr).append("\n");
-            motivo.append("  ⚠️ A data do arquivo NÃO PODE SER FUTURA em relação ao sistema.\n");
-            motivo.append("  ℹ️ Por favor, ajuste a data do arquivo para a data atual ou anterior.");
-            
-            erros.add(criarDetalheErro("1", "B", "data", dataArquivoStr, motivo.toString()));
-            return erros;
-        }
-        
-        // ERRO 2: DATA MUITO ANTIGA (mais de 2 horas)
-        if (dataPassada) {
-            StringBuilder motivo = new StringBuilder();
-            motivo.append("DATA MUITO ANTIGA: O arquivo de ").append(tipo).append(" possui uma data muito antiga.\n");
-            motivo.append("  📅 Data/Hora do arquivo: ").append(sdfCompleto.format(dataArquivo)).append("\n");
-            motivo.append("  📅 Data/Hora atual do sistema: ").append(sdfCompleto.format(dataAtual)).append("\n");
-            motivo.append("  ⏰ Diferença: ").append(diferencaEmMinutos).append(" minutos (limite: ").append(TEMPO_LIMITE_EM_MINUTOS).append(" minutos)\n");
-            motivo.append("  ⚠️ O arquivo deve ter a data/hora ATUAL ou muito próxima.\n");
-            motivo.append("  ℹ️ Por favor, atualize a data/hora do arquivo para a data/hora atual.");
-            
-            erros.add(criarDetalheErro("1", "B", "data", sdfCompleto.format(dataArquivo), motivo.toString()));
-            return erros;
-        }
-        
-        // ERRO 3: DATA DIFERENTE (mas dentro do limite de 2 horas)
-        if (dataDiferente && diferencaEmMinutos <= TEMPO_LIMITE_EM_MINUTOS) {
-            StringBuilder motivo = new StringBuilder();
-            motivo.append("DATA DIFERENTE: A data do arquivo de ").append(tipo).append(" está diferente do sistema.\n");
-            motivo.append("  📅 Data do arquivo: ").append(dataArquivoStr).append(" | Hora: ").append(horaArquivoStr).append("\n");
-            motivo.append("  📅 Data do sistema: ").append(dataAtualStr).append(" | Hora: ").append(horaAtualStr).append("\n");
-            motivo.append("  ⏰ Diferença: ").append(diferencaEmMinutos).append(" minutos\n");
-            motivo.append("  ⚠️ A DATA do arquivo deve ser IGUAL à data atual do sistema.\n");
-            motivo.append("  ℹ️ Por favor, atualize a data do arquivo para: ").append(dataAtualStr);
-            
-            erros.add(criarDetalheErro("1", "B", "data", dataArquivoStr, motivo.toString()));
-        }
-        
-        // ERRO 4: HORA FUTURA (mesmo dia)
-        if (horaFutura) {
-            // Calcular diferença em minutos apenas para a hora
-            Calendar calArquivoHora = (Calendar) calArquivo.clone();
-            Calendar calAtualHora = (Calendar) calAtual.clone();
-            
-            // Zerar as datas para comparar apenas horas
-            calArquivoHora.set(Calendar.YEAR, calAtual.get(Calendar.YEAR));
-            calArquivoHora.set(Calendar.MONTH, calAtual.get(Calendar.MONTH));
-            calArquivoHora.set(Calendar.DAY_OF_MONTH, calAtual.get(Calendar.DAY_OF_MONTH));
-            
-            long diffHoraMillis = Math.abs(calAtualHora.getTimeInMillis() - calArquivoHora.getTimeInMillis());
-            long diffHoraMinutos = diffHoraMillis / (1000 * 60);
-            
-            StringBuilder motivo = new StringBuilder();
-            motivo.append("HORA FUTURA: A hora do arquivo de ").append(tipo).append(" é do FUTURO (mesmo dia).\n");
-            motivo.append("  📅 Data: ").append(dataArquivoStr).append(" | Hora do arquivo: ").append(horaArquivoStr).append("\n");
-            motivo.append("  📅 Data: ").append(dataAtualStr).append(" | Hora do sistema: ").append(horaAtualStr).append("\n");
-            motivo.append("  ⏰ Diferença: ").append(diffHoraMinutos).append(" minutos\n");
-            motivo.append("  ⚠️ A HORA do arquivo NÃO PODE SER FUTURA em relação ao sistema.\n");
-            motivo.append("  ℹ️ Por favor, ajuste a hora do arquivo para: ").append(horaAtualStr);
-            
-            erros.add(criarDetalheErro("1", "B", "hora", horaArquivoStr, motivo.toString()));
-        }
-        
-        // ERRO 5: HORA PASSADA (mesmo dia, diferença > 5 minutos)
-        if (horaPassada && !horaFutura) {
-            Calendar calArquivoHora = (Calendar) calArquivo.clone();
-            Calendar calAtualHora = (Calendar) calAtual.clone();
-            
-            // Zerar as datas para comparar apenas horas
-            calArquivoHora.set(Calendar.YEAR, calAtual.get(Calendar.YEAR));
-            calArquivoHora.set(Calendar.MONTH, calAtual.get(Calendar.MONTH));
-            calArquivoHora.set(Calendar.DAY_OF_MONTH, calAtual.get(Calendar.DAY_OF_MONTH));
-            
-            long diffHoraMillis = Math.abs(calAtualHora.getTimeInMillis() - calArquivoHora.getTimeInMillis());
-            long diffHoraMinutos = diffHoraMillis / (1000 * 60);
-            
-            StringBuilder motivo = new StringBuilder();
-            motivo.append("HORA ANTERIOR: A hora do arquivo de ").append(tipo).append(" está no PASSADO em relação ao sistema.\n");
-            motivo.append("  📅 Data: ").append(dataArquivoStr).append(" | Hora do arquivo: ").append(horaArquivoStr).append("\n");
-            motivo.append("  📅 Data: ").append(dataAtualStr).append(" | Hora do sistema: ").append(horaAtualStr).append("\n");
-            motivo.append("  ⏰ Diferença: ").append(diffHoraMinutos).append(" minutos\n");
-            motivo.append("  ⚠️ A HORA do arquivo está PASSADA em relação ao sistema.\n");
-            motivo.append("  ℹ️ Por favor, atualize a hora do arquivo para: ").append(horaAtualStr);
-            
-            erros.add(criarDetalheErro("1", "B", "hora", horaArquivoStr, motivo.toString()));
-        }
-        
-        // ERRO 6: HORA DIFERENTE (diferença pequena, mesmo dia, não coberta pelos casos anteriores)
-        if (!dataDiferente && horaDiferente && !horaFutura && !horaPassada) {
-            Calendar calArquivoHora = (Calendar) calArquivo.clone();
-            Calendar calAtualHora = (Calendar) calAtual.clone();
-            
-            // Zerar as datas para comparar apenas horas
-            calArquivoHora.set(Calendar.YEAR, calAtual.get(Calendar.YEAR));
-            calArquivoHora.set(Calendar.MONTH, calAtual.get(Calendar.MONTH));
-            calArquivoHora.set(Calendar.DAY_OF_MONTH, calAtual.get(Calendar.DAY_OF_MONTH));
-            
-            long diffHoraMillis = Math.abs(calAtualHora.getTimeInMillis() - calArquivoHora.getTimeInMillis());
-            long diffHoraMinutos = diffHoraMillis / (1000 * 60);
-            
-            if (diffHoraMinutos > 0) {
-                StringBuilder motivo = new StringBuilder();
-                motivo.append("HORA DIFERENTE: A hora do arquivo de ").append(tipo).append(" está ligeiramente diferente.\n");
-                motivo.append("  📅 Data: ").append(dataArquivoStr).append(" | Hora do arquivo: ").append(horaArquivoStr).append("\n");
-                motivo.append("  📅 Data: ").append(dataAtualStr).append(" | Hora do sistema: ").append(horaAtualStr).append("\n");
-                motivo.append("  ⏰ Diferença: ").append(diffHoraMinutos).append(" minutos\n");
-                motivo.append("  ℹ️ A hora do arquivo deve ser igual à hora atual do sistema.");
-                
-                erros.add(criarDetalheErro("1", "B", "hora", horaArquivoStr, motivo.toString()));
-            }
-        }
-        
-        // ERRO 7: DATA/HORA COMPLETAMENTE DIFERENTE (data e hora diferentes simultaneamente)
-        if (dataDiferente && horaDiferente && diferencaEmMinutos <= TEMPO_LIMITE_EM_MINUTOS) {
-            StringBuilder motivo = new StringBuilder();
-            motivo.append("DATA/HORA DIFERENTES: A data e hora do arquivo de ").append(tipo).append(" estão diferentes do sistema.\n");
-            motivo.append("  📅 Data/Hora do arquivo: ").append(sdfCompleto.format(dataArquivo)).append("\n");
-            motivo.append("  📅 Data/Hora do sistema: ").append(sdfCompleto.format(dataAtual)).append("\n");
-            motivo.append("  ⏰ Diferença total: ").append(diferencaEmMinutos).append(" minutos\n");
-            motivo.append("  ⚠️ A DATA e HORA do arquivo devem ser IGUAIS às do sistema.\n");
-            motivo.append("  ℹ️ Por favor, atualize para: ").append(sdfCompleto.format(dataAtual));
-            
-            erros.add(criarDetalheErro("1", "B", "data_hora", sdfCompleto.format(dataArquivo), motivo.toString()));
-        }
-        
+        Map<String, Object> erro = criarDetalheErro("1", "D", "data", dataArquivoDataStr, motivo.toString());
+        erro.put("linha", "1");
+        erro.put("coluna", "D");
+        erros.add(erro);
         return erros;
     }
 
-    /**
-     * Valida APENAS a data do arquivo (separado da hora)
-     */
-    private static List<Map<String, Object>> validarApenasData(
-            Date dataArquivo, Date dataAtual, String tipo) {
-        
-        List<Map<String, Object>> erros = new ArrayList<>();
-        Calendar calArquivo = Calendar.getInstance();
-        calArquivo.setTime(dataArquivo);
-        
-        Calendar calAtual = Calendar.getInstance();
-        calAtual.setTime(dataAtual);
-        
-        SimpleDateFormat sdfData = new SimpleDateFormat("yyyy-MM-dd");
-        
-        // Verificar se data é futura
-        if (calArquivo.get(Calendar.YEAR) > calAtual.get(Calendar.YEAR) ||
-            (calArquivo.get(Calendar.YEAR) == calAtual.get(Calendar.YEAR) && 
-             calArquivo.get(Calendar.MONTH) > calAtual.get(Calendar.MONTH)) ||
-            (calArquivo.get(Calendar.YEAR) == calAtual.get(Calendar.YEAR) && 
-             calArquivo.get(Calendar.MONTH) == calAtual.get(Calendar.MONTH) && 
-             calArquivo.get(Calendar.DAY_OF_MONTH) > calAtual.get(Calendar.DAY_OF_MONTH))) {
-            
-            StringBuilder motivo = new StringBuilder();
-            motivo.append("DATA FUTURA: O arquivo de ").append(tipo).append(" possui uma data do FUTURO.\n");
-            motivo.append("  📅 Data do arquivo: ").append(sdfData.format(dataArquivo)).append("\n");
-            motivo.append("  📅 Data atual: ").append(sdfData.format(dataAtual)).append("\n");
-            motivo.append("  ⚠️ A data NÃO PODE SER FUTURA.");
-            
-            erros.add(criarDetalheErro("1", "B", "data", sdfData.format(dataArquivo), motivo.toString()));
-            return erros;
-        }
-        
-        // Verificar se data é passada (muito antiga)
-        long diferencaDias = (calAtual.getTimeInMillis() - calArquivo.getTimeInMillis()) / (1000 * 60 * 60 * 24);
-        if (diferencaDias > 1) { // Mais de 1 dia de diferença
-            StringBuilder motivo = new StringBuilder();
-            motivo.append("DATA MUITO ANTIGA: O arquivo de ").append(tipo).append(" possui uma data muito antiga.\n");
-            motivo.append("  📅 Data do arquivo: ").append(sdfData.format(dataArquivo)).append("\n");
-            motivo.append("  📅 Data atual: ").append(sdfData.format(dataAtual)).append("\n");
-            motivo.append("  ⏰ Diferença: ").append(diferencaDias).append(" dias\n");
-            motivo.append("  ⚠️ A data deve ser ATUAL.");
-            
-            erros.add(criarDetalheErro("1", "B", "data", sdfData.format(dataArquivo), motivo.toString()));
-            return erros;
-        }
-        
-        // Verificar se data é diferente (mesmo sendo do mesmo dia ou próximo)
-        if (calArquivo.get(Calendar.YEAR) != calAtual.get(Calendar.YEAR) ||
-            calArquivo.get(Calendar.MONTH) != calAtual.get(Calendar.MONTH) ||
-            calArquivo.get(Calendar.DAY_OF_MONTH) != calAtual.get(Calendar.DAY_OF_MONTH)) {
-            
-            StringBuilder motivo = new StringBuilder();
-            motivo.append("DATA DIFERENTE: A data do arquivo de ").append(tipo).append(" está diferente.\n");
-            motivo.append("  📅 Data do arquivo: ").append(sdfData.format(dataArquivo)).append("\n");
-            motivo.append("  📅 Data atual: ").append(sdfData.format(dataAtual)).append("\n");
-            motivo.append("  ℹ️ A data deve ser igual à data atual.");
-            
-            erros.add(criarDetalheErro("1", "B", "data", sdfData.format(dataArquivo), motivo.toString()));
-        }
-        
-        return erros;
-    }
+    return erros; 
+}
 
-    /**
-     * Valida APENAS a hora do arquivo (assumindo que a data é a mesma)
-     */
-    private static List<Map<String, Object>> validarApenasHora(
-            Date dataArquivo, Date dataAtual, String tipo) {
-        
-        List<Map<String, Object>> erros = new ArrayList<>();
-        Calendar calArquivo = Calendar.getInstance();
-        calArquivo.setTime(dataArquivo);
-        
-        Calendar calAtual = Calendar.getInstance();
-        calAtual.setTime(dataAtual);
-        
-        SimpleDateFormat sdfHora = new SimpleDateFormat("HH:mm");
-        
-        // Verificar se é o mesmo dia
-        boolean mesmoDia = calArquivo.get(Calendar.YEAR) == calAtual.get(Calendar.YEAR) &&
-                          calArquivo.get(Calendar.MONTH) == calAtual.get(Calendar.MONTH) &&
-                          calArquivo.get(Calendar.DAY_OF_MONTH) == calAtual.get(Calendar.DAY_OF_MONTH);
-        
-        if (!mesmoDia) {
-            // Se não for o mesmo dia, não faz sentido validar apenas a hora
-            return erros;
-        }
-        
-        // Verificar se hora é futura
-        if (calArquivo.get(Calendar.HOUR_OF_DAY) > calAtual.get(Calendar.HOUR_OF_DAY) ||
-            (calArquivo.get(Calendar.HOUR_OF_DAY) == calAtual.get(Calendar.HOUR_OF_DAY) &&
-             calArquivo.get(Calendar.MINUTE) > calAtual.get(Calendar.MINUTE))) {
-            
-            StringBuilder motivo = new StringBuilder();
-            motivo.append("HORA FUTURA: A hora do arquivo de ").append(tipo).append(" é do FUTURO.\n");
-            motivo.append("  🕒 Hora do arquivo: ").append(sdfHora.format(dataArquivo)).append("\n");
-            motivo.append("  🕒 Hora atual: ").append(sdfHora.format(dataAtual)).append("\n");
-            motivo.append("  ⚠️ A hora NÃO PODE SER FUTURA.");
-            
-            erros.add(criarDetalheErro("1", "B", "hora", sdfHora.format(dataArquivo), motivo.toString()));
-            return erros;
-        }
-        
-        // Verificar se hora é passada (mais de 5 minutos)
-        long diferencaMillis = calAtual.getTimeInMillis() - calArquivo.getTimeInMillis();
-        long diferencaMinutos = diferencaMillis / (1000 * 60);
-        
-        if (diferencaMinutos > 5) {
-            StringBuilder motivo = new StringBuilder();
-            motivo.append("HORA ANTERIOR: A hora do arquivo de ").append(tipo).append(" está no PASSADO.\n");
-            motivo.append("  🕒 Hora do arquivo: ").append(sdfHora.format(dataArquivo)).append("\n");
-            motivo.append("  🕒 Hora atual: ").append(sdfHora.format(dataAtual)).append("\n");
-            motivo.append("  ⏰ Diferença: ").append(diferencaMinutos).append(" minutos\n");
-            motivo.append("  ⚠️ A hora está muito atrasada.");
-            
-            erros.add(criarDetalheErro("1", "B", "hora", sdfHora.format(dataArquivo), motivo.toString()));
-            return erros;
-        }
-        
-        // Verificar se hora é diferente (pequena diferença)
-        if (calArquivo.get(Calendar.HOUR_OF_DAY) != calAtual.get(Calendar.HOUR_OF_DAY) ||
-            calArquivo.get(Calendar.MINUTE) != calAtual.get(Calendar.MINUTE)) {
-            
-            StringBuilder motivo = new StringBuilder();
-            motivo.append("HORA DIFERENTE: A hora do arquivo de ").append(tipo).append(" está diferente.\n");
-            motivo.append("  🕒 Hora do arquivo: ").append(sdfHora.format(dataArquivo)).append("\n");
-            motivo.append("  🕒 Hora atual: ").append(sdfHora.format(dataAtual)).append("\n");
-            motivo.append("  ℹ️ A hora deve ser igual à hora atual.");
-            
-            erros.add(criarDetalheErro("1", "B", "hora", sdfHora.format(dataArquivo), motivo.toString()));
-        }
-        
-        return erros;
-    }
 
-    /**
-     * Verifica se a data do arquivo é válida - VERSÃO MELHORADA COM VALIDAÇÕES SEPARADAS
-     */
-    private static List<Map<String, Object>> validarDataArquivo(Date dataArquivo, String tipo, VersaoService versaoService) {
-        List<Map<String, Object>> erros = new ArrayList<>();
-        Date dataAtual = new Date();
-        
-        // Usar a função melhorada para verificar data/hora com maior precisão
-        List<Map<String, Object>> errosDataHora = verificarDiferencasDataHora(dataArquivo, dataAtual, tipo);
-        if (!errosDataHora.isEmpty()) {
-            return errosDataHora;
-        }
-        
-        // Opcional: também pode usar as validações separadas
-        // List<Map<String, Object>> errosApenasData = validarApenasData(dataArquivo, dataAtual, tipo);
-        // List<Map<String, Object>> errosApenasHora = validarApenasHora(dataArquivo, dataAtual, tipo);
-        // erros.addAll(errosApenasData);
-        // erros.addAll(errosApenasHora);
-        
-        // Verificar se já existe uma versão com a mesma data
-        Versao versaoAtual = versaoService.obterVersao(
-            tipo.equals("tipos de funcionalidade") ? Defs.TIPO_FUNCIONALIDADE : Defs.FUNCIONALIDADE
-        );
-        
-        if (versaoAtual != null) {
-            Date dataVersaoAtual = versaoAtual.getData();
-            
-            // Calcular diferença em minutos entre as duas datas
-            long diffVersaoMillis = Math.abs(dataArquivo.getTime() - dataVersaoAtual.getTime());
-            long diffVersaoMinutos = diffVersaoMillis / (1000 * 60);
-            
-            // Se a diferença for menor que 2 minutos, consideramos como a mesma data/hora
-            if (diffVersaoMinutos < 2) {
-                SimpleDateFormat sdfDetalhado = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                String dataArquivoDetalhada = sdfDetalhado.format(dataArquivo);
-                String dataVersaoDetalhada = sdfDetalhado.format(dataVersaoAtual);
-                
-                StringBuilder motivo = new StringBuilder();
-                motivo.append("ARQUIVO JÁ IMPORTADO: Este arquivo já foi importado anteriormente.\n");
-                motivo.append("  📅 Data/Hora do arquivo atual: ").append(dataArquivoDetalhada).append("\n");
-                motivo.append("  📅 Data/Hora da última importação: ").append(dataVersaoDetalhada).append("\n");
-                motivo.append("  ⏰ Diferença: ").append(diffVersaoMinutos).append(" minutos\n");
-                motivo.append("  ℹ️ Para importar novamente, atualize a data/hora do arquivo.");
-                
-                erros.add(criarDetalheErro("1", "B", "data", dataArquivoDetalhada, motivo.toString()));
-                return erros;
-            }
-        }
-        
-        // Verificar se a data é mais antiga que a última versão (lógica existente)
-        int comparacao = versaoService.comparaDataVersao(
-            tipo.equals("tipos de funcionalidade") ? Defs.TIPO_FUNCIONALIDADE : Defs.FUNCIONALIDADE, 
-            dataArquivo
-        );
-        
-        if (comparacao < 0) {
-            Versao versaoAtual2 = versaoService.obterVersao(
-                tipo.equals("tipos de funcionalidade") ? Defs.TIPO_FUNCIONALIDADE : Defs.FUNCIONALIDADE
-            );
-            if (versaoAtual2 != null) {
-                Date dataVersaoAtual = versaoAtual2.getData();
-                String dataVersaoAtualStr = DATE_FORMAT.format(dataVersaoAtual);
-                String dataArquivoStr = DATE_FORMAT.format(dataArquivo);
-                
-                StringBuilder motivo = new StringBuilder();
-                motivo.append("VERSÃO REJEITADA: O arquivo de ").append(tipo).append(" é mais antigo que a versão atual.\n");
-                motivo.append("  📅 Data/Hora do arquivo: ").append(dataArquivoStr).append("\n");
-                motivo.append("  📅 Última versão importada: ").append(dataVersaoAtualStr).append("\n");
-                motivo.append("  ℹ️ Para importar, use um arquivo com data/hora igual ou posterior a: ").append(dataVersaoAtualStr);
-                
-                erros.add(criarDetalheErro("1", "B", "data", dataArquivoStr, motivo.toString()));
-                return erros;
-            }
-        }
-        
-        return erros;
-    }
+private static long calcularDiferencaDias(Date data1, Date data2) {
+    long diffMillis = Math.abs(data2.getTime() - data1.getTime());
+    return diffMillis / (1000 * 60 * 60 * 24);
+}
+
+/**
+ * Calcula diferença em minutos entre duas datas
+ */
+private static long calcularDiferencaMinutos(Date data1, Date data2) {
+    long diffMillis = Math.abs(data2.getTime() - data1.getTime());
+    return diffMillis / (1000 * 60);
+}
+
+
+private static Map<String, Object> criarDetalheErro(String linha, String coluna, 
+                                                   String campo, String valor, String motivo) {
+    Map<String, Object> erro = new HashMap<>();
+    erro.put("linha", linha);
+    erro.put("coluna", coluna);
+    erro.put("campo", campo);
+    erro.put("valor", valor);
+    erro.put("motivo", motivo);
+    return erro;
+}
 
     /**
      * Determina automaticamente qual folha contém quais dados
@@ -863,7 +603,7 @@ public class TipoFuncionalidadeLoader {
             }
 
             // Validar data do arquivo (nova validação)
-            List<Map<String, Object>> errosData = validarDataArquivo(dataArquivo, "tipos de funcionalidade", versaoService);
+            List<Map<String, Object>> errosData = validarDataArquivoVersao(dataArquivo, "tipos de funcionalidade", versaoService);
             if (!errosData.isEmpty()) {
                 return errosData;
             }
@@ -1044,7 +784,7 @@ public class TipoFuncionalidadeLoader {
             }
 
             // Validar data do arquivo (nova validação)
-            List<Map<String, Object>> errosData = validarDataArquivo(dataArquivo, "funcionalidades", versaoService);
+            List<Map<String, Object>> errosData = validarDataArquivoVersao(dataArquivo, "funcionalidades", versaoService);
             if (!errosData.isEmpty()) {
                 return errosData;
             }
@@ -1075,9 +815,8 @@ public class TipoFuncionalidadeLoader {
                     break;
                 }
 
-                // Validar linha com validação melhorada
-                List<Map<String, Object>> errosLinha = validarLinhaFuncionalidadeMelhorada(
-                    row, index, pkMap.keySet(), tipoFuncionalidadeRepository);
+               List<Map<String, Object>> errosLinha = validarLinhaFuncionalidadeMelhorada(
+    row, index, pkMap.keySet(), tipoFuncionalidadeRepository, funcionalidadeRepository);
                 
                 if (!errosLinha.isEmpty()) {
                     erros.addAll(errosLinha);
@@ -1217,7 +956,7 @@ public class TipoFuncionalidadeLoader {
                     Funcionalidade funcPai = funcPaiOpt.get();
                     
                     // Definir relação pai-filho
-                    funcFilho.setFkFuncionalidade(funcPai);
+                    funcFilho.setFkFuncionalidadePai(funcPai);
                     funcionalidadeRepository.save(funcFilho);
                     
                     System.out.println("  ✅ Relação atualizada: " + filhoId + " -> " + paiId);
@@ -1258,224 +997,265 @@ public class TipoFuncionalidadeLoader {
         return erros;
     }
 
-    /**
-     * Valida linha de funcionalidade - VERSÃO MELHORADA COM VALIDAÇÃO DETALHADA
-     */
-    private static List<Map<String, Object>> validarLinhaFuncionalidadeMelhorada(
-            Row row, 
-            int numeroLinha, 
-            Set<Integer> pksProcessados,
-            TipoFuncionalidadeRepository tipoFuncionalidadeRepository) {
-        
-        List<Map<String, Object>> erros = new ArrayList<>();
-        int linhaReal = numeroLinha + 1;
-        
-        // Mapeamento de colunas
-        String[] nomesColunas = {"A", "B", "C", "D", "E", "F", "G", "H"};
-        String[] nomesCampos = {
-            "pk_funcionalidade", "designacao", "descricao", "fk_tipo_funcionalidade",
-            "grupo", "fk_funcionalidade", "funcionalidades_partilhadas", "url"
-        };
-        
-        // Extrair valores das células
-        String[] valores = new String[8];
-        for (int i = 0; i < 8; i++) {
-            Cell cell = row.getCell(i);
-            valores[i] = (cell != null && !isCellEmpty(cell)) ? FuncionsHelper.getCellAsString(cell).trim() : "";
-        }
-        
-        // Lista de valores comuns que devem ser aceitos (incluindo "Tipo de Problema", etc.)
-        Set<String> valoresPermitidos = new HashSet<>(Arrays.asList(
-            "tipo de problema", "descrição detalhada", "nome do denunciante",
-            "descricao detalhada", "caixa de entrada", "caixa de seleção",
-            "combobox", "input text", "input date", "input file", "checkbox"
-        ));
-        
-        // Verificar se é linha de cabeçalho da tabela (ignorar)
-        String primeiraColuna = valores[0].toLowerCase();
-        if (primeiraColuna.contains("pk_funcionalidade") || primeiraColuna.contains("designacao")) {
-            // É linha de cabeçalho, ignorar validação
-            return erros;
-        }
-        
-        // Validar pk_funcionalidade (coluna A)
-        if (valores[0].isEmpty()) {
-            erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[0], nomesCampos[0], 
-                "[VAZIO]", "Campo obrigatório não preenchido"));
-        } else {
-            // Verificar se é inteiro
-            if (!INTEGER_PATTERN.matcher(valores[0]).matches()) {
-                erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[0], nomesCampos[0], 
-                    valores[0], "Deve ser um número inteiro (sem casas decimais)"));
-            } else {
-                try {
-                    int pk = Integer.parseInt(valores[0]);
-                    if (pk <= 0) {
-                        erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[0], nomesCampos[0], 
-                            valores[0], "Deve ser maior que 0"));
-                    } else if (pksProcessados.contains(pk)) {
-                        erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[0], nomesCampos[0], 
-                            valores[0], "PK duplicada neste arquivo"));
-                    }
-                } catch (NumberFormatException e) {
-                    erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[0], nomesCampos[0], 
-                        valores[0], "Valor numérico inválido"));
-                }
-            }
-        }
-        
-        // Validar designacao (coluna B) - CORRIGIDA
-        if (valores[1].isEmpty()) {
-            erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[1], nomesCampos[1], 
-                "[VAZIO]", "Campo obrigatório não preenchido"));
-        } else {
-            // Verificação especial para valores comuns
-            String designacaoLower = valores[1].toLowerCase();
-            boolean designacaoPermitida = valoresPermitidos.stream()
-                .anyMatch(designacaoLower::contains);
-            
-            // Se não for um valor permitido e não corresponder ao padrão, então gerar erro
-            if (!designacaoPermitida && !LETTERS_ONLY_PATTERN.matcher(valores[1]).matches()) {
-                erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[1], nomesCampos[1], 
-                    valores[1], "Deve conter apenas letras, acentuações e caracteres especiais (.,;:?!\"'()_-/). Números não são permitidos."));
-            }
-            
-            // Verificar tamanho máximo
-            if (valores[1].length() > 100) {
-                erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[1], nomesCampos[1], 
-                    valores[1], "Excede o limite de 100 caracteres"));
-            }
-        }
-        
-        // Validar descricao (coluna C) - CORRIGIDA
-        if (valores[2].isEmpty()) {
-            erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[2], nomesCampos[2], 
-                "[VAZIO]", "Campo obrigatório não preenchido"));
-        } else {
-            // Verificação especial para valores comuns
-            String descricaoLower = valores[2].toLowerCase();
-            boolean descricaoPermitida = valoresPermitidos.stream()
-                .anyMatch(descricaoLower::contains);
-            
-            // Se não for um valor permitido e não corresponder ao padrão, então gerar erro
-            if (!descricaoPermitida && !LETTERS_ONLY_PATTERN.matcher(valores[2]).matches()) {
-                erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[2], nomesCampos[2], 
-                    valores[2], "Deve conter apenas letras, acentuações e caracteres especiais (.,;:?!\"'()_-/). Números não são permitidos."));
-            }
-            
-            // Verificar tamanho máximo
-            if (valores[2].length() > 250) {
-                erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[2], nomesCampos[2], 
-                    valores[2], "Excede o limite de 250 caracteres"));
-            }
-        }
-        
-        // Validar fk_tipo_funcionalidade (coluna D)
-        if (valores[3].isEmpty()) {
-            erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[3], nomesCampos[3], 
-                "[VAZIO]", "Campo obrigatório não preenchido"));
-        } else {
-            // Verificar se é inteiro
-            if (!INTEGER_PATTERN.matcher(valores[3]).matches()) {
-                erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[3], nomesCampos[3], 
-                    valores[3], "Deve ser um número inteiro (sem casas decimais)"));
-            } else {
-                try {
-                    int fk = Integer.parseInt(valores[3]);
-                    if (fk <= 0) {
-                        erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[3], nomesCampos[3], 
-                            valores[3], "Deve ser maior que 0"));
-                    } else if (tipoFuncionalidadeRepository != null) {
-                        // Verificar se o tipo existe no banco
-                        boolean tipoExiste = tipoFuncionalidadeRepository.existsById(fk);
-                        if (!tipoExiste) {
-                            erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[3], nomesCampos[3], 
-                                valores[3], "Tipo de funcionalidade ID " + fk + " não existe no sistema"));
-                        }
-                    }
-                } catch (NumberFormatException e) {
-                    erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[3], nomesCampos[3], 
-                        valores[3], "Valor numérico inválido"));
-                }
-            }
-        }
-        
-        // Validar grupo (coluna E)
-        if (valores[4].isEmpty()) {
-            erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[4], nomesCampos[4], 
-                "[VAZIO]", "Campo obrigatório não preenchido"));
-        } else {
-            // Verificar se é inteiro
-            if (!INTEGER_PATTERN.matcher(valores[4]).matches()) {
-                erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[4], nomesCampos[4], 
-                    valores[4], "Deve ser um número inteiro (sem casas decimais)"));
-            } else {
-                try {
-                    int grupo = Integer.parseInt(valores[4]);
-                    if (grupo < 0) {
-                        erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[4], nomesCampos[4], 
-                            valores[4], "Não pode ser negativo"));
-                    }
-                } catch (NumberFormatException e) {
-                    erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[4], nomesCampos[4], 
-                        valores[4], "Valor numérico inválido"));
-                }
-            }
-        }
-        
-        // Validar fk_funcionalidade (coluna F) - OPCIONAL
-        if (!valores[5].isEmpty()) {
-            // Verificar se é inteiro
-            if (!INTEGER_PATTERN.matcher(valores[5]).matches()) {
-                erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[5], nomesCampos[5], 
-                    valores[5], "Deve ser um número inteiro (sem casas decimais) ou estar vazio"));
-            } else {
-                try {
-                    int fk = Integer.parseInt(valores[5]);
-                    if (fk < 0) {
-                        erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[5], nomesCampos[5], 
-                            valores[5], "Não pode ser negativo"));
-                    }
-                } catch (NumberFormatException e) {
-                    erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[5], nomesCampos[5], 
-                        valores[5], "Valor numérico inválido"));
-                }
-            }
-        }
-        
-        // Validar funcionalidades_partilhadas (coluna G) - OPCIONAL
-        if (!valores[6].isEmpty()) {
-            // Verificar formato (números separados por ; ou o valor 1000 com ou sem ;)
-            if (!SHARED_FUNCS_PATTERN.matcher(valores[6]).matches()) {
-                erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[6], nomesCampos[6], 
-                    valores[6], "Formato inválido. Use números inteiros separados por ponto e vírgula (ex: 1001;1002) ou o valor 1000 (com ou sem ponto e vírgula)"));
-            }
-            
-            // Verificar tamanho máximo
-            if (valores[6].length() > 250) {
-                erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[6], nomesCampos[6], 
-                    valores[6], "Excede o limite de 250 caracteres"));
-            }
-        }
-        
-        // Validar url (coluna H) - OPCIONAL
-        if (!valores[7].isEmpty()) {
-            // Verificar se contém apenas caracteres válidos para URL
-            if (!URL_PATTERN.matcher(valores[7]).matches()) {
-                erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[7], nomesCampos[7], 
-                    valores[7], "Deve conter apenas letras, números e caracteres especiais de URL (/.-_?)"));
-            }
-            
-            // Verificar tamanho máximo
-            if (valores[7].length() > 100) {
-                erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[7], nomesCampos[7], 
-                    valores[7], "Excede o limite de 100 caracteres"));
-            }
-        }
-        
+/**
+ * Valida linha de funcionalidade - VERSÃO MELHORADA COM VALIDAÇÃO DETALHADA
+ */
+private static List<Map<String, Object>> validarLinhaFuncionalidadeMelhorada(
+        Row row, 
+        int numeroLinha, 
+        Set<Integer> pksProcessados,
+        TipoFuncionalidadeRepository tipoFuncionalidadeRepository,
+        FuncionalidadeRepository funcionalidadeRepository) {
+    
+    List<Map<String, Object>> erros = new ArrayList<>();
+    int linhaReal = numeroLinha + 1;
+    
+    // Mapeamento de colunas
+    String[] nomesColunas = {"A", "B", "C", "D", "E", "F", "G", "H"};
+    String[] nomesCampos = {
+        "pk_funcionalidade", "designacao", "descricao", "fk_tipo_funcionalidade",
+        "grupo", "fk_funcionalidade", "funcionalidades_partilhadas", "url"
+    };
+    
+    // Extrair valores das células
+    String[] valores = new String[8];
+    for (int i = 0; i < 8; i++) {
+        Cell cell = row.getCell(i);
+        valores[i] = (cell != null && !isCellEmpty(cell)) ? FuncionsHelper.getCellAsString(cell).trim() : "";
+    }
+    
+    // Lista de valores comuns que devem ser aceitos (incluindo "Tipo de Problema", etc.)
+    Set<String> valoresPermitidos = new HashSet<>(Arrays.asList(
+        "tipo de problema", "descrição detalhada", "nome do denunciante",
+        "descricao detalhada", "caixa de entrada", "caixa de seleção",
+        "combobox", "input text", "input date", "input file", "checkbox"
+    ));
+    
+    // Verificar se é linha de cabeçalho da tabela (ignorar)
+    String primeiraColuna = valores[0].toLowerCase();
+    if (primeiraColuna.contains("pk_funcionalidade") || primeiraColuna.contains("designacao")) {
+        // É linha de cabeçalho, ignorar validação
         return erros;
     }
-
+    
+    // Validar pk_funcionalidade (coluna A)
+    if (valores[0].isEmpty()) {
+        erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[0], nomesCampos[0], 
+            "[VAZIO]", "Campo obrigatório não preenchido"));
+    } else {
+        // Verificar se é inteiro
+        if (!INTEGER_PATTERN.matcher(valores[0]).matches()) {
+            erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[0], nomesCampos[0], 
+                valores[0], "Deve ser um número inteiro (sem casas decimais)"));
+        } else {
+            try {
+                int pk = Integer.parseInt(valores[0]);
+                if (pk <= 0) {
+                    erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[0], nomesCampos[0], 
+                        valores[0], "Deve ser maior que 0"));
+                } else if (pksProcessados.contains(pk)) {
+                    erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[0], nomesCampos[0], 
+                        valores[0], "PK duplicada neste arquivo"));
+                }
+            } catch (NumberFormatException e) {
+                erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[0], nomesCampos[0], 
+                    valores[0], "Valor numérico inválido"));
+            }
+        }
+    }
+    
+    // Validar designacao (coluna B) - CORRIGIDA
+    if (valores[1].isEmpty()) {
+        erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[1], nomesCampos[1], 
+            "[VAZIO]", "Campo obrigatório não preenchido"));
+    } else {
+        // Verificação especial para valores comuns
+        String designacaoLower = valores[1].toLowerCase();
+        boolean designacaoPermitida = valoresPermitidos.stream()
+            .anyMatch(designacaoLower::contains);
+        
+        // Se não for um valor permitido e não corresponder ao padrão, então gerar erro
+        if (!designacaoPermitida && !LETTERS_ONLY_PATTERN.matcher(valores[1]).matches()) {
+            erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[1], nomesCampos[1], 
+                valores[1], "Deve conter apenas letras, acentuações e caracteres especiais (.,;:?!\"'()_-/). Números não são permitidos."));
+        }
+        
+        // Verificar tamanho máximo
+        if (valores[1].length() > 100) {
+            erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[1], nomesCampos[1], 
+                valores[1], "Excede o limite de 100 caracteres"));
+        }
+    }
+    
+    // Validar descricao (coluna C) - CORRIGIDA
+    if (valores[2].isEmpty()) {
+        erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[2], nomesCampos[2], 
+            "[VAZIO]", "Campo obrigatório não preenchido"));
+    } else {
+        // Verificação especial para valores comuns
+        String descricaoLower = valores[2].toLowerCase();
+        boolean descricaoPermitida = valoresPermitidos.stream()
+            .anyMatch(descricaoLower::contains);
+        
+        // Se não for um valor permitido e não corresponder ao padrão, então gerar erro
+        if (!descricaoPermitida && !LETTERS_ONLY_PATTERN.matcher(valores[2]).matches()) {
+            erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[2], nomesCampos[2], 
+                valores[2], "Deve conter apenas letras, acentuações e caracteres especiais (.,;:?!\"'()_-/). Números não são permitidos."));
+        }
+        
+        // Verificar tamanho máximo
+        if (valores[2].length() > 250) {
+            erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[2], nomesCampos[2], 
+                valores[2], "Excede o limite de 250 caracteres"));
+        }
+    }
+    
+    // Validar fk_tipo_funcionalidade (coluna D)
+    if (valores[3].isEmpty()) {
+        erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[3], nomesCampos[3], 
+            "[VAZIO]", "Campo obrigatório não preenchido"));
+    } else {
+        // Verificar se é inteiro
+        if (!INTEGER_PATTERN.matcher(valores[3]).matches()) {
+            erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[3], nomesCampos[3], 
+                valores[3], "Deve ser um número inteiro (sem casas decimais)"));
+        } else {
+            try {
+                int fk = Integer.parseInt(valores[3]);
+                if (fk <= 0) {
+                    erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[3], nomesCampos[3], 
+                        valores[3], "Deve ser maior que 0"));
+                } else if (tipoFuncionalidadeRepository != null) {
+                    // Verificar se o tipo existe no banco
+                    boolean tipoExiste = tipoFuncionalidadeRepository.existsById(fk);
+                    if (!tipoExiste) {
+                        erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[3], nomesCampos[3], 
+                            valores[3], "Tipo de funcionalidade ID " + fk + " não existe no sistema"));
+                    }
+                }
+            } catch (NumberFormatException e) {
+                erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[3], nomesCampos[3], 
+                    valores[3], "Valor numérico inválido"));
+            }
+        }
+    }
+    
+    // VALIDAÇÃO ADICIONADA: Verificar duplicidade designação + mesmo pai (REGRA: designacao + pai devem ser únicos)
+    if (funcionalidadeRepository != null && !valores[1].isEmpty()) { // designacao não vazia
+        Integer paiId = null;
+        
+        // Obter ID do pai se fornecido
+        if (!valores[5].isEmpty()) {
+            try {
+                paiId = Integer.parseInt(valores[5].trim());
+            } catch (NumberFormatException e) {
+                // Já tratado em validação anterior
+            }
+        }
+        
+        // Verificar duplicidade apenas se temos um repositório válido
+        if (funcionalidadeRepository != null) {
+            boolean duplicataExiste;
+            
+            if (paiId != null && paiId > 0) {
+                // Verificar designação duplicada para o mesmo pai (não nulo)
+                duplicataExiste = funcionalidadeRepository
+                    .existsByDesignacaoAndFkFuncionalidadePaiId(valores[1].trim(), paiId);
+                
+                if (duplicataExiste) {
+                    erros.add(criarDetalheErro(String.valueOf(linhaReal), "B", "designacao", 
+                        valores[1], "Designação '" + valores[1] + "' já existe para o pai ID " + paiId + 
+                        ". Designação deve ser única para cada pai."));
+                }
+            } else {
+                // Pai é null (funcionalidade raiz) - verificar duplicidade no nível raiz
+                duplicataExiste = funcionalidadeRepository
+                    .existsByDesignacaoAndFkFuncionalidadePaiId(valores[1].trim(), null);
+                
+                if (duplicataExiste) {
+                    erros.add(criarDetalheErro(String.valueOf(linhaReal), "B", "designacao", 
+                        valores[1], "Designação '" + valores[1] + "' já existe no nível raiz. " +
+                        "Designação deve ser única no nível raiz."));
+                }
+            }
+        }
+    }
+    
+    // Validar grupo (coluna E)
+    if (valores[4].isEmpty()) {
+        erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[4], nomesCampos[4], 
+            "[VAZIO]", "Campo obrigatório não preenchido"));
+    } else {
+        // Verificar se é inteiro
+        if (!INTEGER_PATTERN.matcher(valores[4]).matches()) {
+            erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[4], nomesCampos[4], 
+                valores[4], "Deve ser um número inteiro (sem casas decimais)"));
+        } else {
+            try {
+                int grupo = Integer.parseInt(valores[4]);
+                if (grupo < 0) {
+                    erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[4], nomesCampos[4], 
+                        valores[4], "Não pode ser negativo"));
+                }
+            } catch (NumberFormatException e) {
+                erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[4], nomesCampos[4], 
+                    valores[4], "Valor numérico inválido"));
+            }
+        }
+    }
+    
+    // Validar fk_funcionalidade (coluna F) - OPCIONAL
+    if (!valores[5].isEmpty()) {
+        // Verificar se é inteiro
+        if (!INTEGER_PATTERN.matcher(valores[5]).matches()) {
+            erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[5], nomesCampos[5], 
+                valores[5], "Deve ser um número inteiro (sem casas decimais) ou estar vazio"));
+        } else {
+            try {
+                int fk = Integer.parseInt(valores[5]);
+                if (fk < 0) {
+                    erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[5], nomesCampos[5], 
+                        valores[5], "Não pode ser negativo"));
+                }
+            } catch (NumberFormatException e) {
+                erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[5], nomesCampos[5], 
+                    valores[5], "Valor numérico inválido"));
+            }
+        }
+    }
+    
+    // Validar funcionalidades_partilhadas (coluna G) - OPCIONAL
+    if (!valores[6].isEmpty()) {
+        // Verificar formato (números separados por ; ou o valor 1000 com ou sem ;)
+        if (!SHARED_FUNCS_PATTERN.matcher(valores[6]).matches()) {
+            erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[6], nomesCampos[6], 
+                valores[6], "Formato inválido. Use números inteiros separados por ponto e vírgula (ex: 1001;1002) ou o valor 1000 (com ou sem ponto e vírgula)"));
+        }
+        
+        // Verificar tamanho máximo
+        if (valores[6].length() > 250) {
+            erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[6], nomesCampos[6], 
+                valores[6], "Excede o limite de 250 caracteres"));
+        }
+    }
+    
+    // Validar url (coluna H) - OPCIONAL
+    if (!valores[7].isEmpty()) {
+        // Verificar se contém apenas caracteres válidos para URL
+        if (!URL_PATTERN.matcher(valores[7]).matches()) {
+            erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[7], nomesCampos[7], 
+                valores[7], "Deve conter apenas letras, números e caracteres especiais de URL (/.-_?)"));
+        }
+        
+        // Verificar tamanho máximo
+        if (valores[7].length() > 100) {
+            erros.add(criarDetalheErro(String.valueOf(linhaReal), nomesColunas[7], nomesCampos[7], 
+                valores[7], "Excede o limite de 100 caracteres"));
+        }
+    }
+    
+    return erros;
+}
     /**
      * Encontra início dos dados para o NOVO FORMATO de tipos
      */
@@ -2078,4 +1858,173 @@ public class TipoFuncionalidadeLoader {
         }
         return columnName.toString();
     }
+    
+    
+    
+    
+    
+    /**
+ * Processa apenas a folha de tipos de funcionalidade
+ */
+@Transactional
+public static Map<String, Object> insertOnlyTypeSheet(
+        MultipartFile file,
+        TipoFuncionalidadeRepository tipoFuncionalidadeRepository,
+        VersaoService versaoService) {
+    
+    Map<String, Object> resultado = new HashMap<>();
+    List<Map<String, Object>> errosDetalhados = new ArrayList<>();
+    List<String> warnings = new ArrayList<>();
+    
+    if (file.isEmpty()) {
+        errosDetalhados.add(criarDetalheErro("1", "A", "cabeçalho", "[VAZIO]", "Ficheiro está vazio"));
+        resultado.put("erros", criarEstruturaErro("2001", "Processamento concluído com avisos", 
+            "Requisição realizada com sucesso!", errosDetalhados, errosDetalhados.size()));
+        resultado.put("sucesso", false);
+        return resultado;
+    }
+
+    try (InputStream is = file.getInputStream();
+         Workbook workbook = WorkbookFactory.create(is)) {
+        
+        System.out.println("=== IMPORTACAO APENAS DE TIPOS ===");
+        
+        // Verificar se temos pelo menos 2 folhas
+        if (workbook.getNumberOfSheets() < 2) {
+            warnings.add("⚠️ O arquivo deve ter pelo menos 2 folhas para importação separada");
+        }
+        
+        // SEMPRE processar a SEGUNDA folha para tipos
+        Sheet sheetTipos = workbook.getNumberOfSheets() > 1 ? workbook.getSheetAt(1) : workbook.getSheetAt(0);
+        
+        System.out.println("Processando folha: " + workbook.getSheetName(workbook.getNumberOfSheets() > 1 ? 1 : 0));
+        
+        // Processar tipos de funcionalidade
+        List<Map<String, Object>> errosTiposDetalhados = processarFolhaTipos(
+            sheetTipos, file, tipoFuncionalidadeRepository, versaoService, warnings);
+        
+        if (!errosTiposDetalhados.isEmpty()) {
+            errosDetalhados.addAll(errosTiposDetalhados);
+            resultado.put("erros", criarEstruturaErro("2001", "Processamento concluído com avisos", 
+                "Requisição realizada com sucesso!", errosDetalhados, errosDetalhados.size()));
+            resultado.put("sucesso", false);
+            resultado.put("tipo_erro", "tipos");
+            if (!warnings.isEmpty()) {
+                resultado.put("warnings", warnings);
+            }
+            return resultado;
+        }
+        
+        long totalTipos = tipoFuncionalidadeRepository.count();
+        
+        StringBuilder mensagem = new StringBuilder();
+        mensagem.append("✅ IMPORTACAO DE TIPOS COMPLETA COM SUCESSO!\n");
+        mensagem.append("📊 RESUMO:\n");
+        mensagem.append("   • Tipos de Funcionalidade: ").append(totalTipos).append("\n");
+        
+        Versao versaoTipos = versaoService.obterVersao(Defs.TIPO_FUNCIONALIDADE);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+        if (versaoTipos != null) {
+            mensagem.append("   • Versão Tipos: ").append(sdf.format(versaoTipos.getData())).append("\n");
+        }
+        
+        resultado.put("mensagem", mensagem.toString());
+        resultado.put("sucesso", true);
+        resultado.put("total_tipos", totalTipos);
+        
+        if (!warnings.isEmpty()) {
+            resultado.put("warnings", warnings);
+        }
+        
+    } catch (Exception e) {
+        errosDetalhados.add(criarDetalheErro("1", "A", "geral", "[ERRO SISTEMA]", "Erro ao processar arquivo: " + e.getMessage()));
+        resultado.put("erros", criarEstruturaErro("2001", "Processamento concluído com avisos", 
+            "Requisição realizada com sucesso!", errosDetalhados, errosDetalhados.size()));
+        resultado.put("sucesso", false);
+        e.printStackTrace();
+    }
+    
+    return resultado;
+}
+
+/**
+ * Processa apenas a folha de funcionalidades
+ */
+@Transactional
+public static Map<String, Object> insertOnlyFuncionalidadeSheet(
+        MultipartFile file,
+        FuncionalidadeRepository funcionalidadeRepository,
+        TipoFuncionalidadeRepository tipoFuncionalidadeRepository,
+        VersaoService versaoService) {
+    
+    Map<String, Object> resultado = new HashMap<>();
+    List<Map<String, Object>> errosDetalhados = new ArrayList<>();
+    List<String> warnings = new ArrayList<>();
+    
+    if (file.isEmpty()) {
+        errosDetalhados.add(criarDetalheErro("1", "A", "cabeçalho", "[VAZIO]", "Ficheiro está vazio"));
+        resultado.put("erros", criarEstruturaErro("2001", "Processamento concluído com avisos", 
+            "Requisição realizada com sucesso!", errosDetalhados, errosDetalhados.size()));
+        resultado.put("sucesso", false);
+        return resultado;
+    }
+
+    try (InputStream is = file.getInputStream();
+         Workbook workbook = WorkbookFactory.create(is)) {
+        
+        System.out.println("=== IMPORTACAO APENAS DE FUNCIONALIDADES ===");
+        
+        // SEMPRE processar a PRIMEIRA folha para funcionalidades
+        Sheet sheetFunc = workbook.getSheetAt(0);
+        
+        System.out.println("Processando folha: " + workbook.getSheetName(0));
+        
+        // Processar funcionalidades
+        List<Map<String, Object>> errosFuncDetalhados = processarFolhaFuncionalidadesMelhorada(
+            sheetFunc, file, funcionalidadeRepository, tipoFuncionalidadeRepository, versaoService, warnings);
+        
+        if (!errosFuncDetalhados.isEmpty()) {
+            errosDetalhados.addAll(errosFuncDetalhados);
+            resultado.put("erros", criarEstruturaErro("2001", "Processamento concluído com avisos", 
+                "Requisição realizada com sucesso!", errosDetalhados, errosDetalhados.size()));
+            resultado.put("sucesso", false);
+            resultado.put("tipo_erro", "funcionalidades");
+            if (!warnings.isEmpty()) {
+                resultado.put("warnings", warnings);
+            }
+            return resultado;
+        }
+        
+        long totalFunc = funcionalidadeRepository.count();
+        
+        StringBuilder mensagem = new StringBuilder();
+        mensagem.append("✅ IMPORTACAO DE FUNCIONALIDADES COMPLETA COM SUCESSO!\n");
+        mensagem.append("📊 RESUMO:\n");
+        mensagem.append("   • Funcionalidades: ").append(totalFunc).append("\n");
+        
+        Versao versaoFunc = versaoService.obterVersao(Defs.FUNCIONALIDADE);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+        if (versaoFunc != null) {
+            mensagem.append("   • Versão Funcionalidades: ").append(sdf.format(versaoFunc.getData())).append("\n");
+        }
+        
+        resultado.put("mensagem", mensagem.toString());
+        resultado.put("sucesso", true);
+        resultado.put("total_funcionalidades", totalFunc);
+        
+        if (!warnings.isEmpty()) {
+            resultado.put("warnings", warnings);
+        }
+        
+    } catch (Exception e) {
+        errosDetalhados.add(criarDetalheErro("1", "A", "geral", "[ERRO SISTEMA]", "Erro ao processar arquivo: " + e.getMessage()));
+        resultado.put("erros", criarEstruturaErro("2001", "Processamento concluído com avisos", 
+            "Requisição realizada com sucesso!", errosDetalhados, errosDetalhados.size()));
+        resultado.put("sucesso", false);
+        e.printStackTrace();
+    }
+    
+    return resultado;
+}
+    
 }

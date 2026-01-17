@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 
-export default function FuncionalidadeCadastrar() {
+export default function TipoFuncionalidadeCadastrar() {
   const [file, setFile] = useState(null);
   const [mensagem, setMensagem] = useState("");
   const [loading, setLoading] = useState(false);
@@ -69,7 +69,7 @@ export default function FuncionalidadeCadastrar() {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     const files = e.dataTransfer.files;
     if (files && files[0]) {
       handleFileSelect(files[0]);
@@ -79,7 +79,7 @@ export default function FuncionalidadeCadastrar() {
   const handleFileSelect = (selectedFile) => {
     const allowedExtensions = ['.xls', '.xlsx', '.csv'];
     const fileExtension = selectedFile.name.substring(selectedFile.name.lastIndexOf('.')).toLowerCase();
-    
+
     if (!allowedExtensions.includes(fileExtension)) {
       setMensagem("❌ Formato de arquivo não suportado. Use .xls, .xlsx ou .csv");
       setErros(["Formato de arquivo não suportado. Use .xls, .xlsx ou .csv"]);
@@ -104,7 +104,7 @@ export default function FuncionalidadeCadastrar() {
 
   const simulateProgress = () => {
     if (!progressRef.current) return;
-    
+
     let progress = 0;
     const interval = setInterval(() => {
       progress += 5;
@@ -115,7 +115,7 @@ export default function FuncionalidadeCadastrar() {
         clearInterval(interval);
       }
     }, 50);
-    
+
     return interval;
   };
 
@@ -171,7 +171,7 @@ export default function FuncionalidadeCadastrar() {
       const formDataUpload = new FormData();
       formDataUpload.append("file", file);
 
-      const response = await fetch("http://localhost:9090/api/seguranca/funcionalidade_apenas_importar", {
+      const response = await fetch("http://localhost:9090/api/seguranca/tipo_funcionalidade_importar", {
         method: "POST",
         body: formDataUpload,
         headers: { 'Accept': 'application/json' },
@@ -190,9 +190,9 @@ export default function FuncionalidadeCadastrar() {
           setSucesso(true);
           setFile(null);
           if (fileInputRef.current) fileInputRef.current.value = '';
-          
+
           await carregarVersoes();
-          
+
           setTimeout(() => {
             setMensagem("");
             setSucesso(false);
@@ -263,7 +263,7 @@ export default function FuncionalidadeCadastrar() {
           progressRef.current.style.width = "0%";
         }
       }
-      
+
       // Capturar warnings do backend
       if (resultado.warnings && Array.isArray(resultado.warnings)) {
         setWarnings(resultado.warnings);
@@ -316,11 +316,11 @@ export default function FuncionalidadeCadastrar() {
   // Função para formatar os detalhes do erro com base na imagem
   const formatarDetalhesErro = (texto) => {
     if (!texto) return null;
-    
+
     const linhas = texto.split('\n');
     let emDetalhesErros = false;
     let emProximosPassos = false;
-    
+
     return linhas.map((linha, index) => {
       // Título principal
       if (linha.startsWith('# ')) {
@@ -330,22 +330,22 @@ export default function FuncionalidadeCadastrar() {
           </h5>
         );
       }
-      
+
       // Checkbox de contagem de erros
       if (linha.includes('erro(s) de validação encontrado(s)')) {
         return (
           <div key={index} className="d-flex align-items-start mb-3">
-            <input 
-              type="checkbox" 
-              disabled 
-              className="me-2 mt-1" 
+            <input
+              type="checkbox"
+              disabled
+              className="me-2 mt-1"
               style={{ transform: 'scale(1.2)' }}
             />
             <span style={{ color: '#d32f2f', fontWeight: '500' }}>{linha.trim()}</span>
           </div>
         );
       }
-      
+
       // Código e Status
       if (linha.includes('Código:') || linha.includes('Status:')) {
         return (
@@ -354,7 +354,7 @@ export default function FuncionalidadeCadastrar() {
           </div>
         );
       }
-      
+
       // Seção de mensagem do servidor
       if (linha.includes('Mensagem do servidor:')) {
         return (
@@ -365,7 +365,7 @@ export default function FuncionalidadeCadastrar() {
           </div>
         );
       }
-      
+
       // Seção de detalhes dos erros
       if (linha.includes('Detalhes dos erros encontrados:')) {
         emDetalhesErros = true;
@@ -377,11 +377,11 @@ export default function FuncionalidadeCadastrar() {
           </div>
         );
       }
-      
+
       // Linhas de erro específicas
       if (linha.startsWith('**Linha') || linha.startsWith('**Motivo do erro:')) {
         return (
-          <div key={index} className="mb-2" style={{ 
+          <div key={index} className="mb-2" style={{
             color: emDetalhesErros ? '#333' : '#1976d2',
             fontWeight: linha.startsWith('**') ? '500' : 'normal',
             marginLeft: linha.startsWith('**Motivo') ? '20px' : '0'
@@ -390,7 +390,7 @@ export default function FuncionalidadeCadastrar() {
           </div>
         );
       }
-      
+
       // Seção de próximos passos
       if (linha.includes('Próximos passos:')) {
         emDetalhesErros = false;
@@ -403,7 +403,7 @@ export default function FuncionalidadeCadastrar() {
           </div>
         );
       }
-      
+
       // Itens de lista nos próximos passos
       if (linha.startsWith('- ') && emProximosPassos) {
         return (
@@ -413,13 +413,13 @@ export default function FuncionalidadeCadastrar() {
           </div>
         );
       }
-      
+
       // Linha de requisição realizada com sucesso
       if (linha.includes('Requisição realizada com sucesso!')) {
         return (
-          <div key={index} className="mb-3" style={{ 
-            padding: '8px 12px', 
-            backgroundColor: '#e8f5e9', 
+          <div key={index} className="mb-3" style={{
+            padding: '8px 12px',
+            backgroundColor: '#e8f5e9',
             borderRadius: '4px',
             color: '#2e7d32',
             borderLeft: '4px solid #4caf50'
@@ -428,13 +428,13 @@ export default function FuncionalidadeCadastrar() {
           </div>
         );
       }
-      
+
       // Descrições de erro específicas
       if (linha.includes('repetida nas linhas:')) {
         return (
-          <div key={index} className="mb-3" style={{ 
-            padding: '8px 12px', 
-            backgroundColor: '#ffebee', 
+          <div key={index} className="mb-3" style={{
+            padding: '8px 12px',
+            backgroundColor: '#ffebee',
             borderRadius: '4px',
             color: '#c62828',
             borderLeft: '4px solid #f44336',
@@ -444,12 +444,12 @@ export default function FuncionalidadeCadastrar() {
           </div>
         );
       }
-      
+
       // Linha vazia
       if (linha.trim() === '') {
         return <div key={index} className="mb-2"></div>;
       }
-      
+
       // Linha normal
       return (
         <div key={index} className="mb-1" style={{ color: '#666' }}>
@@ -466,15 +466,15 @@ export default function FuncionalidadeCadastrar() {
         <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog modal-lg modal-dialog-centered">
             <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '12px', overflow: 'hidden' }}>
-              <div className="modal-header" style={{ 
-                backgroundColor: '#f44336', 
+              <div className="modal-header" style={{
+                backgroundColor: '#f44336',
                 color: 'white',
                 borderBottom: 'none',
                 padding: '20px 24px'
               }}>
                 <div className="d-flex align-items-center w-100">
-                  <div style={{ 
-                    backgroundColor: 'rgba(255,255,255,0.2)', 
+                  <div style={{
+                    backgroundColor: 'rgba(255,255,255,0.2)',
                     borderRadius: '50%',
                     width: '40px',
                     height: '40px',
@@ -492,28 +492,28 @@ export default function FuncionalidadeCadastrar() {
                     <small style={{ opacity: 0.9 }}>Verifique os problemas identificados</small>
                   </div>
                 </div>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="btn-close btn-close-white"
                   onClick={fecharModalLimparMensagens}
                   style={{ opacity: 0.8 }}
                 ></button>
               </div>
-              
+
               <div className="modal-body p-0">
-                <div className="p-4" style={{ 
+                <div className="p-4" style={{
                   backgroundColor: '#f8f9fa',
                   maxHeight: '70vh',
                   overflowY: 'auto'
                 }}>
-                  <div style={{ 
-                    backgroundColor: 'white', 
-                    padding: '24px', 
+                  <div style={{
+                    backgroundColor: 'white',
+                    padding: '24px',
                     borderRadius: '8px',
                     border: '1px solid #e0e0e0',
                     boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
                   }}>
-                    <div style={{ 
+                    <div style={{
                       fontFamily: "'Segoe UI', 'Roboto', sans-serif",
                       fontSize: '14px',
                       lineHeight: '1.6',
@@ -521,24 +521,24 @@ export default function FuncionalidadeCadastrar() {
                     }}>
                       {formatarDetalhesErro(errorDetails)}
                     </div>
-                    
+
                     {/* Resumo do Erro */}
                     <div className="mt-4 pt-3 border-top">
                       <div className="d-flex align-items-center justify-content-between">
-                       
+
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-              
-              <div className="modal-footer" style={{ 
+
+              <div className="modal-footer" style={{
                 backgroundColor: '#f8f9fa',
                 borderTop: '1px solid #e0e0e0',
                 padding: '16px 24px'
               }}>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="btn btn-outline-secondary"
                   onClick={fecharModalLimparMensagens}
                   style={{ padding: '8px 20px' }}
@@ -546,8 +546,8 @@ export default function FuncionalidadeCadastrar() {
                   <i className="bi bi-eye-slash me-2"></i>
                   Fechar Detalhes
                 </button>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="btn btn-primary"
                   onClick={() => {
                     fecharModalLimparMensagens();
@@ -567,8 +567,8 @@ export default function FuncionalidadeCadastrar() {
       {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h1 className="h3 mb-0 text-primary">📊 Importar Funcionalidade</h1>
-          <p className="text-muted mb-0">Importe funcionalidade através de ficheiros Excel</p>
+          <h1 className="h3 mb-0 text-primary">📊 Importar Tipo Funcionalidade</h1>
+          <p className="text-muted mb-0">Importe Tipo funcionalidade através de ficheiros Excel</p>
         </div>
       </div>
 
@@ -586,9 +586,9 @@ export default function FuncionalidadeCadastrar() {
                     <small className="text-success">{mensagem}</small>
                   </div>
                 </div>
-                <button 
-                  type="button" 
-                  className="btn-close" 
+                <button
+                  type="button"
+                  className="btn-close"
                   onClick={() => {
                     setMensagem("");
                     setSucesso(false);
@@ -607,9 +607,9 @@ export default function FuncionalidadeCadastrar() {
                     <i className="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
                     <strong>Erros encontrados ({erros.length})</strong>
                   </div>
-                  <button 
-                    type="button" 
-                    className="btn-close btn-close-white" 
+                  <button
+                    type="button"
+                    className="btn-close btn-close-white"
                     onClick={() => {
                       setErros([]);
                       setMensagem("");
@@ -674,9 +674,9 @@ export default function FuncionalidadeCadastrar() {
                     <i className="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
                     <strong>Avisos ({warnings.length})</strong>
                   </div>
-                  <button 
-                    type="button" 
-                    className="btn-close" 
+                  <button
+                    type="button"
+                    className="btn-close"
                     onClick={() => setWarnings([])}
                     aria-label="Close"
                   ></button>
@@ -709,9 +709,9 @@ export default function FuncionalidadeCadastrar() {
                       <small>{mensagem}</small>
                     </div>
                   </div>
-                  <button 
-                    type="button" 
-                    className="btn-close" 
+                  <button
+                    type="button"
+                    className="btn-close"
                     onClick={() => {
                       setMensagem("");
                       setShowMessages(false);
@@ -730,10 +730,9 @@ export default function FuncionalidadeCadastrar() {
         <div className="col-lg-8">
           <div className="card border-0 shadow-sm mb-4">
             <div className="card-body p-4">
-              <div 
-                className={`drop-zone p-5 text-center border-2 border-dashed rounded-3 mb-4 ${
-                  dragActive ? 'drag-active bg-primary bg-opacity-10' : 'bg-light'
-                } ${file ? 'border-success' : ''}`}
+              <div
+                className={`drop-zone p-5 text-center border-2 border-dashed rounded-3 mb-4 ${dragActive ? 'drag-active bg-primary bg-opacity-10' : 'bg-light'
+                  } ${file ? 'border-success' : ''}`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
                 onDragOver={handleDrag}
@@ -747,12 +746,12 @@ export default function FuncionalidadeCadastrar() {
                     {file ? file.name : "Arraste e solte seu arquivo aqui"}
                   </h5>
                   <p className="text-muted mb-3">
-                    {file 
+                    {file
                       ? `${formatFileSize(file.size)} • Clique para alterar`
                       : "ou clique para selecionar o arquivo, com o seguinte formato:  .xlsx .xls .csv"
                     }
                   </p>
-                  
+
                   <button className="btn btn-primary">
                     <i className="bi bi-folder2-open me-2"></i>
                     Selecionar Arquivo
@@ -774,9 +773,9 @@ export default function FuncionalidadeCadastrar() {
                     <small className="text-muted">Aguarde</small>
                   </div>
                   <div className="progress" style={{ height: '8px' }}>
-                    <div 
+                    <div
                       ref={progressRef}
-                      className="progress-bar progress-bar-striped progress-bar-animated" 
+                      className="progress-bar progress-bar-striped progress-bar-animated"
                       role="progressbar"
                       style={{ width: '0%', transition: 'width 0.3s ease' }}
                     ></div>
@@ -797,7 +796,7 @@ export default function FuncionalidadeCadastrar() {
                         </small>
                       </div>
                     </div>
-                    <button 
+                    <button
                       className="btn btn-sm btn-outline-danger"
                       onClick={() => setFile(null)}
                     >
@@ -827,7 +826,7 @@ export default function FuncionalidadeCadastrar() {
                     </>
                   )}
                 </button>
-                
+
                 <button
                   type="button"
                   className="btn btn-outline-secondary"
@@ -851,11 +850,20 @@ export default function FuncionalidadeCadastrar() {
                 <i className="bi bi-clock-history me-2 text-info"></i>
                 Versões Atual
               </h6>
-              
+
               <div className="d-flex align-items-center mb-3">
                 <div className="me-3">
                   <div className="icon-circle bg-info bg-opacity-10 text-info">
                     <i className="bi bi-tags"></i>
+                  </div>
+                </div>
+                <div className="flex-grow-1">
+                  <small className="text-muted">Tipo de Funcionalidade</small>
+                  <div className="d-flex align-items-center">
+                    <span className="fw-semibold">{versoes.tipos_funcionalidade}</span>
+                    {versaoCarregando && (
+                      <span className="spinner-border spinner-border-sm ms-2 text-info"></span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -866,15 +874,6 @@ export default function FuncionalidadeCadastrar() {
                     <i className="bi bi-list-check"></i>
                   </div>
                 </div>
-                <div className="flex-grow-1">
-                  <small className="text-muted">Funcionalidade</small>
-                  <div className="d-flex align-items-center">
-                    <span className="fw-semibold">{versoes.funcionalidades}</span>
-                    {versaoCarregando && (
-                      <span className="spinner-border spinner-border-sm ms-2 text-success"></span>
-                    )}
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -882,7 +881,7 @@ export default function FuncionalidadeCadastrar() {
           {/* Quick Info Card */}
           <div className="card border-0 shadow-sm">
             <div className="card-body p-4">
-              
+
 
               <div className="accordion accordion-flush" id="infoAccordion">
                 <div className="accordion-item border-0">

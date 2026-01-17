@@ -34,8 +34,7 @@ export default function FuncionalidadeListar() {
         try {
             setLoading(true);
             setError(null);
-            const resp = await fetch("http://localhost:9090/api/seguranca/funcionalidade_listar");
-            
+const resp = await fetch("http://localhost:9090/api/seguranca/tipo_funcionalidade_listar");            
             if (!resp.ok) {
                 throw new Error(`Erro ao carregar: ${resp.status} ${resp.statusText}`);
             }
@@ -266,7 +265,6 @@ export default function FuncionalidadeListar() {
                                             {node.designacao}
                                         </h5>
                                         
-                                        {/* Badge do tipo */}
                                         <span className="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 ms-2 px-2 py-1">
                                             {tipo}
                                         </span>
@@ -277,7 +275,6 @@ export default function FuncionalidadeListar() {
                                             </span>
                                         )}
                                         
-                                        {/* Badge de grupo */}
                                         {grupo !== 0 && (
                                             <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 ms-2 px-2 py-1">
                                                 Grupo: {grupo}
@@ -300,7 +297,6 @@ export default function FuncionalidadeListar() {
                                         </div>
                                     )}
                                     
-                                    {/* URL se existir */}
                                     {node.url && (
                                         <div className="mt-2">
                                             <small className="text-primary">
@@ -310,7 +306,6 @@ export default function FuncionalidadeListar() {
                                         </div>
                                     )}
                                     
-                                    {/* ID e FK se existirem - ATUALIZADO para mostrar fkFuncionalidadePai */}
                                     <div className="mt-2 d-flex gap-2">
                                         <small className="text-muted">
                                             ID: {node.pkFuncionalidade}
@@ -324,7 +319,6 @@ export default function FuncionalidadeListar() {
                                 </div>
                             </div>
 
-                            {/* ID da funcionalidade em badge */}
                             <div className="ms-3">
                                 <span 
                                     className="badge bg-dark bg-opacity-10 text-dark border border-dark border-opacity-25 px-3 py-2"
@@ -421,10 +415,10 @@ export default function FuncionalidadeListar() {
                         </div>
                         <div>
                             <h1 className="text-dark mb-1" style={{ fontWeight: '600' }}>
-                                Estrutura de Funcionalidades
+                                Estrutura de Tipo Funcionalidade
                             </h1>
                             <p className="text-muted mb-0">
-                                Visualize hierarquicamente todas as funcionalidades do sistema
+                                Visualize hierarquicamente o tipo funcionalidade do sistema
                             </p>
                         </div>
                     </div>

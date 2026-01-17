@@ -20,7 +20,7 @@ public class FuncionalidadeDTO {
 
     private Integer grupo;
 
-    private Integer fkFuncionalidade;
+    private Integer fkFuncionalidadePai;
 
     private String funcionalidadesPartilhadas;
 

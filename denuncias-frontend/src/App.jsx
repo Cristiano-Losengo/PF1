@@ -17,6 +17,10 @@ import Contacto from './pages/Contacto';
 import Seguranca from './pages/Seguranca';
 import FuncionalidadeCadastrar from './pages/Funcionalidade/FuncionalidadeCadastrar';
 import FuncionalidadeListar from './pages/Funcionalidade/FuncionalidadeListar';
+
+import TipoFuncionalidadeCadastrar from './pages/Funcionalidade/TipoFuncionalidadeCadastrar';
+import TipoFuncionalidadeListar from './pages/Funcionalidade/TipoFuncionalidadeListar';
+
 import FuncionalidadePerfilCadastrar from './pages/Funcionalidade/FuncionalidadePerfilCadastrar';
 import FuncionalidadePerfilListar from './pages/Funcionalidade/FuncionalidadePerfilListar';
 import PerfilCadastrar from './pages/Perfil/PerfilCadastrar';
@@ -257,8 +261,12 @@ function App() {
                           role="menu"
                           className={`dropdown-menu border-0 shadow-sm submenu-list ${segOpen.funcionalidade ? 'show' : ''}`}
                         >
-                          <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/funcionalidade/cadastrar" onClick={closeAll}>➕ Cadastrar</Link></li>
-                          <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/funcionalidade/listar" onClick={closeAll}>📋 Listar</Link></li>
+                          <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/funcionalidade/cadastrar" onClick={closeAll}>➕ Cadastrar funcionalidade</Link></li>
+                          <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/funcionalidade/listar" onClick={closeAll}>📋 Listar funcionalidade</Link></li>
+                          <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/funcionalidade/tipo_cadastrar" onClick={closeAll}>➕ Cadastrar tipo funcionalidade</Link></li>
+                          <li role="none"><Link role="menuitem" className="dropdown-item" to="/seguranca/funcionalidade/tipo_listar" onClick={closeAll}>📋 Listar tipo funcionalidade</Link></li>
+
+
                         </ul>
                       </li>
 
@@ -355,6 +363,9 @@ function App() {
 
           <Route path="/seguranca/funcionalidade/cadastrar" element={loggedIn ? <FuncionalidadeCadastrar /> : <Navigate to="/login" />} />
           <Route path="/seguranca/funcionalidade/listar" element={loggedIn ? <FuncionalidadeListar /> : <Navigate to="/login" />} />
+          <Route path="/seguranca/funcionalidade/tipo_cadastrar" element={loggedIn ? <TipoFuncionalidadeCadastrar /> : <Navigate to="/login" />} />
+          <Route path="/seguranca/funcionalidade/tipo_listar" element={loggedIn ? <TipoFuncionalidadeListar /> : <Navigate to="/login" />} />
+
           <Route path="/seguranca/perfis/cadastrar" element={loggedIn ? <PerfilCadastrar /> : <Navigate to="/login" />} />
           <Route path="/seguranca/perfis/listar" element={loggedIn ? <PerfilListar /> : <Navigate to="/login" />} />
           <Route path="/seguranca/perfis/atribuir" element={loggedIn ? <FuncionalidadePerfilCadastrar /> : <Navigate to="/login" />} />

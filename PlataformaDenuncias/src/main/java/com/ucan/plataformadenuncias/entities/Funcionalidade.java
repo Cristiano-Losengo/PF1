@@ -42,8 +42,8 @@ public class Funcionalidade {
     private Integer grupo;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_funcionalidade")
-    private Funcionalidade fkFuncionalidade;
+    @JoinColumn(name = "fk_funcionalidade_pai")
+    private Funcionalidade fkFuncionalidadePai;
 
     @Column(name = "funcionalidades_partilhadas", length = 250)
     private String funcionalidadesPartilhadas;
@@ -70,7 +70,7 @@ public class Funcionalidade {
         this.descricao = descricao;
         this.designacao = designacao;
         this.fkTipoFuncionalidade = fkTipoFuncionalidade;
-        this.fkFuncionalidade = fk_funcionalidade;
+        this.fkFuncionalidadePai = fk_funcionalidade;
         this.funcionalidadesPartilhadas = funcionalidadesPartilhadas;
         this.url = url;
     }
@@ -79,7 +79,7 @@ public class Funcionalidade {
         this.descricao = descricao;
         this.designacao = designacao;
         this.fkTipoFuncionalidade = fkTipoFuncionalidade;
-        this.fkFuncionalidade = fk_funcionalidade;
+        this.fkFuncionalidadePai = fk_funcionalidade;
         this.url = url;
     }
 

@@ -140,8 +140,8 @@ public class SegurancaController {
                         funcionalidadeDTO.setDesignacaoTipoFuncionalidade("Sem tipo");
                     }
 
-                    if (funcionalidade.getFkFuncionalidade() != null) {
-                        funcionalidadeDTO.setFkFuncionalidade(funcionalidade.getFkFuncionalidade().getPkFuncionalidade());
+                    if (funcionalidade.getFkFuncionalidadePai()!= null) {
+                        funcionalidadeDTO.setFkFuncionalidadePai(funcionalidade.getFkFuncionalidadePai().getPkFuncionalidade());
                     }
 
                     listaFuncionalidade.add(funcionalidadeDTO);
@@ -874,82 +874,273 @@ private String extrairBairro(Localidade localidade) {
         }
     }
 
-    @PostMapping("/funcionalidade_cadastrar")
-    @Transactional
-    public ResponseEntity<?> cadastrarFuncionalidade(@RequestBody Funcionalidade funcionalidade) {
-        try {
-            Funcionalidade funcionalidadeModel = funcionalidadeRepository.save(funcionalidade);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("sucesso", true);
-            response.put("mensagem", "Funcionalidade cadastrada com sucesso");
-            response.put("funcionalidade", funcionalidadeModel);
-
+@PostMapping("/funcionalidade_cadastrar")
+@Transactional
+public ResponseEntity<?> cadastrarFuncionalidade(@RequestBody Funcionalidade funcionalidade) {
+    try {
+        Map<String, Object> response = new HashMap<>();
+        
+        // VALIDAÇÃO 1: Campos obrigatórios
+        if (funcionalidade.getDesignacao() == null || funcionalidade.getDesignacao().trim().isEmpty()) {
+            response.put("sucesso", false);
+            response.put("mensagem", "Designação é obrigatória");
+            response.put("campoErro", "designacao");
             return ResponseEntity.ok(response);
+        }
+        
+        if (funcionalidade.getDescricao() == null || funcionalidade.getDescricao().trim().isEmpty()) {
+            response.put("sucesso", false);
+            response.put("mensagem", "Descrição é obrigatória");
+            response.put("campoErro", "descricao");
+            return ResponseEntity.ok(response);
+        }
+        
+        // VALIDAÇÃO 2: Verificar duplicidade designação + mesmo pai
+        Integer paiId = (funcionalidade.getFkFuncionalidadePai() != null && 
+                       funcionalidade.getFkFuncionalidadePai().getPkFuncionalidade() != null) ?
+                       funcionalidade.getFkFuncionalidadePai().getPkFuncionalidade() : null;
+        
+        Map<String, Object> validacaoDuplicidade = validarDuplicidadeDesignacaoPai(
+            funcionalidade.getDesignacao(), 
+            paiId, 
+            null // null porque é novo cadastro
+        );
+        
+        if (!(Boolean) validacaoDuplicidade.get("valido")) {
+            response.put("sucesso", false);
+            response.put("mensagem", validacaoDuplicidade.get("mensagem"));
+            response.put("campoErro", "designacao");
+            response.put("detalhes", validacaoDuplicidade.get("duplicatas"));
+            return ResponseEntity.ok(response);
+        }
+        
+        // VALIDAÇÃO 3: Verificar se PK já existe (se fornecida)
+        if (funcionalidade.getPkFuncionalidade() != null) {
+            Optional<Funcionalidade> funcExistente = funcionalidadeRepository
+                .findById(funcionalidade.getPkFuncionalidade());
+            if (funcExistente.isPresent()) {
+                response.put("sucesso", false);
+                response.put("mensagem", "Já existe uma funcionalidade com PK " + 
+                           funcionalidade.getPkFuncionalidade());
+                response.put("campoErro", "pkFuncionalidade");
+                return ResponseEntity.ok(response);
+            }
+        }
+        
+        // VALIDAÇÃO 4: Verificar se o pai existe (se fornecido)
+        if (paiId != null) {
+            Optional<Funcionalidade> paiExistente = funcionalidadeRepository.findById(paiId);
+            if (!paiExistente.isPresent()) {
+                response.put("sucesso", false);
+                response.put("mensagem", "Funcionalidade pai não encontrada (ID: " + paiId + ")");
+                response.put("campoErro", "fkFuncionalidadePai");
+                return ResponseEntity.ok(response);
+            }
+        }
+        
+        // Salvar se todas as validações passarem
+        Funcionalidade funcionalidadeModel = funcionalidadeRepository.save(funcionalidade);
 
-        } catch (Exception e) {
+        response.put("sucesso", true);
+        response.put("mensagem", "Funcionalidade cadastrada com sucesso");
+        response.put("funcionalidade", funcionalidadeModel);
+
+        return ResponseEntity.ok(response);
+
+    } catch (Exception e) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("sucesso", false);
+        response.put("mensagem", "Erro ao cadastrar funcionalidade: " + e.getMessage());
+        return ResponseEntity.badRequest().body(response);
+    }
+}
+
+   @PostMapping("/funcionalidade_perfil_cadastrar")
+public ResponseEntity<?> cadastrarFuncionalidadePerfil(@RequestBody FuncionalidadePerfilDTO funcionalidadePerfilDTO) {
+    try {
+        System.out.println("=== CADASTRAR FUNCIONALIDADE PERFIL ===");
+        System.out.println("Dados recebidos: " + funcionalidadePerfilDTO.toString());
+        
+        // O DTO contém fkFuncionalidade (o campo correto enviado pelo frontend)
+        Integer fkFuncionalidade = funcionalidadePerfilDTO.getFkFuncionalidade();
+        Integer fkPerfil = funcionalidadePerfilDTO.getFkPerfil();
+        
+        System.out.println("FK Funcionalidade: " + fkFuncionalidade);
+        System.out.println("FK Perfil: " + fkPerfil);
+        
+        // VALIDAÇÃO: Verificar se os dados obrigatórios estão presentes
+        if (fkFuncionalidade == null || fkFuncionalidade <= 0) {
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", false);
-            response.put("mensagem", "Erro ao cadastrar funcionalidade: " + e.getMessage());
-            return ResponseEntity.badRequest().body(response);
-        }
-    }
-
-    @PostMapping("/funcionalidade_perfil_cadastrar")
-    @Transactional
-    public ResponseEntity<?> cadastrarFuncionalidadePerfil(@RequestBody FuncionalidadePerfilDTO funcionalidadePerfilDTO) {
-        try {
-            Funcionalidade funcionalidadeModel = new Funcionalidade();
-            Perfil perfilModel = new Perfil();
-            FuncionalidadePerfil funcionalidadePerfilModel = new FuncionalidadePerfil();
-
-            funcionalidadeModel.setPkFuncionalidade(funcionalidadePerfilDTO.getFkFuncionalidade());
-            perfilModel.setPkPerfil(funcionalidadePerfilDTO.getFkPerfil());
-
-            funcionalidadePerfilModel.setFkFuncionalidade(funcionalidadeModel);
-            funcionalidadePerfilModel.setFkPerfil(perfilModel);
-            funcionalidadePerfilModel.setDetalhe(funcionalidadePerfilDTO.getDetalhe());
-
-            funcionalidadePerfilRepository.save(funcionalidadePerfilModel);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("sucesso", true);
-            response.put("mensagem", "Funcionalidade-Perfil cadastrado com sucesso");
-            response.put("funcionalidadePerfil", funcionalidadePerfilModel);
-
+            response.put("mensagem", "Funcionalidade é obrigatória");
+            response.put("campoErro", "fkFuncionalidade");
             return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
+        }
+        
+        if (fkPerfil == null || fkPerfil <= 0) {
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", false);
-            response.put("mensagem", "Erro ao cadastrar funcionalidade-perfil: " + e.getMessage());
-            return ResponseEntity.badRequest().body(response);
-        }
-    }
-
-    @PutMapping("/funcionalidade_editar/{id}")
-    @Transactional
-    public ResponseEntity<?> editarFuncionalidade(@PathVariable int id, @RequestBody Funcionalidade funcionalidade) {
-        try {
-            funcionalidade.setPkFuncionalidade(id);
-            Funcionalidade funcionalidadeAtualizada = funcionalidadeRepository.save(funcionalidade);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("sucesso", true);
-            response.put("mensagem", "Funcionalidade editada com sucesso");
-            response.put("funcionalidade", funcionalidadeAtualizada);
-
+            response.put("mensagem", "Perfil é obrigatório");
+            response.put("campoErro", "fkPerfil");
             return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
+        }
+        
+        Optional<Funcionalidade> funcionalidadeOpt = funcionalidadeRepository.findById(fkFuncionalidade);
+        if (!funcionalidadeOpt.isPresent()) {
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", false);
-            response.put("mensagem", "Erro ao editar funcionalidade: " + e.getMessage());
-            return ResponseEntity.badRequest().body(response);
+            response.put("mensagem", "Funcionalidade não encontrada (ID: " + fkFuncionalidade + ")");
+            response.put("campoErro", "fkFuncionalidade");
+            return ResponseEntity.ok(response);
         }
+        
+        Optional<Perfil> perfilOpt = perfilRepository.findById(fkPerfil);
+        if (!perfilOpt.isPresent()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("sucesso", false);
+            response.put("mensagem", "Perfil não encontrado (ID: " + fkPerfil + ")");
+            response.put("campoErro", "fkPerfil");
+            return ResponseEntity.ok(response);
+        }
+        
+        // VERIFICAR SE ASSOCIAÇÃO JÁ EXISTE
+        Optional<FuncionalidadePerfil> associacaoExistente = 
+            funcionalidadePerfilRepository.findByFkPerfilPkPerfilAndFkFuncionalidadePkFuncionalidade(
+                fkPerfil, fkFuncionalidade);
+        
+        if (associacaoExistente.isPresent()) {
+            Funcionalidade func = funcionalidadeOpt.get();
+            Perfil perfil = perfilOpt.get();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("sucesso", false);
+            response.put("mensagem", "A funcionalidade \"" + func.getDesignacao() + 
+                           "\" já está atribuída ao perfil \"" + perfil.getDesignacao() + "\"");
+            response.put("campoErro", "duplicidade");
+            return ResponseEntity.ok(response);
+        }
+        
+        // Criar nova associação
+        FuncionalidadePerfil funcionalidadePerfilModel = new FuncionalidadePerfil();
+        funcionalidadePerfilModel.setFkFuncionalidade(funcionalidadeOpt.get());
+        funcionalidadePerfilModel.setFkPerfil(perfilOpt.get());
+        
+        // Detalhe é opcional
+        if (funcionalidadePerfilDTO.getDetalhe() != null && !funcionalidadePerfilDTO.getDetalhe().isEmpty()) {
+            funcionalidadePerfilModel.setDetalhe(funcionalidadePerfilDTO.getDetalhe().trim());
+        }
+        
+        // Salvar associação
+        FuncionalidadePerfil associacaoSalva = funcionalidadePerfilRepository.save(funcionalidadePerfilModel);
+        
+        // Preparar resposta de sucesso
+        Map<String, Object> response = new HashMap<>();
+        response.put("sucesso", true);
+        response.put("mensagem", "Funcionalidade atribuída ao perfil com sucesso");
+        response.put("associacao", 
+            Map.of(
+                "id", associacaoSalva.getPkFuncionalidadePerfil(),
+                "funcionalidade", funcionalidadeOpt.get().getDesignacao(),
+                "perfil", perfilOpt.get().getDesignacao()
+            )
+        );
+        
+        return ResponseEntity.ok(response);
+        
+    } catch (DataIntegrityViolationException e) {
+        System.err.println("Erro de integridade em cadastrarFuncionalidadePerfil: " + e.getMessage());
+        
+        // Tratar violação de constraints
+        String mensagemErro = "Erro de integridade de dados";
+        
+        if (e.getMostSpecificCause() != null) {
+            String causa = e.getMostSpecificCause().getMessage();
+            if (causa.contains("duplicate key") || causa.contains("unique constraint")) {
+                mensagemErro = "Esta associação já existe no sistema";
+            } else if (causa.contains("foreign key constraint")) {
+                mensagemErro = "Funcionalidade ou perfil inválido";
+            }
+        }
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("sucesso", false);
+        response.put("mensagem", mensagemErro);
+        return ResponseEntity.ok(response);
+        
+    } catch (Exception e) {
+        System.err.println("Erro em cadastrarFuncionalidadePerfil: " + e.getMessage());
+        e.printStackTrace();
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("sucesso", false);
+        response.put("mensagem", "Erro interno ao cadastrar associação");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
+}
 
-    @PostMapping("/funcionalidade_importar")
+@PutMapping("/funcionalidade_editar/{id}")
+@Transactional
+public ResponseEntity<?> editarFuncionalidade(@PathVariable int id, @RequestBody Funcionalidade funcionalidade) {
+    try {
+        Map<String, Object> response = new HashMap<>();
+
+        // NOVA VALIDAÇÃO: Verificar duplicidade ao editar
+        if (funcionalidade.getDescricao() != null && funcionalidade.getDesignacao() != null) {
+            List<Funcionalidade> funcionalidadesExistentes;
+
+            Integer paiId = (funcionalidade.getFkFuncionalidadePai() != null &&
+                           funcionalidade.getFkFuncionalidadePai().getPkFuncionalidade() != null) ?
+                           funcionalidade.getFkFuncionalidadePai().getPkFuncionalidade() : null;
+
+            if (paiId != null) {
+                // 🔍 CORREÇÃO: Usar o método existente 'findByDescricaoAndDesignacaoAnd...'
+                funcionalidadesExistentes = funcionalidadeRepository
+                    .findByDescricaoAndDesignacaoAndFkFuncionalidadePaiPkFuncionalidade(
+                        funcionalidade.getDescricao(),   // Parâmetro 1: Descricao
+                        funcionalidade.getDesignacao(),  // Parâmetro 2: Designacao
+                        paiId                           // Parâmetro 3: ID do pai
+                    );
+            } else {
+                // 🔍 CORREÇÃO: Usar o método existente 'findByDescricaoAndDesignacaoAnd...IsNull'
+                funcionalidadesExistentes = funcionalidadeRepository
+                    .findByDescricaoAndDesignacaoAndFkFuncionalidadePaiIsNull(
+                        funcionalidade.getDescricao(),   // Parâmetro 1: Descricao
+                        funcionalidade.getDesignacao()   // Parâmetro 2: Designacao
+                    );
+            }
+
+            // Filtrar para excluir a própria funcionalidade que está sendo editada
+            final Integer finalId = id;
+            funcionalidadesExistentes = funcionalidadesExistentes.stream()
+                .filter(f -> !f.getPkFuncionalidade().equals(finalId))
+                .collect(Collectors.toList());
+
+            if (!funcionalidadesExistentes.isEmpty()) {
+                response.put("sucesso", false);
+                response.put("mensagem", "Já existe uma funcionalidade com esta designação, descrição e mesmo nível hierárquico");
+                response.put("campoErro", "duplicidade");
+                return ResponseEntity.ok(response);
+            }
+        }
+
+        funcionalidade.setPkFuncionalidade(id);
+        Funcionalidade funcionalidadeAtualizada = funcionalidadeRepository.save(funcionalidade);
+
+        response.put("sucesso", true);
+        response.put("mensagem", "Funcionalidade editada com sucesso");
+        response.put("funcionalidade", funcionalidadeAtualizada);
+
+        return ResponseEntity.ok(response);
+
+    } catch (Exception e) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("sucesso", false);
+        response.put("mensagem", "Erro ao editar funcionalidade: " + e.getMessage());
+        return ResponseEntity.badRequest().body(response);
+    }
+}
+
+  /*  @PostMapping("/funcionalidade_importar")
     @Transactional
     public ResponseEntity<?> importar(@RequestParam("file") MultipartFile file) {
         System.out.println("=== INICIANDO IMPORTAÇÃO DE DUAS FOLHAS ===");
@@ -966,7 +1157,7 @@ private String extrairBairro(Localidade localidade) {
             erro.put("sucesso", false);
             return ResponseEntity.badRequest().body(erro);
         }
-    }
+    }*/
 
     @GetMapping("/versoes_atuais")
     @Transactional(readOnly = true)
@@ -1818,4 +2009,163 @@ public ResponseEntity<?> buscarContaPorId(@PathVariable Integer id) {
     }
 }
     
+
+
+
+
+
+
+@PostMapping("/tipo_funcionalidade_importar")
+@Transactional
+public ResponseEntity<?> importarTipoFuncionalidade(@RequestParam("file") MultipartFile file) {
+    System.out.println("=== INICIANDO IMPORTAÇÃO APENAS DE TIPO FUNCIONALIDADE ===");
+
+    try {
+        // Processar apenas a folha de tipos (folha 2)
+        Map<String, Object> resultado = TipoFuncionalidadeLoader.insertOnlyTypeSheet(
+                file, tipoFuncionalidadeRepository, versaoService);
+
+        return ResponseEntity.ok(resultado);
+
+    } catch (Exception e) {
+        Map<String, Object> erro = new HashMap<>();
+        erro.put("erro", "❌ Erro durante a importação: " + e.getMessage());
+        erro.put("sucesso", false);
+        return ResponseEntity.badRequest().body(erro);
+    }
+}
+
+@PostMapping("/funcionalidade_apenas_importar")
+@Transactional
+public ResponseEntity<?> importarApenasFuncionalidade(@RequestParam("file") MultipartFile file) {
+    System.out.println("=== INICIANDO IMPORTAÇÃO APENAS DE FUNCIONALIDADE ===");
+
+    try {
+        // Processar apenas a folha de funcionalidades (folha 1)
+        Map<String, Object> resultado = TipoFuncionalidadeLoader.insertOnlyFuncionalidadeSheet(
+                file, funcionalidadeRepository, tipoFuncionalidadeRepository, versaoService);
+
+        return ResponseEntity.ok(resultado);
+
+    } catch (Exception e) {
+        Map<String, Object> erro = new HashMap<>();
+        erro.put("erro", "❌ Erro durante a importação: " + e.getMessage());
+        erro.put("sucesso", false);
+        return ResponseEntity.badRequest().body(erro);
+    }
+}
+
+/*@GetMapping("/tipo_funcionalidade_listar")
+@Transactional(readOnly = true)
+public ResponseEntity<?> listarTipoFuncionalidade() {
+    try {
+        List<TipoFuncionalidade> tipos = FuncionalidadeRepository.findAllByOrderByPkTipoFuncionalidadeAsc();
+        
+        List<Map<String, Object>> tiposFormatados = new ArrayList<>();
+        for (TipoFuncionalidade tipo : tipos) {
+            Map<String, Object> tipoMap = new HashMap<>();
+            tipoMap.put("pkTipoFuncionalidade", tipo.getPkTipoFuncionalidade());
+            tipoMap.put("designacao", tipo.getDesignacao());
+            tipoMap.put("createdAt", tipo.getCreatedAt());
+            tipoMap.put("updatedAt", tipo.getUpdatedAt());
+            tiposFormatados.add(tipoMap);
+        }
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("sucesso", true);
+        response.put("mensagem", "Tipos de funcionalidade listados com sucesso");
+        response.put("dados", tiposFormatados);
+        response.put("total", tiposFormatados.size());
+        
+        return ResponseEntity.ok(response);
+        
+    } catch (Exception e) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("sucesso", false);
+        response.put("mensagem", "Erro ao listar tipos: " + e.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+}
+*/
+
+
+
+
+
+/**
+ * Valida se já existe uma funcionalidade com mesma designação e mesmo pai
+ * Atende às regras: designacao + fkPai devem ser únicos
+ * Descrição pode repetir, PK deve ser única
+ */
+private Map<String, Object> validarDuplicidadeDesignacaoPai(
+        String designacao, 
+        Integer fkPaiId, 
+        Integer pkFuncionalidadeAtual) {
+    
+    Map<String, Object> resultado = new HashMap<>();
+    resultado.put("valido", true);
+    
+    // Se designação for nula ou vazia, não valida
+    if (designacao == null || designacao.trim().isEmpty()) {
+        return resultado;
+    }
+    
+    designacao = designacao.trim();
+    List<Funcionalidade> duplicatas;
+    
+    if (fkPaiId != null && fkPaiId > 0) {
+        if (pkFuncionalidadeAtual != null) {
+            // Validação para edição (exclui o próprio ID)
+            duplicatas = funcionalidadeRepository
+                .findByDesignacaoAndFkFuncionalidadePaiPkFuncionalidadeAndPkFuncionalidadeNot(
+                    designacao, fkPaiId, pkFuncionalidadeAtual);
+        } else {
+            // Validação para cadastro
+            duplicatas = funcionalidadeRepository
+                .findByDesignacaoAndFkFuncionalidadePaiPkFuncionalidade(designacao, fkPaiId);
+        }
+    } else {
+        // Pai é null (funcionalidade raiz)
+        if (pkFuncionalidadeAtual != null) {
+            // Validação para edição (exclui o próprio ID)
+            duplicatas = funcionalidadeRepository
+                .findByDesignacaoAndFkFuncionalidadePaiIsNullAndPkFuncionalidadeNot(
+                    designacao, pkFuncionalidadeAtual);
+        } else {
+            // Validação para cadastro
+            duplicatas = funcionalidadeRepository
+                .findByDesignacaoAndFkFuncionalidadePaiIsNull(designacao);
+        }
+    }
+    
+    if (!duplicatas.isEmpty()) {
+        resultado.put("valido", false);
+        
+        String mensagemPai = (fkPaiId != null && fkPaiId > 0) ? 
+                            " com o pai ID " + fkPaiId : " no nível raiz";
+        
+        resultado.put("mensagem", String.format(
+            "Já existe uma funcionalidade com a designação '%s'%s. " +
+            "Designação deve ser única para cada pai.",
+            designacao, mensagemPai
+        ));
+        
+        resultado.put("duplicatas", duplicatas.stream()
+            .map(f -> {
+                Map<String, Object> duplicataInfo = new HashMap<>();
+                duplicataInfo.put("pkFuncionalidade", f.getPkFuncionalidade());
+                duplicataInfo.put("designacao", f.getDesignacao());
+                duplicataInfo.put("descricao", f.getDescricao());
+                duplicataInfo.put("paiId", (f.getFkFuncionalidadePai() != null) ? 
+                                 f.getFkFuncionalidadePai().getPkFuncionalidade() : null);
+                duplicataInfo.put("paiDesignacao", (f.getFkFuncionalidadePai() != null) ? 
+                                 f.getFkFuncionalidadePai().getDesignacao() : "Raiz");
+                return duplicataInfo;
+            })
+            .collect(Collectors.toList()));
+    }
+    
+    return resultado;
+}
+
 }

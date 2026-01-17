@@ -1013,7 +1013,7 @@ export default function PerfilCadastrar() {
                       Use o botão "Cancelar" no topo para retornar à lista de perfis sem salvar as alterações
                     </small>
                   </div>
-                )}f
+                )}
               </form>
             </div>
                    
