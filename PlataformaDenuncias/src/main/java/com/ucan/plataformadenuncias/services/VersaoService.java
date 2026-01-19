@@ -48,8 +48,22 @@ public class VersaoService {
         
         return versaoRepository.save(versao);
     }
-    
+
+    /**
+     *
+     * @param tabelaNome
+     * @return
+     */
     public Versao obterVersao(String tabelaNome) {
         return versaoRepository.findByNomeTabela(tabelaNome).orElse(null);
+    }
+
+    /**
+     *
+     * @return
+     */
+    public boolean isEmpty()
+    {
+        return versaoRepository.count() == 0;
     }
 }

@@ -1,26 +1,29 @@
 package com.ucan.plataformadenuncias.dto;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.util.List;
+
+@Setter
+@Getter
 public class LoginDTO {
 
     private String username;
     private String password;
 
-    public String getUsername() {
-        return username;
-    }
+    private String nomeCompleto;
+    private String tipoConta;
+    private List<String> perfis;
+    private List<String> funcionalidades;
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
+    /**
+     *  Conta - Perfil
+     *  Funcionalidade - Perfil
+     *  Conta - Perfil - Funcionalidade
+     *
+     *  Conta -> ContaPerfil -> Perfis -> FuncionalidadePerfil -> Funcionalidades
+     *
+     */
 
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
 }

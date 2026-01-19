@@ -3,6 +3,8 @@ package com.ucan.plataformadenuncias.entities;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -66,21 +68,45 @@ public class Funcionalidade {
         this.pkFuncionalidade = pkFuncionalidade;
     }
 
-    public Funcionalidade(String descricao, String designacao, TipoFuncionalidade fkTipoFuncionalidade, Funcionalidade fk_funcionalidade, String funcionalidadesPartilhadas, String url) {
-        this.descricao = descricao;
-        this.designacao = designacao;
-        this.fkTipoFuncionalidade = fkTipoFuncionalidade;
-        this.fkFuncionalidadePai = fk_funcionalidade;
-        this.funcionalidadesPartilhadas = funcionalidadesPartilhadas;
+    public Funcionalidade(String url, String funcionalidadesPartilhadas, Funcionalidade fkFuncionalidadePai, Integer grupo, TipoFuncionalidade fkTipoFuncionalidade, String designacao, String descricao, Integer pkFuncionalidade) {
         this.url = url;
+        this.funcionalidadesPartilhadas = funcionalidadesPartilhadas;
+        this.fkFuncionalidadePai = fkFuncionalidadePai;
+        this.grupo = grupo;
+        this.fkTipoFuncionalidade = fkTipoFuncionalidade;
+        this.designacao = designacao;
+        this.descricao = descricao;
+        this.pkFuncionalidade = pkFuncionalidade;
     }
 
-    public Funcionalidade(String descricao, String designacao, TipoFuncionalidade fkTipoFuncionalidade, Funcionalidade fk_funcionalidade,  String url) {
+    public Funcionalidade(Integer pkFuncionalidade, String descricao, String designacao, TipoFuncionalidade fkTipoFuncionalidade, Integer grupo, Funcionalidade fkFuncionalidadePai, String funcionalidadesPartilhadas, String url, String versao) {
+        this.pkFuncionalidade = pkFuncionalidade;
         this.descricao = descricao;
         this.designacao = designacao;
         this.fkTipoFuncionalidade = fkTipoFuncionalidade;
-        this.fkFuncionalidadePai = fk_funcionalidade;
+        this.grupo = grupo;
+        this.fkFuncionalidadePai = fkFuncionalidadePai;
+        this.funcionalidadesPartilhadas = funcionalidadesPartilhadas;
         this.url = url;
+        this.versao = versao;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Funcionalidade that = (Funcionalidade) o;
+        return Objects.equals(pkFuncionalidade, that.pkFuncionalidade) && Objects.equals(descricao, that.descricao) && Objects.equals(designacao, that.designacao) && Objects.equals(fkTipoFuncionalidade, that.fkTipoFuncionalidade) && Objects.equals(grupo, that.grupo) && Objects.equals(fkFuncionalidadePai, that.fkFuncionalidadePai) ;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(pkFuncionalidade, descricao, designacao, fkTipoFuncionalidade, grupo, fkFuncionalidadePai);
+    }
+
+    public boolean isGingogo(Funcionalidade o)
+    {
+        return  Objects.equals(descricao, o.descricao) && Objects.equals(designacao, o.designacao) && Objects.equals(fkTipoFuncionalidade, o.fkTipoFuncionalidade) && Objects.equals(grupo, o.grupo) && Objects.equals(fkFuncionalidadePai, o.fkFuncionalidadePai) ;
     }
 
 }

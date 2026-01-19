@@ -11,11 +11,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         "com.ucan.plataformadenuncias.dto",
         "com.ucan.plataformadenuncias.entities",
         "com.ucan.plataformadenuncias.enumerable",
+        "com.ucan.plataformadenuncias.initializer",
         "com.ucan.plataformadenuncias.repositories",
-        "com.ucan.plataformadenuncias.security",
         "com.ucan.plataformadenuncias.services",
-        "com.ucan.plataformadenuncias.initializer"
-
+        "com.ucan.plataformadenuncias.security",
 })
 
 public class PlataformaDenunciasApplication {

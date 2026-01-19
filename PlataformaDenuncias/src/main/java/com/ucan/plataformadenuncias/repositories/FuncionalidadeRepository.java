@@ -1,9 +1,7 @@
 package com.ucan.plataformadenuncias.repositories;
 
 import com.ucan.plataformadenuncias.entities.Funcionalidade;
-import com.ucan.plataformadenuncias.entities.TipoFuncionalidade;
 import java.util.List;
-import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

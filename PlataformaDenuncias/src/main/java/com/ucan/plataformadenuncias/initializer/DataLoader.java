@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Calendar;
 
 @Component
 public class DataLoader implements CommandLineRunner {
@@ -23,6 +24,8 @@ public class DataLoader implements CommandLineRunner {
     
     private final GeneroRepository generoRepository;
     private final EstadoCivilRepository estadoCivilRepository;
+    private final VersaoRepository versaoRepository;
+
     
     
     public DataLoader(PessoaRepository pessoaRepository,
@@ -31,7 +34,7 @@ public class DataLoader implements CommandLineRunner {
                       PerfilRepository perfilRepository,
                       ContaRepository contaRepository,
                       TelefoneRepository telefoneRepository ,
-                      GeneroRepository generoRepository,EstadoCivilRepository estadoCivilRepository) {
+                      GeneroRepository generoRepository, EstadoCivilRepository estadoCivilRepository, VersaoRepository versaoRepository) {
 
         this.pessoaRepository = pessoaRepository;
         this.funcionalidadeRepository = funcionalidadeRepository;
@@ -41,7 +44,8 @@ public class DataLoader implements CommandLineRunner {
         this.telefoneRepository = telefoneRepository;
         this.generoRepository = generoRepository;
         this.estadoCivilRepository = estadoCivilRepository;
-        
+
+        this.versaoRepository = versaoRepository;
     }
 
     @Override
@@ -173,6 +177,20 @@ public class DataLoader implements CommandLineRunner {
     estadoCivilRepository.save(new EstadoCivil(3, "DIVORCIADO"));
     estadoCivilRepository.save(new EstadoCivil(4, "VIUVO"));
     estadoCivilRepository.save(new EstadoCivil(5, "UNIAO_DE_FACTO"));
+
+    Versao versao =  new Versao();
+    versao.setData(Calendar.getInstance().getTime());
+    versao.setNomeTabela("tipo_funcionalidade");
+    versao.setDescricao("versao 1");
+
+    versaoRepository.save(versao);
+
+    Versao versao2 =  new Versao();
+    versao2.setData(Calendar.getInstance().getTime());
+    versao2.setNomeTabela("funcionalidade");
+    versao2.setDescricao("versão 1");
+
+    versaoRepository.save(versao2);
 
     }
 
