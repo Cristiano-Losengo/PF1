@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -15,23 +16,29 @@ import org.springframework.stereotype.Service;
 public class ContaService {
 
     @Autowired
-    private ContaRepository repository;
+    private ContaRepository contaRepository;
 
     public Conta salvar(Conta conta) {
-        return repository.save(conta);
+        return contaRepository.save(conta);
     }
 
     public List<Conta> listarTodos() {
-        return repository.findAll();
+        return contaRepository.findAll();
     }
 
     public Optional<Conta> buscarPorId(Integer id) {
-        return repository.findById(id);
+        return contaRepository.findById(id);
     }
 
     public void remover(Integer id) {
-        repository.deleteById(id);
+        contaRepository.deleteById(id);
     }
 
-  
+    @Transactional(readOnly = true)
+    public Conta carregarConta(String email) {
+        return contaRepository
+                .findContaComPerfisEFuncionalidadesByEmail(email)
+                .orElseThrow();
+    }
+
 }

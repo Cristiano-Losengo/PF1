@@ -3,14 +3,18 @@ package com.ucan.plataformadenuncias.initializer;
 import com.ucan.plataformadenuncias.config.Defs;
 import com.ucan.plataformadenuncias.config.FuncionsHelper;
 import com.ucan.plataformadenuncias.entities.*;
+import com.ucan.plataformadenuncias.enumerable.TipoContaEnum;
+import com.ucan.plataformadenuncias.enumerable.TipoLocalidade;
 import com.ucan.plataformadenuncias.repositories.*;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Component;
 
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Calendar;
+import java.util.Optional;
 
 @Component
 public class DataLoader implements CommandLineRunner {
@@ -25,6 +29,8 @@ public class DataLoader implements CommandLineRunner {
     private final GeneroRepository generoRepository;
     private final EstadoCivilRepository estadoCivilRepository;
     private final VersaoRepository versaoRepository;
+    private final LocalidadeRepository localidadeRepository;
+
 
     
     
@@ -34,7 +40,7 @@ public class DataLoader implements CommandLineRunner {
                       PerfilRepository perfilRepository,
                       ContaRepository contaRepository,
                       TelefoneRepository telefoneRepository ,
-                      GeneroRepository generoRepository, EstadoCivilRepository estadoCivilRepository, VersaoRepository versaoRepository) {
+                      GeneroRepository generoRepository, EstadoCivilRepository estadoCivilRepository, VersaoRepository versaoRepository, LocalidadeRepository localidadeRepository) {
 
         this.pessoaRepository = pessoaRepository;
         this.funcionalidadeRepository = funcionalidadeRepository;
@@ -46,6 +52,7 @@ public class DataLoader implements CommandLineRunner {
         this.estadoCivilRepository = estadoCivilRepository;
 
         this.versaoRepository = versaoRepository;
+        this.localidadeRepository = localidadeRepository;
     }
 
     @Override
@@ -168,7 +175,7 @@ public class DataLoader implements CommandLineRunner {
             System.out.println("Autorities. Nenhum dado inicial carregado.");
         }
     */
-    
+
     generoRepository.save(new Genero(1, "Masculino"));
     generoRepository.save(new Genero(2, "Feminino"));
 
@@ -177,6 +184,48 @@ public class DataLoader implements CommandLineRunner {
     estadoCivilRepository.save(new EstadoCivil(3, "DIVORCIADO"));
     estadoCivilRepository.save(new EstadoCivil(4, "VIUVO"));
     estadoCivilRepository.save(new EstadoCivil(5, "UNIAO_DE_FACTO"));
+
+
+
+    Localidade localidade =  new Localidade();
+    localidade.setNome("Luanda");
+    localidade.setTipo(TipoLocalidade.RUA);
+    localidade.setNomeRua("Porto Santo");
+
+    localidade  = localidadeRepository.save(localidade);
+
+
+    Pessoa pessoa = new Pessoa();
+    pessoa.setIdentificacao("AAABBBCCC");
+    pessoa.setNome("Whitney Houston");
+    LocalDate dataNascimento =  LocalDate.now();
+    pessoa.setDataNascimento(dataNascimento);
+    pessoa.setFkGenero(new Genero(1));
+    pessoa.setFkEstadoCivil(new EstadoCivil(1));
+    pessoa.setLocalidade(localidade);
+
+    Optional<Pessoa> pessoaExistente =
+            pessoaRepository.findByIdentificacao(pessoa.getIdentificacao());
+
+    if (pessoaExistente == null) {
+        pessoa = pessoaRepository.save(pessoa); // INSERT
+    } else {
+        pessoa = pessoaExistente.get(); // entidade já persistida
+    }
+
+    Conta conta = contaRepository.findByEmail("whitney@gmail.com")
+            .orElseGet(Conta::new);
+
+    conta.setTipoConta(TipoContaEnum.ADMIN);
+    conta.setFkPessoa(pessoa);
+    conta.setEmail("whitney@gmail.com");
+    conta.setPasswordHash("whitney");
+    contaRepository.save(conta);
+
+   // Perfil perfil = perfilRepository.
+
+    ContaPerfil contaPerfil =  new ContaPerfil();
+    contaPerfil.setFkConta(conta);
 
     Versao versao =  new Versao();
     versao.setData(Calendar.getInstance().getTime());

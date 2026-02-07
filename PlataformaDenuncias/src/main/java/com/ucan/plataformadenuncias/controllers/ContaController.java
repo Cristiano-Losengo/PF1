@@ -1,9 +1,13 @@
 package com.ucan.plataformadenuncias.controllers;
 
 
-import com.ucan.plataformadenuncias.entities.Conta;
+import com.ucan.plataformadenuncias.dto.ContaDTO;
+import com.ucan.plataformadenuncias.dto.FuncionalidadeDTO;
+import com.ucan.plataformadenuncias.dto.PerfilDTO;
+import com.ucan.plataformadenuncias.entities.*;
 import com.ucan.plataformadenuncias.services.ContaService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 /**
@@ -34,4 +38,8 @@ public class ContaController {
     public void delete(@PathVariable Integer id) {
         contaService.remover(id);
     }
+
+
+
+
 }

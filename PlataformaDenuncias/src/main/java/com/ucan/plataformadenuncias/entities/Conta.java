@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -41,7 +43,7 @@ public class Conta {
     private Pessoa fkPessoa;
 
     @OneToMany(mappedBy = "fkConta", fetch = FetchType.LAZY)
-    private List<ContaPerfil> contaPerfis;
+    private Set<ContaPerfil> contaPerfis;
 
     @CreationTimestamp
     @Column(updatable = false)

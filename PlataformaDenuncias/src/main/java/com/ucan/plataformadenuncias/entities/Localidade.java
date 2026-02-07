@@ -47,7 +47,6 @@ public class Localidade implements Serializable {
     @Column(name = "nome_rua_ou_numero_rua")
     private String nomeRua;
 
-
     @JsonManagedReference
     @OneToMany(mappedBy = "localidadePai", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<Localidade> filhas;

@@ -5,6 +5,7 @@ import com.ucan.plataformadenuncias.config.FuncionsHelper;
 import com.ucan.plataformadenuncias.dto.ContaPerfilDTO;
 import com.ucan.plataformadenuncias.dto.FuncionalidadeDTO;
 import com.ucan.plataformadenuncias.dto.FuncionalidadePerfilDTO;
+import com.ucan.plataformadenuncias.dto.PerfilDTO;
 import com.ucan.plataformadenuncias.entities.*;
 import com.ucan.plataformadenuncias.enumerable.TipoContaEnum;
 import com.ucan.plataformadenuncias.enumerable.TipoLocalidade;
@@ -12,10 +13,12 @@ import com.ucan.plataformadenuncias.enumerable.TipoTelefoneEnum;
 import com.ucan.plataformadenuncias.initializer.TipoFuncionalidadeLoader;
 import com.ucan.plataformadenuncias.repositories.*;
 import com.ucan.plataformadenuncias.services.VersaoService;
+
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,13 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -118,8 +118,8 @@ public class SegurancaController {
                     funcionalidadeDTO.setPkFuncionalidade(funcionalidade.getPkFuncionalidade());
                     funcionalidadeDTO.setDesignacao(funcionalidade.getDesignacao() != null ? funcionalidade.getDesignacao() : "");
                     funcionalidadeDTO.setDescricao(funcionalidade.getDescricao() != null ? funcionalidade.getDescricao() : "");
-                    funcionalidadeDTO.setCreatedAt(funcionalidade.getCreatedAt());
-                    funcionalidadeDTO.setUpdatedAt(funcionalidade.getUpdatedAt());
+                    //  funcionalidadeDTO.setCreatedAt(funcionalidade.getCreatedAt());
+                    //   funcionalidadeDTO.setUpdatedAt(funcionalidade.getUpdatedAt());
                     funcionalidadeDTO.setUrl(funcionalidade.getUrl() != null ? funcionalidade.getUrl() : "");
 
                     if (funcionalidade.getGrupo() != null) {
@@ -134,13 +134,13 @@ public class SegurancaController {
                         funcionalidadeDTO.setFkTipoFuncionalidade(funcionalidade.getFkTipoFuncionalidade().getPkTipoFuncionalidade());
                         funcionalidadeDTO.setDesignacaoTipoFuncionalidade(
                                 funcionalidade.getFkTipoFuncionalidade().getDesignacao() != null
-                                ? funcionalidade.getFkTipoFuncionalidade().getDesignacao() : ""
+                                        ? funcionalidade.getFkTipoFuncionalidade().getDesignacao() : ""
                         );
                     } else {
                         funcionalidadeDTO.setDesignacaoTipoFuncionalidade("Sem tipo");
                     }
 
-                    if (funcionalidade.getFkFuncionalidadePai()!= null) {
+                    if (funcionalidade.getFkFuncionalidadePai() != null) {
                         funcionalidadeDTO.setFkFuncionalidadePai(funcionalidade.getFkFuncionalidadePai().getPkFuncionalidade());
                     }
 
@@ -202,192 +202,210 @@ public class SegurancaController {
         }
     }
 
-   @GetMapping("/conta_listar")
-@Transactional(readOnly = true)
-public ResponseEntity<?> listarConta() {
-    try {
-        List<Conta> contas = contaRepository.findAll();
-        
-        List<Map<String, Object>> contasCompletas = new ArrayList<>();
-        
-        for (Conta conta : contas) {
-            Map<String, Object> contaMap = new HashMap<>();
-            
-            contaMap.put("pkConta", conta.getPkConta());
-            contaMap.put("email", conta.getEmail());
-            contaMap.put("tipoConta", conta.getTipoConta() != null ? conta.getTipoConta().name() : null);
-            
-            Integer estadoConta = conta.getEstado();
-            contaMap.put("estado", estadoConta != null ? estadoConta : 1);
-            
-            contaMap.put("createdAt", conta.getCreatedAt());
-            contaMap.put("updatedAt", conta.getUpdatedAt());
-            
-            if (conta.getFkPessoa() != null) {
-                Pessoa pessoa = conta.getFkPessoa();
-                contaMap.put("nomeCompleto", pessoa.getNome());
-                contaMap.put("identificacao", pessoa.getIdentificacao());
-                
-                if (pessoa.getTelefones() != null && !pessoa.getTelefones().isEmpty()) {
-                    Telefone telefonePrincipal = pessoa.getTelefones().stream()
-                            .findFirst()
-                            .orElse(pessoa.getTelefones().get(0));
-                    contaMap.put("telefone", telefonePrincipal.getNumero());
-                }
-                
-                contaMap.put("fkGenero", pessoa.getFkGenero() != null ? pessoa.getFkGenero().getPkGenero() : null);
-                contaMap.put("fkEstadoCivil", pessoa.getFkEstadoCivil() != null ? pessoa.getFkEstadoCivil().getPkEstadoCivil() : null);
-                contaMap.put("dataNascimento", pessoa.getDataNascimento());
-                
-                // MELHORADO: Incluir informações de endereço/localidade com campos separados
-                if (pessoa.getLocalidade() != null) {
-                    Localidade localidade = pessoa.getLocalidade();
-                    contaMap.put("localidade", localidade.getNome());
-                    contaMap.put("nomeRua", localidade.getNomeRua());
-                    
-                    // ADICIONADO: Campos separados para província, município, bairro
-                    // Extrair da estrutura hierárquica de Localidade
-                    String provincia = extrairProvincia(localidade);
-                    String municipio = extrairMunicipio(localidade);
-                    String bairro = extrairBairro(localidade);
-                    
-                    contaMap.put("provincia", provincia);
-                    contaMap.put("municipio", municipio);
-                    contaMap.put("bairro", bairro);
-                    
-                    System.out.println("Endereço extraído para conta " + conta.getPkConta() + ": " +
-                            "Província=" + provincia + ", Município=" + municipio + ", Bairro=" + bairro);
+    @GetMapping("/conta_listar")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> listarConta() {
+        try {
+            List<Conta> contas = contaRepository.findAll();
+
+            List<Map<String, Object>> contasCompletas = new ArrayList<>();
+
+            for (Conta conta : contas) {
+                Map<String, Object> contaMap = new HashMap<>();
+
+                contaMap.put("pkConta", conta.getPkConta());
+                contaMap.put("email", conta.getEmail());
+                contaMap.put("tipoConta", conta.getTipoConta() != null ? conta.getTipoConta().name() : null);
+
+                Integer estadoConta = conta.getEstado();
+                contaMap.put("estado", estadoConta != null ? estadoConta : 1);
+
+                contaMap.put("createdAt", conta.getCreatedAt());
+                contaMap.put("updatedAt", conta.getUpdatedAt());
+
+                if (conta.getFkPessoa() != null) {
+                    Pessoa pessoa = conta.getFkPessoa();
+                    contaMap.put("nomeCompleto", pessoa.getNome());
+                    contaMap.put("identificacao", pessoa.getIdentificacao());
+
+                    if (pessoa.getTelefones() != null && !pessoa.getTelefones().isEmpty()) {
+                        Telefone telefonePrincipal = pessoa.getTelefones().stream()
+                                .findFirst()
+                                .orElse(pessoa.getTelefones().get(0));
+                        contaMap.put("telefone", telefonePrincipal.getNumero());
+                    }
+
+                    contaMap.put("fkGenero", pessoa.getFkGenero() != null ? pessoa.getFkGenero().getPkGenero() : null);
+                    contaMap.put("fkEstadoCivil", pessoa.getFkEstadoCivil() != null ? pessoa.getFkEstadoCivil().getPkEstadoCivil() : null);
+                    contaMap.put("dataNascimento", pessoa.getDataNascimento());
+
+                    // MELHORADO: Incluir informações de endereço/localidade com campos separados
+                    if (pessoa.getLocalidade() != null) {
+                        Localidade localidade = pessoa.getLocalidade();
+                        contaMap.put("localidade", localidade.getNome());
+                        contaMap.put("nomeRua", localidade.getNomeRua());
+
+                        // ADICIONADO: Campos separados para província, município, bairro
+                        // Extrair da estrutura hierárquica de Localidade
+                        String provincia = extrairProvincia(localidade);
+                        String municipio = extrairMunicipio(localidade);
+                        String bairro = extrairBairro(localidade);
+
+                        contaMap.put("provincia", provincia);
+                        contaMap.put("municipio", municipio);
+                        contaMap.put("bairro", bairro);
+
+                        System.out.println("Endereço extraído para conta " + conta.getPkConta() + ": " +
+                                "Província=" + provincia + ", Município=" + municipio + ", Bairro=" + bairro);
+                    } else {
+                        // Se não houver localidade, definir campos como nulo
+                        contaMap.put("provincia", null);
+                        contaMap.put("municipio", null);
+                        contaMap.put("bairro", null);
+                        contaMap.put("nomeRua", null);
+                        contaMap.put("localidade", null);
+                    }
                 } else {
-                    // Se não houver localidade, definir campos como nulo
+                    contaMap.put("nomeCompleto", null);
+                    contaMap.put("identificacao", null);
+                    contaMap.put("telefone", null);
+                    contaMap.put("fkGenero", null);
+                    contaMap.put("fkEstadoCivil", null);
+                    contaMap.put("dataNascimento", null);
                     contaMap.put("provincia", null);
                     contaMap.put("municipio", null);
                     contaMap.put("bairro", null);
                     contaMap.put("nomeRua", null);
                     contaMap.put("localidade", null);
                 }
-            } else {
-                contaMap.put("nomeCompleto", null);
-                contaMap.put("identificacao", null);
-                contaMap.put("telefone", null);
-                contaMap.put("fkGenero", null);
-                contaMap.put("fkEstadoCivil", null);
-                contaMap.put("dataNascimento", null);
-                contaMap.put("provincia", null);
-                contaMap.put("municipio", null);
-                contaMap.put("bairro", null);
-                contaMap.put("nomeRua", null);
-                contaMap.put("localidade", null);
-            }
-            
-            contasCompletas.add(contaMap);
-        }
-        
-        return ResponseEntity.ok(contasCompletas);
-    } catch (Exception e) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("sucesso", false);
-        response.put("mensagem", "Erro ao listar contas: " + e.getMessage());
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-    }
-}
 
-// ADICIONADO: Métodos auxiliares para extrair informações de endereço
-private String extrairProvincia(Localidade localidade) {
-    try {
-        // Se a localidade for do tipo PROVINCIA, retornar o nome
-        if (localidade.getTipo() == TipoLocalidade.PROVINCIA) {
-            return localidade.getNome();
-        }
-        
-        // Se tiver localidade pai, navegar até a província
-        Localidade atual = localidade;
-        while (atual != null) {
-            if (atual.getTipo() == TipoLocalidade.PROVINCIA) {
-                return atual.getNome();
+                contasCompletas.add(contaMap);
             }
-            atual = atual.getLocalidadePai();
+
+            return ResponseEntity.ok(contasCompletas);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("sucesso", false);
+            response.put("mensagem", "Erro ao listar contas: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
-        
-        // Tentar extrair do nome se tiver formato conhecido
-        String nome = localidade.getNome();
-        if (nome != null && nome.contains(",")) {
-            String[] partes = nome.split(",");
-            for (String parte : partes) {
-                String parteTrim = parte.trim();
-                // Verificar se parece ser uma província (heuristicamente)
-                if (parteTrim.matches(".*(nda|ela|mbo|nza)$")) {
-                    return parteTrim;
+    }
+
+    // ADICIONADO: Métodos auxiliares para extrair informações de endereço
+    private String extrairProvincia(Localidade localidade) {
+        try {
+            // Se a localidade for do tipo PROVINCIA, retornar o nome
+            if (localidade.getTipo() == TipoLocalidade.PROVINCIA) {
+                return localidade.getNome();
+            }
+
+            // Se tiver localidade pai, navegar até a província
+            Localidade atual = localidade;
+            while (atual != null) {
+                if (atual.getTipo() == TipoLocalidade.PROVINCIA) {
+                    return atual.getNome();
+                }
+                atual = atual.getLocalidadePai();
+            }
+
+            // Tentar extrair do nome se tiver formato conhecido
+            String nome = localidade.getNome();
+            if (nome != null && nome.contains(",")) {
+                String[] partes = nome.split(",");
+                for (String parte : partes) {
+                    String parteTrim = parte.trim();
+                    // Verificar se parece ser uma província (heuristicamente)
+                    if (parteTrim.matches(".*(nda|ela|mbo|nza)$")) {
+                        return parteTrim;
+                    }
                 }
             }
-        }
-        
-        return nome != null ? nome : "Não informado";
-    } catch (Exception e) {
-        return "Não informado";
-    }
-}
 
-private String extrairMunicipio(Localidade localidade) {
-    try {
-        // Se a localidade for do tipo MUNICIPIO, retornar o nome
-        if (localidade.getTipo() == TipoLocalidade.MUNICIPIO) {
-            return localidade.getNome();
+            return nome != null ? nome : "Não informado";
+        } catch (Exception e) {
+            return "Não informado";
         }
-        
-        // Se for bairro, buscar o município pai
-        if (localidade.getTipo() == TipoLocalidade.BAIRRO && localidade.getLocalidadePai() != null) {
-            Localidade pai = localidade.getLocalidadePai();
-            if (pai.getTipo() == TipoLocalidade.MUNICIPIO) {
-                return pai.getNome();
-            }
-        }
-        
-        // Tentar extrair do nome se tiver formato conhecido
-        String nome = localidade.getNome();
-        if (nome != null && nome.contains(",")) {
-            String[] partes = nome.split(",");
-            if (partes.length >= 2) {
-                return partes[1].trim();
-            }
-        }
-        
-        return "Não informado";
-    } catch (Exception e) {
-        return "Não informado";
     }
-}
 
-private String extrairBairro(Localidade localidade) {
-    try {
-        // Se a localidade for do tipo BAIRRO, retornar o nome
-        if (localidade.getTipo() == TipoLocalidade.BAIRRO) {
-            return localidade.getNome();
-        }
-        
-        // Tentar extrair do nome se tiver formato conhecido
-        String nome = localidade.getNome();
-        if (nome != null && nome.contains(",")) {
-            String[] partes = nome.split(",");
-            if (partes.length >= 3) {
-                return partes[2].trim();
-            } else if (partes.length == 2) {
-                // Se só tiver 2 partes, a segunda pode ser o bairro
-                return partes[1].trim();
+    private String extrairMunicipio(Localidade localidade) {
+        try {
+            // Se a localidade for do tipo MUNICIPIO, retornar o nome
+            if (localidade.getTipo() == TipoLocalidade.MUNICIPIO) {
+                return localidade.getNome();
             }
+
+            // Se for bairro, buscar o município pai
+            if (localidade.getTipo() == TipoLocalidade.BAIRRO && localidade.getLocalidadePai() != null) {
+                Localidade pai = localidade.getLocalidadePai();
+                if (pai.getTipo() == TipoLocalidade.MUNICIPIO) {
+                    return pai.getNome();
+                }
+            }
+
+            // Tentar extrair do nome se tiver formato conhecido
+            String nome = localidade.getNome();
+            if (nome != null && nome.contains(",")) {
+                String[] partes = nome.split(",");
+                if (partes.length >= 2) {
+                    return partes[1].trim();
+                }
+            }
+
+            return "Não informado";
+        } catch (Exception e) {
+            return "Não informado";
         }
-        
-        return nome != null ? nome : "Não informado";
-    } catch (Exception e) {
-        return "Não informado";
     }
-}
+
+    private String extrairBairro(Localidade localidade) {
+        try {
+            // Se a localidade for do tipo BAIRRO, retornar o nome
+            if (localidade.getTipo() == TipoLocalidade.BAIRRO) {
+                return localidade.getNome();
+            }
+
+            // Tentar extrair do nome se tiver formato conhecido
+            String nome = localidade.getNome();
+            if (nome != null && nome.contains(",")) {
+                String[] partes = nome.split(",");
+                if (partes.length >= 3) {
+                    return partes[2].trim();
+                } else if (partes.length == 2) {
+                    // Se só tiver 2 partes, a segunda pode ser o bairro
+                    return partes[1].trim();
+                }
+            }
+
+            return nome != null ? nome : "Não informado";
+        } catch (Exception e) {
+            return "Não informado";
+        }
+    }
 
     @GetMapping("/perfil_listar")
     @Transactional(readOnly = true)
     public ResponseEntity<?> listarPerfil() {
+
         try {
+
             List<Perfil> perfis = perfilRepository.findAll();
-            return ResponseEntity.ok(perfis);
+
+            List<PerfilDTO> listaPerfil =   perfis.stream().map(perfil -> {
+
+                PerfilDTO dto = new PerfilDTO();
+
+                dto.setPkPerfil(perfil.getPkPerfil());
+                dto.setDesignacao(perfil.getDesignacao());
+                dto.setDescricao(perfil.getDescricao());
+                dto.setEstado(perfil.getEstado());
+                dto.setCreatedAt(perfil.getCreatedAt());
+                dto.setUpdatedAt(perfil.getUpdatedAt());
+
+                return dto;
+            }).collect(Collectors.toList());
+
+            return    ResponseEntity.ok(listaPerfil);
+
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("sucesso", false);
@@ -471,16 +489,16 @@ private String extrairBairro(Localidade localidade) {
     @Transactional
     public ResponseEntity<?> cadastrarConta(@RequestBody ContaPerfilDTO contaPerfilDTO) {
         Map<String, Object> response = new HashMap<>();
-        
+
         try {
             System.out.println("Dados recebidos para cadastro: " + contaPerfilDTO.toString());
-            
+
             // ========== VALIDAÇÃO: VERIFICAR SE IDENTIFICAÇÃO JÁ EXISTE ==========
             if (contaPerfilDTO.getIdentificacao() != null && !contaPerfilDTO.getIdentificacao().trim().isEmpty()) {
                 String identificacao = contaPerfilDTO.getIdentificacao().trim();
-                
+
                 Optional<Pessoa> pessoaExistente = pessoaRepository.findByIdentificacao(identificacao);
-                
+
                 if (pessoaExistente.isPresent()) {
                     response.put("sucesso", false);
                     response.put("mensagem", "Esta identificação já está em uso por outra pessoa");
@@ -488,13 +506,13 @@ private String extrairBairro(Localidade localidade) {
                     return ResponseEntity.ok(response); // Mudar para .ok() para manter consistência
                 }
             }
-            
+
             // ========== VALIDAÇÃO: VERIFICAR SE EMAIL JÁ EXISTE ==========
             if (contaPerfilDTO.getEmail() != null && !contaPerfilDTO.getEmail().trim().isEmpty()) {
                 String email = contaPerfilDTO.getEmail().trim().toLowerCase();
-                
+
                 Optional<Conta> contaExistente = contaRepository.findByEmail(email);
-                
+
                 if (contaExistente.isPresent()) {
                     response.put("sucesso", false);
                     response.put("mensagem", "Este email já está em uso por outra conta");
@@ -502,7 +520,7 @@ private String extrairBairro(Localidade localidade) {
                     return ResponseEntity.ok(response); // Mudar para .ok() para manter consistência
                 }
             }
-            
+
             // ========== VALIDAÇÃO: VERIFICAR SE PERFIL É VÁLIDO ==========
             int fkPerfil = contaPerfilDTO.getFkPerfil();
             if (fkPerfil <= 0) {
@@ -511,7 +529,7 @@ private String extrairBairro(Localidade localidade) {
                 response.put("campoErro", "fkPerfil");
                 return ResponseEntity.ok(response);
             }
-            
+
             Perfil perfilModel = perfilRepository.findByPkPerfil(fkPerfil);
             if (perfilModel == null) {
                 response.put("sucesso", false);
@@ -519,9 +537,9 @@ private String extrairBairro(Localidade localidade) {
                 response.put("campoErro", "fkPerfil");
                 return ResponseEntity.ok(response);
             }
-            
+
             // ========== FIM DA VALIDAÇÃO ==========
-            
+
             Pessoa pessoaModel = new Pessoa();
             Conta contaModel = new Conta();
             ContaPerfil contaPerfil = new ContaPerfil();
@@ -534,24 +552,24 @@ private String extrairBairro(Localidade localidade) {
                 System.err.println("Erro ao processar endereço, criando localidade padrão...");
                 localidadePessoa = criarLocalidadeBasica();
             }
-            
+
             // 2. CONFIGURAR PESSOA COM ENDEREÇO
             pessoaModel.setNome(contaPerfilDTO.getNomeCompleto());
-            pessoaModel.setIdentificacao(contaPerfilDTO.getIdentificacao() != null ? 
-                                       contaPerfilDTO.getIdentificacao().trim() : null);
-            
+            pessoaModel.setIdentificacao(contaPerfilDTO.getIdentificacao() != null ?
+                    contaPerfilDTO.getIdentificacao().trim() : null);
+
             // Configurar gênero se fornecido
             int fkGenero = contaPerfilDTO.getFkGenero();
             if (fkGenero > 0) {
                 pessoaModel.setFkGenero(new Genero(fkGenero));
             }
-            
+
             // Configurar estado civil se fornecido
             int fkEstadoCivil = contaPerfilDTO.getFkEstadoCivil();
             if (fkEstadoCivil > 0) {
                 pessoaModel.setFkEstadoCivil(new EstadoCivil(fkEstadoCivil));
             }
-            
+
             // Definir data de nascimento
             if (contaPerfilDTO.getDataNascimento() != null && !contaPerfilDTO.getDataNascimento().isEmpty()) {
                 try {
@@ -566,7 +584,7 @@ private String extrairBairro(Localidade localidade) {
                     pessoaModel.setDataNascimento(LocalDate.now().minusYears(18));
                 }
             }
-            
+
             // Associar localidade à pessoa SOMENTE se não for null
             if (localidadePessoa != null) {
                 pessoaModel.setLocalidade(localidadePessoa);
@@ -579,7 +597,7 @@ private String extrairBairro(Localidade localidade) {
                 telefone.setPrincipal(true);
                 telefone.setTipo(TipoTelefoneEnum.CELULAR);
                 telefone.setFkPessoa(pessoaModel);
-                
+
                 if (pessoaModel.getTelefones() == null) {
                     pessoaModel.setTelefones(new ArrayList<>());
                 }
@@ -588,12 +606,12 @@ private String extrairBairro(Localidade localidade) {
 
             // 4. SALVAR PESSOA
             pessoaModel = pessoaRepository.save(pessoaModel);
-            
+
             // 5. SALVAR CONTA
-            contaModel.setEmail(contaPerfilDTO.getEmail() != null ? 
-                               contaPerfilDTO.getEmail().trim().toLowerCase() : null);
+            contaModel.setEmail(contaPerfilDTO.getEmail() != null ?
+                    contaPerfilDTO.getEmail().trim().toLowerCase() : null);
             contaModel.setPasswordHash(contaPerfilDTO.getPasswordHash());
-            
+
             // Validar e converter tipo de conta
             try {
                 if (contaPerfilDTO.getTipoConta() != null && !contaPerfilDTO.getTipoConta().isEmpty()) {
@@ -616,27 +634,27 @@ private String extrairBairro(Localidade localidade) {
                 System.err.println("Erro ao definir tipo de conta: " + e.getMessage());
                 contaModel.setTipoConta(TipoContaEnum.ADMIN);
             }
-            
+
             // Configurar estado
             int estadoConta = contaPerfilDTO.getEstado();
             if (estadoConta < 0 || estadoConta > 1) {
                 estadoConta = 1; // Valor padrão se inválido
             }
             contaModel.setEstado(estadoConta);
-            
+
             contaModel.setFkPessoa(pessoaModel);
             contaModel = contaRepository.save(contaModel);
-            
+
             // 6. SALVAR CONTA-PERFIL
             contaPerfil.setFkConta(contaModel);
             contaPerfil.setFkPerfil(perfilModel);
-            
+
             int estadoContaPerfil = contaPerfilDTO.getEstado();
             if (estadoContaPerfil < 0 || estadoContaPerfil > 1) {
                 estadoContaPerfil = 1;
             }
             contaPerfil.setEstado(estadoContaPerfil);
-            
+
             contaPerfilRepository.save(contaPerfil);
 
             response.put("sucesso", true);
@@ -648,7 +666,7 @@ private String extrairBairro(Localidade localidade) {
 
         } catch (DataIntegrityViolationException e) {
             String mensagemErro = "Erro de integridade de dados";
-            
+
             if (e.getMessage() != null) {
                 if (e.getMessage().contains("pessoa_identificacao_key")) {
                     mensagemErro = "Esta identificação já está em uso por outra pessoa";
@@ -658,11 +676,11 @@ private String extrairBairro(Localidade localidade) {
                     mensagemErro = "Já existe um registro com estes dados";
                 }
             }
-            
+
             response.put("sucesso", false);
             response.put("mensagem", mensagemErro);
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             response.put("sucesso", false);
             response.put("mensagem", "Erro ao cadastrar conta: " + e.getMessage());
@@ -680,10 +698,10 @@ private String extrairBairro(Localidade localidade) {
             System.out.println("Município: " + contaPerfilDTO.getMunicipio());
             System.out.println("Bairro: " + contaPerfilDTO.getBairro());
             System.out.println("Nome Rua: " + contaPerfilDTO.getNomeRua());
-            
+
             // Usar diretamente os nomes recebidos para criar a localidade
             return criarLocalidadeComNomes(contaPerfilDTO);
-            
+
         } catch (Exception e) {
             System.err.println("Erro em processarEnderecoComNomes: " + e.getMessage());
             e.printStackTrace();
@@ -693,10 +711,10 @@ private String extrairBairro(Localidade localidade) {
 
     private Localidade criarLocalidadeComNomes(ContaPerfilDTO contaPerfilDTO) {
         Localidade localidade = new Localidade();
-        
+
         // Montar nome completo da localidade
         StringBuilder nomeBuilder = new StringBuilder();
-        
+
         if (contaPerfilDTO.getBairro() != null && !contaPerfilDTO.getBairro().trim().isEmpty()) {
             nomeBuilder.append(contaPerfilDTO.getBairro().trim());
             localidade.setTipo(TipoLocalidade.BAIRRO);
@@ -710,24 +728,24 @@ private String extrairBairro(Localidade localidade) {
             nomeBuilder.append("Endereço não especificado");
             localidade.setTipo(TipoLocalidade.BAIRRO);
         }
-        
+
         localidade.setNome(nomeBuilder.toString());
-        
+
         // Adicionar nome da rua se existir
         if (contaPerfilDTO.getNomeRua() != null && !contaPerfilDTO.getNomeRua().trim().isEmpty()) {
             localidade.setNomeRua(contaPerfilDTO.getNomeRua().trim());
             System.out.println("Nome da rua definido: " + contaPerfilDTO.getNomeRua().trim());
         }
-        
+
         System.out.println("Criando nova localidade com nomes: " + localidade.getNome() + " (Tipo: " + localidade.getTipo() + ")");
-        
+
         // Buscar localidade pai (município) se existir
-        if (contaPerfilDTO.getMunicipio() != null && !contaPerfilDTO.getMunicipio().trim().isEmpty() && 
-            localidade.getTipo() == TipoLocalidade.BAIRRO) {
+        if (contaPerfilDTO.getMunicipio() != null && !contaPerfilDTO.getMunicipio().trim().isEmpty() &&
+                localidade.getTipo() == TipoLocalidade.BAIRRO) {
             try {
                 // Buscar município pelo nome
                 Optional<Localidade> municipioOpt = localidadeRepository.findByNome(contaPerfilDTO.getMunicipio().trim());
-                
+
                 if (municipioOpt.isPresent()) {
                     localidade.setLocalidadePai(municipioOpt.get());
                     System.out.println("Município pai encontrado pelo nome: " + municipioOpt.get().getNome());
@@ -736,7 +754,7 @@ private String extrairBairro(Localidade localidade) {
                     Localidade novoMunicipio = new Localidade();
                     novoMunicipio.setNome(contaPerfilDTO.getMunicipio().trim());
                     novoMunicipio.setTipo(TipoLocalidade.MUNICIPIO);
-                    
+
                     // Buscar província pai se existir
                     if (contaPerfilDTO.getProvincia() != null && !contaPerfilDTO.getProvincia().trim().isEmpty()) {
                         Optional<Localidade> provinciaOpt = localidadeRepository.findByNome(contaPerfilDTO.getProvincia().trim());
@@ -744,7 +762,7 @@ private String extrairBairro(Localidade localidade) {
                             novoMunicipio.setLocalidadePai(provinciaOpt.get());
                         }
                     }
-                    
+
                     novoMunicipio = localidadeRepository.save(novoMunicipio);
                     localidade.setLocalidadePai(novoMunicipio);
                     System.out.println("Novo município criado: " + novoMunicipio.getNome());
@@ -753,7 +771,7 @@ private String extrairBairro(Localidade localidade) {
                 System.err.println("Erro ao buscar ou criar município pai: " + e.getMessage());
             }
         }
-        
+
         return localidadeRepository.save(localidade);
     }
 
@@ -762,18 +780,18 @@ private String extrairBairro(Localidade localidade) {
         try {
             Localidade localidadeBasica = new Localidade();
             localidadeBasica.setNome("Endereço padrão");
-            
+
             try {
                 localidadeBasica.setTipo(TipoLocalidade.BAIRRO);
             } catch (Exception e) {
                 // Se não conseguir definir tipo, não definir
                 System.err.println("Não foi possível definir tipo para localidade básica");
             }
-            
+
             return localidadeRepository.save(localidadeBasica);
         } catch (Exception ex) {
             System.err.println("Erro ao criar localidade básica: " + ex.getMessage());
-            
+
             // Criar objeto mínimo sem salvar no banco
             Localidade localidade = new Localidade();
             localidade.setNome("Endereço");
@@ -874,271 +892,272 @@ private String extrairBairro(Localidade localidade) {
         }
     }
 
-@PostMapping("/funcionalidade_cadastrar")
-@Transactional
-public ResponseEntity<?> cadastrarFuncionalidade(@RequestBody Funcionalidade funcionalidade) {
-    try {
-        Map<String, Object> response = new HashMap<>();
-        
-        // VALIDAÇÃO 1: Campos obrigatórios
-        if (funcionalidade.getDesignacao() == null || funcionalidade.getDesignacao().trim().isEmpty()) {
-            response.put("sucesso", false);
-            response.put("mensagem", "Designação é obrigatória");
-            response.put("campoErro", "designacao");
-            return ResponseEntity.ok(response);
-        }
-        
-        if (funcionalidade.getDescricao() == null || funcionalidade.getDescricao().trim().isEmpty()) {
-            response.put("sucesso", false);
-            response.put("mensagem", "Descrição é obrigatória");
-            response.put("campoErro", "descricao");
-            return ResponseEntity.ok(response);
-        }
-        
-        // VALIDAÇÃO 2: Verificar duplicidade designação + mesmo pai
-        Integer paiId = (funcionalidade.getFkFuncionalidadePai() != null && 
-                       funcionalidade.getFkFuncionalidadePai().getPkFuncionalidade() != null) ?
-                       funcionalidade.getFkFuncionalidadePai().getPkFuncionalidade() : null;
-        
-        Map<String, Object> validacaoDuplicidade = validarDuplicidadeDesignacaoPai(
-            funcionalidade.getDesignacao(), 
-            paiId, 
-            null // null porque é novo cadastro
-        );
-        
-        if (!(Boolean) validacaoDuplicidade.get("valido")) {
-            response.put("sucesso", false);
-            response.put("mensagem", validacaoDuplicidade.get("mensagem"));
-            response.put("campoErro", "designacao");
-            response.put("detalhes", validacaoDuplicidade.get("duplicatas"));
-            return ResponseEntity.ok(response);
-        }
-        
-        // VALIDAÇÃO 3: Verificar se PK já existe (se fornecida)
-        if (funcionalidade.getPkFuncionalidade() != null) {
-            Optional<Funcionalidade> funcExistente = funcionalidadeRepository
-                .findById(funcionalidade.getPkFuncionalidade());
-            if (funcExistente.isPresent()) {
+    @PostMapping("/funcionalidade_cadastrar")
+    @Transactional
+    public ResponseEntity<?> cadastrarFuncionalidade(@RequestBody Funcionalidade funcionalidade) {
+        try {
+            Map<String, Object> response = new HashMap<>();
+
+            // VALIDAÇÃO 1: Campos obrigatórios
+            if (funcionalidade.getDesignacao() == null || funcionalidade.getDesignacao().trim().isEmpty()) {
                 response.put("sucesso", false);
-                response.put("mensagem", "Já existe uma funcionalidade com PK " + 
-                           funcionalidade.getPkFuncionalidade());
-                response.put("campoErro", "pkFuncionalidade");
+                response.put("mensagem", "Designação é obrigatória");
+                response.put("campoErro", "designacao");
                 return ResponseEntity.ok(response);
             }
-        }
-        
-        // VALIDAÇÃO 4: Verificar se o pai existe (se fornecido)
-        if (paiId != null) {
-            Optional<Funcionalidade> paiExistente = funcionalidadeRepository.findById(paiId);
-            if (!paiExistente.isPresent()) {
+
+            if (funcionalidade.getDescricao() == null || funcionalidade.getDescricao().trim().isEmpty()) {
                 response.put("sucesso", false);
-                response.put("mensagem", "Funcionalidade pai não encontrada (ID: " + paiId + ")");
-                response.put("campoErro", "fkFuncionalidadePai");
+                response.put("mensagem", "Descrição é obrigatória");
+                response.put("campoErro", "descricao");
                 return ResponseEntity.ok(response);
             }
-        }
-        
-        // Salvar se todas as validações passarem
-        Funcionalidade funcionalidadeModel = funcionalidadeRepository.save(funcionalidade);
 
-        response.put("sucesso", true);
-        response.put("mensagem", "Funcionalidade cadastrada com sucesso");
-        response.put("funcionalidade", funcionalidadeModel);
-
-        return ResponseEntity.ok(response);
-
-    } catch (Exception e) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("sucesso", false);
-        response.put("mensagem", "Erro ao cadastrar funcionalidade: " + e.getMessage());
-        return ResponseEntity.badRequest().body(response);
-    }
-}
-
-   @PostMapping("/funcionalidade_perfil_cadastrar")
-public ResponseEntity<?> cadastrarFuncionalidadePerfil(@RequestBody FuncionalidadePerfilDTO funcionalidadePerfilDTO) {
-    try {
-        System.out.println("=== CADASTRAR FUNCIONALIDADE PERFIL ===");
-        System.out.println("Dados recebidos: " + funcionalidadePerfilDTO.toString());
-        
-        // O DTO contém fkFuncionalidade (o campo correto enviado pelo frontend)
-        Integer fkFuncionalidade = funcionalidadePerfilDTO.getFkFuncionalidade();
-        Integer fkPerfil = funcionalidadePerfilDTO.getFkPerfil();
-        
-        System.out.println("FK Funcionalidade: " + fkFuncionalidade);
-        System.out.println("FK Perfil: " + fkPerfil);
-        
-        // VALIDAÇÃO: Verificar se os dados obrigatórios estão presentes
-        if (fkFuncionalidade == null || fkFuncionalidade <= 0) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("sucesso", false);
-            response.put("mensagem", "Funcionalidade é obrigatória");
-            response.put("campoErro", "fkFuncionalidade");
-            return ResponseEntity.ok(response);
-        }
-        
-        if (fkPerfil == null || fkPerfil <= 0) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("sucesso", false);
-            response.put("mensagem", "Perfil é obrigatório");
-            response.put("campoErro", "fkPerfil");
-            return ResponseEntity.ok(response);
-        }
-        
-        Optional<Funcionalidade> funcionalidadeOpt = funcionalidadeRepository.findById(fkFuncionalidade);
-        if (!funcionalidadeOpt.isPresent()) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("sucesso", false);
-            response.put("mensagem", "Funcionalidade não encontrada (ID: " + fkFuncionalidade + ")");
-            response.put("campoErro", "fkFuncionalidade");
-            return ResponseEntity.ok(response);
-        }
-        
-        Optional<Perfil> perfilOpt = perfilRepository.findById(fkPerfil);
-        if (!perfilOpt.isPresent()) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("sucesso", false);
-            response.put("mensagem", "Perfil não encontrado (ID: " + fkPerfil + ")");
-            response.put("campoErro", "fkPerfil");
-            return ResponseEntity.ok(response);
-        }
-        
-        // VERIFICAR SE ASSOCIAÇÃO JÁ EXISTE
-        Optional<FuncionalidadePerfil> associacaoExistente = 
-            funcionalidadePerfilRepository.findByFkPerfilPkPerfilAndFkFuncionalidadePkFuncionalidade(
-                fkPerfil, fkFuncionalidade);
-        
-        if (associacaoExistente.isPresent()) {
-            Funcionalidade func = funcionalidadeOpt.get();
-            Perfil perfil = perfilOpt.get();
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("sucesso", false);
-            response.put("mensagem", "A funcionalidade \"" + func.getDesignacao() + 
-                           "\" já está atribuída ao perfil \"" + perfil.getDesignacao() + "\"");
-            response.put("campoErro", "duplicidade");
-            return ResponseEntity.ok(response);
-        }
-        
-        // Criar nova associação
-        FuncionalidadePerfil funcionalidadePerfilModel = new FuncionalidadePerfil();
-        funcionalidadePerfilModel.setFkFuncionalidade(funcionalidadeOpt.get());
-        funcionalidadePerfilModel.setFkPerfil(perfilOpt.get());
-        
-        // Detalhe é opcional
-        if (funcionalidadePerfilDTO.getDetalhe() != null && !funcionalidadePerfilDTO.getDetalhe().isEmpty()) {
-            funcionalidadePerfilModel.setDetalhe(funcionalidadePerfilDTO.getDetalhe().trim());
-        }
-        
-        // Salvar associação
-        FuncionalidadePerfil associacaoSalva = funcionalidadePerfilRepository.save(funcionalidadePerfilModel);
-        
-        // Preparar resposta de sucesso
-        Map<String, Object> response = new HashMap<>();
-        response.put("sucesso", true);
-        response.put("mensagem", "Funcionalidade atribuída ao perfil com sucesso");
-        response.put("associacao", 
-            Map.of(
-                "id", associacaoSalva.getPkFuncionalidadePerfil(),
-                "funcionalidade", funcionalidadeOpt.get().getDesignacao(),
-                "perfil", perfilOpt.get().getDesignacao()
-            )
-        );
-        
-        return ResponseEntity.ok(response);
-        
-    } catch (DataIntegrityViolationException e) {
-        System.err.println("Erro de integridade em cadastrarFuncionalidadePerfil: " + e.getMessage());
-        
-        // Tratar violação de constraints
-        String mensagemErro = "Erro de integridade de dados";
-        
-        if (e.getMostSpecificCause() != null) {
-            String causa = e.getMostSpecificCause().getMessage();
-            if (causa.contains("duplicate key") || causa.contains("unique constraint")) {
-                mensagemErro = "Esta associação já existe no sistema";
-            } else if (causa.contains("foreign key constraint")) {
-                mensagemErro = "Funcionalidade ou perfil inválido";
-            }
-        }
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("sucesso", false);
-        response.put("mensagem", mensagemErro);
-        return ResponseEntity.ok(response);
-        
-    } catch (Exception e) {
-        System.err.println("Erro em cadastrarFuncionalidadePerfil: " + e.getMessage());
-        e.printStackTrace();
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("sucesso", false);
-        response.put("mensagem", "Erro interno ao cadastrar associação");
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-    }
-}
-
-@PutMapping("/funcionalidade_editar/{id}")
-@Transactional
-public ResponseEntity<?> editarFuncionalidade(@PathVariable int id, @RequestBody Funcionalidade funcionalidade) {
-    try {
-        Map<String, Object> response = new HashMap<>();
-
-        // NOVA VALIDAÇÃO: Verificar duplicidade ao editar
-        if (funcionalidade.getDescricao() != null && funcionalidade.getDesignacao() != null) {
-            List<Funcionalidade> funcionalidadesExistentes;
-
+            // VALIDAÇÃO 2: Verificar duplicidade designação + mesmo pai
             Integer paiId = (funcionalidade.getFkFuncionalidadePai() != null &&
-                           funcionalidade.getFkFuncionalidadePai().getPkFuncionalidade() != null) ?
-                           funcionalidade.getFkFuncionalidadePai().getPkFuncionalidade() : null;
+                    funcionalidade.getFkFuncionalidadePai().getPkFuncionalidade() != null) ?
+                    funcionalidade.getFkFuncionalidadePai().getPkFuncionalidade() : null;
 
-            if (paiId != null) {
-                // 🔍 CORREÇÃO: Usar o método existente 'findByDescricaoAndDesignacaoAnd...'
-                funcionalidadesExistentes = funcionalidadeRepository
-                    .findByDescricaoAndDesignacaoAndFkFuncionalidadePaiPkFuncionalidade(
-                        funcionalidade.getDescricao(),   // Parâmetro 1: Descricao
-                        funcionalidade.getDesignacao(),  // Parâmetro 2: Designacao
-                        paiId                           // Parâmetro 3: ID do pai
-                    );
-            } else {
-                // 🔍 CORREÇÃO: Usar o método existente 'findByDescricaoAndDesignacaoAnd...IsNull'
-                funcionalidadesExistentes = funcionalidadeRepository
-                    .findByDescricaoAndDesignacaoAndFkFuncionalidadePaiIsNull(
-                        funcionalidade.getDescricao(),   // Parâmetro 1: Descricao
-                        funcionalidade.getDesignacao()   // Parâmetro 2: Designacao
-                    );
+            Map<String, Object> validacaoDuplicidade = validarDuplicidadeDesignacaoPai(
+                    funcionalidade.getDesignacao(),
+                    paiId,
+                    null // null porque é novo cadastro
+            );
+
+            if (!(Boolean) validacaoDuplicidade.get("valido")) {
+                response.put("sucesso", false);
+                response.put("mensagem", validacaoDuplicidade.get("mensagem"));
+                response.put("campoErro", "designacao");
+                response.put("detalhes", validacaoDuplicidade.get("duplicatas"));
+                return ResponseEntity.ok(response);
             }
 
-            // Filtrar para excluir a própria funcionalidade que está sendo editada
-            final Integer finalId = id;
-            funcionalidadesExistentes = funcionalidadesExistentes.stream()
-                .filter(f -> !f.getPkFuncionalidade().equals(finalId))
-                .collect(Collectors.toList());
+            // VALIDAÇÃO 3: Verificar se PK já existe (se fornecida)
+            if (funcionalidade.getPkFuncionalidade() != null) {
+                Optional<Funcionalidade> funcExistente = funcionalidadeRepository
+                        .findById(funcionalidade.getPkFuncionalidade());
+                if (funcExistente.isPresent()) {
+                    response.put("sucesso", false);
+                    response.put("mensagem", "Já existe uma funcionalidade com PK " +
+                            funcionalidade.getPkFuncionalidade());
+                    response.put("campoErro", "pkFuncionalidade");
+                    return ResponseEntity.ok(response);
+                }
+            }
 
-            if (!funcionalidadesExistentes.isEmpty()) {
+            // VALIDAÇÃO 4: Verificar se o pai existe (se fornecido)
+            if (paiId != null) {
+                Optional<Funcionalidade> paiExistente = funcionalidadeRepository.findById(paiId);
+                if (!paiExistente.isPresent()) {
+                    response.put("sucesso", false);
+                    response.put("mensagem", "Funcionalidade pai não encontrada (ID: " + paiId + ")");
+                    response.put("campoErro", "fkFuncionalidadePai");
+                    return ResponseEntity.ok(response);
+                }
+            }
+
+            // Salvar se todas as validações passarem
+            Funcionalidade funcionalidadeModel = funcionalidadeRepository.save(funcionalidade);
+
+            response.put("sucesso", true);
+            response.put("mensagem", "Funcionalidade cadastrada com sucesso");
+            response.put("funcionalidade", funcionalidadeModel);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("sucesso", false);
+            response.put("mensagem", "Erro ao cadastrar funcionalidade: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @PostMapping("/funcionalidade_perfil_cadastrar")
+    public ResponseEntity<?> cadastrarFuncionalidadePerfil(@RequestBody FuncionalidadePerfilDTO funcionalidadePerfilDTO) {
+
+        try {
+            System.out.println("=== CADASTRAR FUNCIONALIDADE PERFIL ===");
+            System.out.println("Dados recebidos: " + funcionalidadePerfilDTO.toString());
+
+            // O DTO contém fkFuncionalidade (o campo correto enviado pelo frontend)
+            Integer fkFuncionalidade = funcionalidadePerfilDTO.getFkFuncionalidade();
+            Integer fkPerfil = funcionalidadePerfilDTO.getFkPerfil();
+
+            System.out.println("FK Funcionalidade: " + fkFuncionalidade);
+            System.out.println("FK Perfil: " + fkPerfil);
+
+            // VALIDAÇÃO: Verificar se os dados obrigatórios estão presentes
+            if (fkFuncionalidade == null || fkFuncionalidade <= 0) {
+                Map<String, Object> response = new HashMap<>();
                 response.put("sucesso", false);
-                response.put("mensagem", "Já existe uma funcionalidade com esta designação, descrição e mesmo nível hierárquico");
+                response.put("mensagem", "Funcionalidade é obrigatória");
+                response.put("campoErro", "fkFuncionalidade");
+                return ResponseEntity.ok(response);
+            }
+
+            if (fkPerfil == null || fkPerfil <= 0) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("sucesso", false);
+                response.put("mensagem", "Perfil é obrigatório");
+                response.put("campoErro", "fkPerfil");
+                return ResponseEntity.ok(response);
+            }
+
+            Optional<Funcionalidade> funcionalidadeOpt = funcionalidadeRepository.findById(fkFuncionalidade);
+            if (!funcionalidadeOpt.isPresent()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("sucesso", false);
+                response.put("mensagem", "Funcionalidade não encontrada (ID: " + fkFuncionalidade + ")");
+                response.put("campoErro", "fkFuncionalidade");
+                return ResponseEntity.ok(response);
+            }
+
+            Optional<Perfil> perfilOpt = perfilRepository.findById(fkPerfil);
+            if (!perfilOpt.isPresent()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("sucesso", false);
+                response.put("mensagem", "Perfil não encontrado (ID: " + fkPerfil + ")");
+                response.put("campoErro", "fkPerfil");
+                return ResponseEntity.ok(response);
+            }
+
+            // VERIFICAR SE ASSOCIAÇÃO JÁ EXISTE
+            Optional<FuncionalidadePerfil> associacaoExistente =
+                    funcionalidadePerfilRepository.findByFkPerfilPkPerfilAndFkFuncionalidadePkFuncionalidade(
+                            fkPerfil, fkFuncionalidade);
+
+            if (associacaoExistente.isPresent()) {
+                Funcionalidade func = funcionalidadeOpt.get();
+                Perfil perfil = perfilOpt.get();
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("sucesso", false);
+                response.put("mensagem", "A funcionalidade \"" + func.getDesignacao() +
+                        "\" já está atribuída ao perfil \"" + perfil.getDesignacao() + "\"");
                 response.put("campoErro", "duplicidade");
                 return ResponseEntity.ok(response);
             }
+
+            // Criar nova associação
+            FuncionalidadePerfil funcionalidadePerfilModel = new FuncionalidadePerfil();
+            funcionalidadePerfilModel.setFkFuncionalidade(funcionalidadeOpt.get());
+            funcionalidadePerfilModel.setFkPerfil(perfilOpt.get());
+
+            // Detalhe é opcional
+            if (funcionalidadePerfilDTO.getDetalhe() != null && !funcionalidadePerfilDTO.getDetalhe().isEmpty()) {
+                funcionalidadePerfilModel.setDetalhe(funcionalidadePerfilDTO.getDetalhe().trim());
+            }
+
+            // Salvar associação
+            FuncionalidadePerfil associacaoSalva = funcionalidadePerfilRepository.save(funcionalidadePerfilModel);
+
+            // Preparar resposta de sucesso
+            Map<String, Object> response = new HashMap<>();
+            response.put("sucesso", true);
+            response.put("mensagem", "Funcionalidade atribuída ao perfil com sucesso");
+            response.put("associacao",
+                    Map.of(
+                            "id", associacaoSalva.getPkFuncionalidadePerfil(),
+                            "funcionalidade", funcionalidadeOpt.get().getDesignacao(),
+                            "perfil", perfilOpt.get().getDesignacao()
+                    )
+            );
+
+            return ResponseEntity.ok(response);
+
+        } catch (DataIntegrityViolationException e) {
+            System.err.println("Erro de integridade em cadastrarFuncionalidadePerfil: " + e.getMessage());
+
+            // Tratar violação de constraints
+            String mensagemErro = "Erro de integridade de dados";
+
+            if (e.getMostSpecificCause() != null) {
+                String causa = e.getMostSpecificCause().getMessage();
+                if (causa.contains("duplicate key") || causa.contains("unique constraint")) {
+                    mensagemErro = "Esta associação já existe no sistema";
+                } else if (causa.contains("foreign key constraint")) {
+                    mensagemErro = "Funcionalidade ou perfil inválido";
+                }
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("sucesso", false);
+            response.put("mensagem", mensagemErro);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.err.println("Erro em cadastrarFuncionalidadePerfil: " + e.getMessage());
+            e.printStackTrace();
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("sucesso", false);
+            response.put("mensagem", "Erro interno ao cadastrar associação");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
-
-        funcionalidade.setPkFuncionalidade(id);
-        Funcionalidade funcionalidadeAtualizada = funcionalidadeRepository.save(funcionalidade);
-
-        response.put("sucesso", true);
-        response.put("mensagem", "Funcionalidade editada com sucesso");
-        response.put("funcionalidade", funcionalidadeAtualizada);
-
-        return ResponseEntity.ok(response);
-
-    } catch (Exception e) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("sucesso", false);
-        response.put("mensagem", "Erro ao editar funcionalidade: " + e.getMessage());
-        return ResponseEntity.badRequest().body(response);
     }
-}
+
+    @PutMapping("/funcionalidade_editar/{id}")
+    @Transactional
+    public ResponseEntity<?> editarFuncionalidade(@PathVariable int id, @RequestBody Funcionalidade funcionalidade) {
+        try {
+            Map<String, Object> response = new HashMap<>();
+
+            // NOVA VALIDAÇÃO: Verificar duplicidade ao editar
+            if (funcionalidade.getDescricao() != null && funcionalidade.getDesignacao() != null) {
+                List<Funcionalidade> funcionalidadesExistentes;
+
+                Integer paiId = (funcionalidade.getFkFuncionalidadePai() != null &&
+                        funcionalidade.getFkFuncionalidadePai().getPkFuncionalidade() != null) ?
+                        funcionalidade.getFkFuncionalidadePai().getPkFuncionalidade() : null;
+
+                if (paiId != null) {
+                    // 🔍 CORREÇÃO: Usar o método existente 'findByDescricaoAndDesignacaoAnd...'
+                    funcionalidadesExistentes = funcionalidadeRepository
+                            .findByDescricaoAndDesignacaoAndFkFuncionalidadePaiPkFuncionalidade(
+                                    funcionalidade.getDescricao(),   // Parâmetro 1: Descricao
+                                    funcionalidade.getDesignacao(),  // Parâmetro 2: Designacao
+                                    paiId                           // Parâmetro 3: ID do pai
+                            );
+                } else {
+                    // 🔍 CORREÇÃO: Usar o método existente 'findByDescricaoAndDesignacaoAnd...IsNull'
+                    funcionalidadesExistentes = funcionalidadeRepository
+                            .findByDescricaoAndDesignacaoAndFkFuncionalidadePaiIsNull(
+                                    funcionalidade.getDescricao(),   // Parâmetro 1: Descricao
+                                    funcionalidade.getDesignacao()   // Parâmetro 2: Designacao
+                            );
+                }
+
+                // Filtrar para excluir a própria funcionalidade que está sendo editada
+                final Integer finalId = id;
+                funcionalidadesExistentes = funcionalidadesExistentes.stream()
+                        .filter(f -> !f.getPkFuncionalidade().equals(finalId))
+                        .collect(Collectors.toList());
+
+                if (!funcionalidadesExistentes.isEmpty()) {
+                    response.put("sucesso", false);
+                    response.put("mensagem", "Já existe uma funcionalidade com esta designação, descrição e mesmo nível hierárquico");
+                    response.put("campoErro", "duplicidade");
+                    return ResponseEntity.ok(response);
+                }
+            }
+
+            funcionalidade.setPkFuncionalidade(id);
+            Funcionalidade funcionalidadeAtualizada = funcionalidadeRepository.save(funcionalidade);
+
+            response.put("sucesso", true);
+            response.put("mensagem", "Funcionalidade editada com sucesso");
+            response.put("funcionalidade", funcionalidadeAtualizada);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("sucesso", false);
+            response.put("mensagem", "Erro ao editar funcionalidade: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
 
   /*  @PostMapping("/funcionalidade_importar")
     @Transactional
@@ -1412,7 +1431,9 @@ public ResponseEntity<?> editarFuncionalidade(@PathVariable int id, @RequestBody
     public ResponseEntity<?> verificarEstruturaArquivo(@RequestParam("file") MultipartFile file) {
         Map<String, Object> resultado = new HashMap<>();
 
-        try ( InputStream is = file.getInputStream();  Workbook workbook = WorkbookFactory.create(is)) {
+        System.out.println("@PostMapping( verificar_estrutura_arquivo )");
+
+        try (InputStream is = file.getInputStream(); Workbook workbook = WorkbookFactory.create(is)) {
 
             resultado.put("total_folhas", workbook.getNumberOfSheets());
 
@@ -1453,607 +1474,606 @@ public ResponseEntity<?> editarFuncionalidade(@PathVariable int id, @RequestBody
             return ResponseEntity.badRequest().body(resultado);
         }
     }
-    
-    
-   @PutMapping("/conta_atualizar/{id}")
-@Transactional
-public ResponseEntity<?> atualizarConta(@PathVariable Integer id, @RequestBody ContaPerfilDTO contaPerfilDTO) {
-    Map<String, Object> response = new HashMap<>();
-    
-    try {
-        System.out.println("=== INICIANDO ATUALIZAÇÃO DE CONTA ID: " + id + " ===");
-        System.out.println("Dados recebidos: " + contaPerfilDTO.toString());
-        
-        // Buscar conta existente
-        Optional<Conta> contaExistenteOpt = contaRepository.findById(id);
-        if (!contaExistenteOpt.isPresent()) {
-            response.put("sucesso", false);
-            response.put("mensagem", "Conta não encontrada");
-            return ResponseEntity.ok(response);
-        }
-        
-        Conta contaExistente = contaExistenteOpt.get();
-        Pessoa pessoaExistente = contaExistente.getFkPessoa();
-        
-        if (pessoaExistente == null) {
-            response.put("sucesso", false);
-            response.put("mensagem", "Pessoa associada à conta não encontrada");
-            return ResponseEntity.ok(response);
-        }
-        
-        // VALIDAÇÃO: Verificar se email mudou e se novo email já existe
-        String novoEmail = contaPerfilDTO.getEmail() != null ? 
-                          contaPerfilDTO.getEmail().trim().toLowerCase() : null;
-        String emailAtual = contaExistente.getEmail();
-        
-        if (novoEmail != null && !novoEmail.isEmpty() && !novoEmail.equals(emailAtual)) {
-            Optional<Conta> contaComMesmoEmail = contaRepository.findByEmail(novoEmail);
-            if (contaComMesmoEmail.isPresent()) {
+
+
+    @PutMapping("/conta_atualizar/{id}")
+    @Transactional
+    public ResponseEntity<?> atualizarConta(@PathVariable Integer id, @RequestBody ContaPerfilDTO contaPerfilDTO) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            System.out.println("=== INICIANDO ATUALIZAÇÃO DE CONTA ID: " + id + " ===");
+            System.out.println("Dados recebidos: " + contaPerfilDTO.toString());
+
+            // Buscar conta existente
+            Optional<Conta> contaExistenteOpt = contaRepository.findById(id);
+            if (!contaExistenteOpt.isPresent()) {
                 response.put("sucesso", false);
-                response.put("mensagem", "Este email já está em uso por outra conta");
-                response.put("campoErro", "email");
+                response.put("mensagem", "Conta não encontrada");
                 return ResponseEntity.ok(response);
             }
-            System.out.println("Email atualizado de '" + emailAtual + "' para '" + novoEmail + "'");
-        }
-        
-        // VALIDAÇÃO: Verificar se identificação mudou e se nova identificação já existe
-        String novaIdentificacao = contaPerfilDTO.getIdentificacao() != null ? 
-                                  contaPerfilDTO.getIdentificacao().trim() : null;
-        String identificacaoAtual = pessoaExistente.getIdentificacao();
-        
-        if (novaIdentificacao != null && !novaIdentificacao.isEmpty() && 
-            !novaIdentificacao.equals(identificacaoAtual)) {
-            Optional<Pessoa> pessoaComMesmoBI = pessoaRepository.findByIdentificacao(novaIdentificacao);
-            if (pessoaComMesmoBI.isPresent()) {
+
+            Conta contaExistente = contaExistenteOpt.get();
+            Pessoa pessoaExistente = contaExistente.getFkPessoa();
+
+            if (pessoaExistente == null) {
                 response.put("sucesso", false);
-                response.put("mensagem", "Esta identificação já está em uso por outra pessoa");
-                response.put("campoErro", "identificacao");
+                response.put("mensagem", "Pessoa associada à conta não encontrada");
                 return ResponseEntity.ok(response);
             }
-            System.out.println("Identificação atualizada de '" + identificacaoAtual + "' para '" + novaIdentificacao + "'");
-        }
-        
-        // ========== ATUALIZAR PESSOA ==========
-        // Nome
-        if (contaPerfilDTO.getNomeCompleto() != null && !contaPerfilDTO.getNomeCompleto().trim().isEmpty()) {
-            pessoaExistente.setNome(contaPerfilDTO.getNomeCompleto().trim());
-        }
-        
-        // Identificação
-        if (novaIdentificacao != null && !novaIdentificacao.isEmpty()) {
-            pessoaExistente.setIdentificacao(novaIdentificacao);
-        }
-        
-        // Gênero
-        int fkGenero = contaPerfilDTO.getFkGenero();
-        if (fkGenero > 0) {
-            pessoaExistente.setFkGenero(new Genero(fkGenero));
-        } else {
-            pessoaExistente.setFkGenero(null);
-        }
-        
-        // Estado Civil
-        int fkEstadoCivil = contaPerfilDTO.getFkEstadoCivil();
-        if (fkEstadoCivil > 0) {
-            pessoaExistente.setFkEstadoCivil(new EstadoCivil(fkEstadoCivil));
-        } else {
-            pessoaExistente.setFkEstadoCivil(null);
-        }
-        
-        // Data de Nascimento
-        if (contaPerfilDTO.getDataNascimento() != null && !contaPerfilDTO.getDataNascimento().isEmpty()) {
+
+            // VALIDAÇÃO: Verificar se email mudou e se novo email já existe
+            String novoEmail = contaPerfilDTO.getEmail() != null ?
+                    contaPerfilDTO.getEmail().trim().toLowerCase() : null;
+            String emailAtual = contaExistente.getEmail();
+
+            if (novoEmail != null && !novoEmail.isEmpty() && !novoEmail.equals(emailAtual)) {
+                Optional<Conta> contaComMesmoEmail = contaRepository.findByEmail(novoEmail);
+                if (contaComMesmoEmail.isPresent()) {
+                    response.put("sucesso", false);
+                    response.put("mensagem", "Este email já está em uso por outra conta");
+                    response.put("campoErro", "email");
+                    return ResponseEntity.ok(response);
+                }
+                System.out.println("Email atualizado de '" + emailAtual + "' para '" + novoEmail + "'");
+            }
+
+            // VALIDAÇÃO: Verificar se identificação mudou e se nova identificação já existe
+            String novaIdentificacao = contaPerfilDTO.getIdentificacao() != null ?
+                    contaPerfilDTO.getIdentificacao().trim() : null;
+            String identificacaoAtual = pessoaExistente.getIdentificacao();
+
+            if (novaIdentificacao != null && !novaIdentificacao.isEmpty() &&
+                    !novaIdentificacao.equals(identificacaoAtual)) {
+                Optional<Pessoa> pessoaComMesmoBI = pessoaRepository.findByIdentificacao(novaIdentificacao);
+                if (pessoaComMesmoBI.isPresent()) {
+                    response.put("sucesso", false);
+                    response.put("mensagem", "Esta identificação já está em uso por outra pessoa");
+                    response.put("campoErro", "identificacao");
+                    return ResponseEntity.ok(response);
+                }
+                System.out.println("Identificação atualizada de '" + identificacaoAtual + "' para '" + novaIdentificacao + "'");
+            }
+
+            // ========== ATUALIZAR PESSOA ==========
+            // Nome
+            if (contaPerfilDTO.getNomeCompleto() != null && !contaPerfilDTO.getNomeCompleto().trim().isEmpty()) {
+                pessoaExistente.setNome(contaPerfilDTO.getNomeCompleto().trim());
+            }
+
+            // Identificação
+            if (novaIdentificacao != null && !novaIdentificacao.isEmpty()) {
+                pessoaExistente.setIdentificacao(novaIdentificacao);
+            }
+
+            // Gênero
+            int fkGenero = contaPerfilDTO.getFkGenero();
+            if (fkGenero > 0) {
+                pessoaExistente.setFkGenero(new Genero(fkGenero));
+            } else {
+                pessoaExistente.setFkGenero(null);
+            }
+
+            // Estado Civil
+            int fkEstadoCivil = contaPerfilDTO.getFkEstadoCivil();
+            if (fkEstadoCivil > 0) {
+                pessoaExistente.setFkEstadoCivil(new EstadoCivil(fkEstadoCivil));
+            } else {
+                pessoaExistente.setFkEstadoCivil(null);
+            }
+
+            // Data de Nascimento
+            if (contaPerfilDTO.getDataNascimento() != null && !contaPerfilDTO.getDataNascimento().isEmpty()) {
+                try {
+                    String dataStr = contaPerfilDTO.getDataNascimento();
+                    // Aceitar formatos diferentes
+                    if (dataStr.contains("-")) {
+                        String[] dataArray = dataStr.split("-");
+                        if (dataArray.length >= 3) {
+                            int ano = Integer.parseInt(dataArray[0]);
+                            int mes = Integer.parseInt(dataArray[1]);
+                            int dia = Integer.parseInt(dataArray[2]);
+                            LocalDate localDate = LocalDate.of(ano, mes, dia);
+                            pessoaExistente.setDataNascimento(localDate);
+                            System.out.println("Data de nascimento atualizada: " + localDate);
+                        }
+                    } else if (dataStr.contains("/")) {
+                        String[] dataArray = dataStr.split("/");
+                        if (dataArray.length >= 3) {
+                            int dia = Integer.parseInt(dataArray[0]);
+                            int mes = Integer.parseInt(dataArray[1]);
+                            int ano = Integer.parseInt(dataArray[2]);
+                            LocalDate localDate = LocalDate.of(ano, mes, dia);
+                            pessoaExistente.setDataNascimento(localDate);
+                            System.out.println("Data de nascimento atualizada: " + localDate);
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Erro ao converter data de nascimento: " + e.getMessage());
+                }
+            }
+
+            // ATUALIZAR ENDEREÇO
+            Localidade novaLocalidade = null;
             try {
-                String dataStr = contaPerfilDTO.getDataNascimento();
-                // Aceitar formatos diferentes
-                if (dataStr.contains("-")) {
-                    String[] dataArray = dataStr.split("-");
-                    if (dataArray.length >= 3) {
-                        int ano = Integer.parseInt(dataArray[0]);
-                        int mes = Integer.parseInt(dataArray[1]);
-                        int dia = Integer.parseInt(dataArray[2]);
-                        LocalDate localDate = LocalDate.of(ano, mes, dia);
-                        pessoaExistente.setDataNascimento(localDate);
-                        System.out.println("Data de nascimento atualizada: " + localDate);
-                    }
-                } else if (dataStr.contains("/")) {
-                    String[] dataArray = dataStr.split("/");
-                    if (dataArray.length >= 3) {
-                        int dia = Integer.parseInt(dataArray[0]);
-                        int mes = Integer.parseInt(dataArray[1]);
-                        int ano = Integer.parseInt(dataArray[2]);
-                        LocalDate localDate = LocalDate.of(ano, mes, dia);
-                        pessoaExistente.setDataNascimento(localDate);
-                        System.out.println("Data de nascimento atualizada: " + localDate);
-                    }
+                novaLocalidade = processarEnderecoComNomes(contaPerfilDTO);
+                if (novaLocalidade != null) {
+                    pessoaExistente.setLocalidade(novaLocalidade);
+                    System.out.println("Endereço atualizado para localidade ID: " + novaLocalidade.getPkLocalidade());
                 }
             } catch (Exception e) {
-                System.err.println("Erro ao converter data de nascimento: " + e.getMessage());
+                System.err.println("Erro ao processar endereço: " + e.getMessage());
+                // Mantém a localidade atual em caso de erro
             }
-        }
-        
-        // ATUALIZAR ENDEREÇO
-        Localidade novaLocalidade = null;
-        try {
-            novaLocalidade = processarEnderecoComNomes(contaPerfilDTO);
-            if (novaLocalidade != null) {
-                pessoaExistente.setLocalidade(novaLocalidade);
-                System.out.println("Endereço atualizado para localidade ID: " + novaLocalidade.getPkLocalidade());
-            }
-        } catch (Exception e) {
-            System.err.println("Erro ao processar endereço: " + e.getMessage());
-            // Mantém a localidade atual em caso de erro
-        }
-        
-        // ATUALIZAR TELEFONE
-        if (contaPerfilDTO.getTelefone() != null && !contaPerfilDTO.getTelefone().trim().isEmpty()) {
-            String novoTelefone = contaPerfilDTO.getTelefone().trim();
-            
-            if (pessoaExistente.getTelefones() == null || pessoaExistente.getTelefones().isEmpty()) {
-                // Criar novo telefone
-                Telefone telefone = new Telefone();
-                telefone.setNumero(novoTelefone);
-                telefone.setPrincipal(true);
-                telefone.setTipo(TipoTelefoneEnum.CELULAR);
-                telefone.setFkPessoa(pessoaExistente);
-                
-                List<Telefone> telefones = new ArrayList<>();
-                telefones.add(telefone);
-                pessoaExistente.setTelefones(telefones);
-                System.out.println("Novo telefone criado: " + novoTelefone);
-            } else {
-                // Atualizar telefone principal existente
-                Telefone telefonePrincipal = pessoaExistente.getTelefones().get(0);
-                String telefoneAnterior = telefonePrincipal.getNumero();
-                telefonePrincipal.setNumero(novoTelefone);
-                System.out.println("Telefone atualizado de '" + telefoneAnterior + "' para '" + novoTelefone + "'");
-            }
-        }
-        
-        // Salvar pessoa
-        pessoaExistente = pessoaRepository.save(pessoaExistente);
-        System.out.println("Pessoa ID " + pessoaExistente.getPkPessoa() + " atualizada");
-        
-        // ========== ATUALIZAR CONTA ==========
-        // Email
-        if (novoEmail != null && !novoEmail.isEmpty()) {
-            contaExistente.setEmail(novoEmail);
-        }
-        
-        // Senha (apenas se fornecida e não estiver vazia)
-        if (contaPerfilDTO.getPasswordHash() != null && 
-            !contaPerfilDTO.getPasswordHash().isEmpty() &&
-            !contaPerfilDTO.getPasswordHash().equals("[PROTEGIDO]")) {
-            contaExistente.setPasswordHash(contaPerfilDTO.getPasswordHash());
-            System.out.println("Senha atualizada");
-        }
-        
-        // Tipo de conta
-        if (contaPerfilDTO.getTipoConta() != null && !contaPerfilDTO.getTipoConta().isEmpty()) {
-            try {
-                contaExistente.setTipoConta(TipoContaEnum.valueOf(contaPerfilDTO.getTipoConta()));
-            } catch (IllegalArgumentException e) {
-                if ("ADMINISTRADOR".equalsIgnoreCase(contaPerfilDTO.getTipoConta())) {
-                    contaExistente.setTipoConta(TipoContaEnum.ADMIN);
-                } else {
-                    contaExistente.setTipoConta(TipoContaEnum.ADMIN);
-                }
-            }
-        }
-        
-        // Estado
-        int estadoConta = contaPerfilDTO.getEstado();
-        if (estadoConta >= 0 && estadoConta <= 2) { // Aceita 0, 1, 2
-            contaExistente.setEstado(estadoConta);
-            System.out.println("Estado da conta definido como: " + estadoConta);
-        }
-        
-        contaExistente.setFkPessoa(pessoaExistente);
-        contaExistente = contaRepository.save(contaExistente);
-        System.out.println("Conta ID " + contaExistente.getPkConta() + " atualizada");
-        
-        // ========== ATUALIZAR CONTA-PERFIL ==========
-        int fkPerfil = contaPerfilDTO.getFkPerfil();
-        if (fkPerfil > 0) {
-            Optional<ContaPerfil> contaPerfilExistenteOpt = contaPerfilRepository.findByFkConta(contaExistente);
-            Perfil novoPerfil = perfilRepository.findByPkPerfil(fkPerfil);
-            
-            if (novoPerfil != null) {
-                if (contaPerfilExistenteOpt.isPresent()) {
-                    // Atualizar associação existente
-                    ContaPerfil contaPerfilExistente = contaPerfilExistenteOpt.get();
-                    contaPerfilExistente.setFkPerfil(novoPerfil);
-                    contaPerfilExistente.setEstado(estadoConta);
-                    contaPerfilRepository.save(contaPerfilExistente);
-                    System.out.println("Associação conta-perfil atualizada para perfil ID: " + fkPerfil);
-                } else {
-                    // Criar nova associação
-                    ContaPerfil novaContaPerfil = new ContaPerfil();
-                    novaContaPerfil.setFkConta(contaExistente);
-                    novaContaPerfil.setFkPerfil(novoPerfil);
-                    novaContaPerfil.setEstado(estadoConta);
-                    contaPerfilRepository.save(novaContaPerfil);
-                    System.out.println("Nova associação conta-perfil criada para perfil ID: " + fkPerfil);
-                }
-            } else {
-                System.err.println("Perfil ID " + fkPerfil + " não encontrado");
-            }
-        }
-        
-        response.put("sucesso", true);
-        response.put("mensagem", "Conta atualizada com sucesso!");
-        response.put("contaId", contaExistente.getPkConta());
-        response.put("pessoaId", pessoaExistente.getPkPessoa());
-        
-        return ResponseEntity.ok(response);
-        
-    } catch (DataIntegrityViolationException e) {
-        String mensagemErro = "Erro de integridade de dados";
-        String detalheErro = "";
-        
-        if (e.getMessage() != null) {
-            if (e.getMessage().contains("pessoa_identificacao_key")) {
-                mensagemErro = "Esta identificação já está em uso por outra pessoa";
-                detalheErro = "identificacao_duplicada";
-            } else if (e.getMessage().contains("conta_email_key")) {
-                mensagemErro = "Este email já está em uso por outra conta";
-                detalheErro = "email_duplicado";
-            } else if (e.getMessage().contains("duplicate key")) {
-                mensagemErro = "Já existe um registro com estes dados";
-                detalheErro = "registro_duplicado";
-            }
-        }
-        
-        System.err.println("DataIntegrityViolationException: " + e.getMessage());
-        e.printStackTrace();
-        
-        response.put("sucesso", false);
-        response.put("mensagem", mensagemErro);
-        response.put("erroDetalhe", detalheErro);
-        return ResponseEntity.ok(response);
-        
-    } catch (Exception e) {
-        System.err.println("Erro ao atualizar conta: " + e.getMessage());
-        e.printStackTrace();
-        
-        response.put("sucesso", false);
-        response.put("mensagem", "Erro ao atualizar conta: " + e.getMessage());
-        return ResponseEntity.ok(response);
-    }
-}
 
-  @DeleteMapping("/conta_excluir/{id}")
-@Transactional
-public ResponseEntity<?> excluirConta(@PathVariable Integer id) {
-    Map<String, Object> response = new HashMap<>();
-    
-    try {
-        Optional<Conta> contaExistenteOpt = contaRepository.findById(id);
-        
-        if (!contaExistenteOpt.isPresent()) {
-            response.put("sucesso", false);
-            response.put("mensagem", "Conta não encontrada");
-            return ResponseEntity.ok(response);
-        }
-        
-        Conta conta = contaExistenteOpt.get();
-        Pessoa pessoa = conta.getFkPessoa();
-        
-        // Verificar se a conta está ativa (opcional, para prevenção)
-        if (conta.getEstado() != null && conta.getEstado() == 1) {
-            response.put("sucesso", false);
-            response.put("mensagem", "Não é possível excluir uma conta ativa. Desative-a primeiro.");
-            return ResponseEntity.ok(response);
-        }
-        
-        // 1. Excluir todas as associações conta-perfil
-        List<ContaPerfil> associacoesContaPerfil = contaPerfilRepository.findAllByFkConta(conta);
-        if (associacoesContaPerfil != null && !associacoesContaPerfil.isEmpty()) {
-            contaPerfilRepository.deleteAll(associacoesContaPerfil);
-            System.out.println("Excluídas " + associacoesContaPerfil.size() + " associações conta-perfil");
-        }
-        
-        // 2. Excluir a conta
-        contaRepository.delete(conta);
-        System.out.println("Conta ID " + id + " excluída");
-        
-        // 3. Verificar se deve excluir a pessoa (apenas se não estiver vinculada a outras contas)
-        if (pessoa != null) {
-            Long contasDaPessoa = contaRepository.countByFkPessoa(pessoa);
-            if (contasDaPessoa == null || contasDaPessoa == 0) {
-                // Verificar se a pessoa tem telefones
-                if (pessoa.getTelefones() != null && !pessoa.getTelefones().isEmpty()) {
-                    // Poderia excluir telefones aqui se necessário
-                    System.out.println("Pessoa tem " + pessoa.getTelefones().size() + " telefones");
-                }
-                
-                pessoaRepository.delete(pessoa);
-                System.out.println("Pessoa ID " + pessoa.getPkPessoa() + " excluída");
-            } else {
-                System.out.println("Pessoa mantida pois está vinculada a " + contasDaPessoa + " outras contas");
-            }
-        }
-        
-        response.put("sucesso", true);
-        response.put("mensagem", "Conta excluída com sucesso");
-        response.put("contaId", id);
-        
-        return ResponseEntity.ok(response);
-        
-    } catch (DataIntegrityViolationException e) {
-        System.err.println("Erro de integridade ao excluir conta: " + e.getMessage());
-        e.printStackTrace();
-        
-        String mensagemErro = "Não é possível excluir a conta pois está associada a outros registros no sistema";
-        
-        // Análise mais detalhada do erro
-        if (e.getMessage() != null) {
-            if (e.getMessage().contains("foreign key constraint")) {
-                mensagemErro = "Esta conta está vinculada a outros registros do sistema. "
-                    + "Desvincule todas as associações antes de excluir.";
-            }
-        }
-        
-        response.put("sucesso", false);
-        response.put("mensagem", mensagemErro);
-        response.put("erroTecnico", e.getMessage());
-        return ResponseEntity.ok(response);
-        
-    } catch (Exception e) {
-        System.err.println("Erro ao excluir conta: " + e.getMessage());
-        e.printStackTrace();
-        
-        response.put("sucesso", false);
-        response.put("mensagem", "Erro ao excluir conta: " + e.getMessage());
-        return ResponseEntity.ok(response);
-    }
-}
-    @PutMapping("/conta_alternar_estado/{id}")
-@Transactional
-public ResponseEntity<?> alternarEstadoConta(@PathVariable Integer id) {
-    Map<String, Object> response = new HashMap<>();
-    
-    try {
-        Optional<Conta> contaExistenteOpt = contaRepository.findById(id);
-        
-        if (!contaExistenteOpt.isPresent()) {
-            response.put("sucesso", false);
-            response.put("mensagem", "Conta não encontrada");
-            return ResponseEntity.ok(response);
-        }
-        
-        Conta conta = contaExistenteOpt.get();
-        
-        // Alternar estado (0 = inativo, 1 = ativo)
-        Integer estadoAtual = conta.getEstado();
-        Integer novoEstado = (estadoAtual == 1) ? 0 : 1;
-        
-        conta.setEstado(novoEstado);
-        contaRepository.save(conta);
-        
-        // Atualizar também nas associações conta-perfil
-        List<ContaPerfil> contaPerfis = contaPerfilRepository.findAllByFkConta(conta);
-        for (ContaPerfil cp : contaPerfis) {
-            cp.setEstado(novoEstado);
-            contaPerfilRepository.save(cp);
-        }
-        
-        String estadoStr = (novoEstado == 1) ? "ativada" : "desativada";
-        
-        response.put("sucesso", true);
-        response.put("mensagem", "Conta " + estadoStr + " com sucesso");
-        response.put("estadoAnterior", estadoAtual);
-        response.put("novoEstado", novoEstado);
-        
-        return ResponseEntity.ok(response);
-        
-    } catch (Exception e) {
-        System.err.println("Erro ao alternar estado da conta: " + e.getMessage());
-        e.printStackTrace();
-        
-        response.put("sucesso", false);
-        response.put("mensagem", "Erro ao alterar estado da conta: " + e.getMessage());
-        return ResponseEntity.ok(response);
-    }
-}
+            // ATUALIZAR TELEFONE
+            if (contaPerfilDTO.getTelefone() != null && !contaPerfilDTO.getTelefone().trim().isEmpty()) {
+                String novoTelefone = contaPerfilDTO.getTelefone().trim();
 
-@GetMapping("/conta_por_email/{email}")
-@Transactional(readOnly = true)
-public ResponseEntity<?> buscarContaPorEmail(@PathVariable String email) {
-    Map<String, Object> response = new HashMap<>();
-    
-    try {
-        Optional<Conta> contaOpt = contaRepository.findByEmail(email.toLowerCase());
-        
-        if (!contaOpt.isPresent()) {
+                if (pessoaExistente.getTelefones() == null || pessoaExistente.getTelefones().isEmpty()) {
+                    // Criar novo telefone
+                    Telefone telefone = new Telefone();
+                    telefone.setNumero(novoTelefone);
+                    telefone.setPrincipal(true);
+                    telefone.setTipo(TipoTelefoneEnum.CELULAR);
+                    telefone.setFkPessoa(pessoaExistente);
+
+                    List<Telefone> telefones = new ArrayList<>();
+                    telefones.add(telefone);
+                    pessoaExistente.setTelefones(telefones);
+                    System.out.println("Novo telefone criado: " + novoTelefone);
+                } else {
+                    // Atualizar telefone principal existente
+                    Telefone telefonePrincipal = pessoaExistente.getTelefones().get(0);
+                    String telefoneAnterior = telefonePrincipal.getNumero();
+                    telefonePrincipal.setNumero(novoTelefone);
+                    System.out.println("Telefone atualizado de '" + telefoneAnterior + "' para '" + novoTelefone + "'");
+                }
+            }
+
+            // Salvar pessoa
+            pessoaExistente = pessoaRepository.save(pessoaExistente);
+            System.out.println("Pessoa ID " + pessoaExistente.getPkPessoa() + " atualizada");
+
+            // ========== ATUALIZAR CONTA ==========
+            // Email
+            if (novoEmail != null && !novoEmail.isEmpty()) {
+                contaExistente.setEmail(novoEmail);
+            }
+
+            // Senha (apenas se fornecida e não estiver vazia)
+            if (contaPerfilDTO.getPasswordHash() != null &&
+                    !contaPerfilDTO.getPasswordHash().isEmpty() &&
+                    !contaPerfilDTO.getPasswordHash().equals("[PROTEGIDO]")) {
+                contaExistente.setPasswordHash(contaPerfilDTO.getPasswordHash());
+                System.out.println("Senha atualizada");
+            }
+
+            // Tipo de conta
+            if (contaPerfilDTO.getTipoConta() != null && !contaPerfilDTO.getTipoConta().isEmpty()) {
+                try {
+                    contaExistente.setTipoConta(TipoContaEnum.valueOf(contaPerfilDTO.getTipoConta()));
+                } catch (IllegalArgumentException e) {
+                    if ("ADMINISTRADOR".equalsIgnoreCase(contaPerfilDTO.getTipoConta())) {
+                        contaExistente.setTipoConta(TipoContaEnum.ADMIN);
+                    } else {
+                        contaExistente.setTipoConta(TipoContaEnum.ADMIN);
+                    }
+                }
+            }
+
+            // Estado
+            int estadoConta = contaPerfilDTO.getEstado();
+            if (estadoConta >= 0 && estadoConta <= 2) { // Aceita 0, 1, 2
+                contaExistente.setEstado(estadoConta);
+                System.out.println("Estado da conta definido como: " + estadoConta);
+            }
+
+            contaExistente.setFkPessoa(pessoaExistente);
+            contaExistente = contaRepository.save(contaExistente);
+            System.out.println("Conta ID " + contaExistente.getPkConta() + " atualizada");
+
+            // ========== ATUALIZAR CONTA-PERFIL ==========
+            int fkPerfil = contaPerfilDTO.getFkPerfil();
+            if (fkPerfil > 0) {
+                Optional<ContaPerfil> contaPerfilExistenteOpt = contaPerfilRepository.findByFkConta(contaExistente);
+                Perfil novoPerfil = perfilRepository.findByPkPerfil(fkPerfil);
+
+                if (novoPerfil != null) {
+                    if (contaPerfilExistenteOpt.isPresent()) {
+                        // Atualizar associação existente
+                        ContaPerfil contaPerfilExistente = contaPerfilExistenteOpt.get();
+                        contaPerfilExistente.setFkPerfil(novoPerfil);
+                        contaPerfilExistente.setEstado(estadoConta);
+                        contaPerfilRepository.save(contaPerfilExistente);
+                        System.out.println("Associação conta-perfil atualizada para perfil ID: " + fkPerfil);
+                    } else {
+                        // Criar nova associação
+                        ContaPerfil novaContaPerfil = new ContaPerfil();
+                        novaContaPerfil.setFkConta(contaExistente);
+                        novaContaPerfil.setFkPerfil(novoPerfil);
+                        novaContaPerfil.setEstado(estadoConta);
+                        contaPerfilRepository.save(novaContaPerfil);
+                        System.out.println("Nova associação conta-perfil criada para perfil ID: " + fkPerfil);
+                    }
+                } else {
+                    System.err.println("Perfil ID " + fkPerfil + " não encontrado");
+                }
+            }
+
             response.put("sucesso", true);
-            response.put("existe", false);
-            response.put("mensagem", "Email disponível");
-            return ResponseEntity.ok(response);
-        }
-        
-        Conta conta = contaOpt.get();
-        
-        Map<String, Object> dadosConta = new HashMap<>();
-        dadosConta.put("pkConta", conta.getPkConta());
-        dadosConta.put("email", conta.getEmail());
-        dadosConta.put("estado", conta.getEstado());
-        
-        if (conta.getFkPessoa() != null) {
-            dadosConta.put("nomePessoa", conta.getFkPessoa().getNome());
-        }
-        
-        response.put("sucesso", true);
-        response.put("existe", true);
-        response.put("dados", dadosConta);
-        response.put("mensagem", "Email já está em uso");
-        
-        return ResponseEntity.ok(response);
-        
-    } catch (Exception e) {
-        response.put("sucesso", false);
-        response.put("mensagem", "Erro ao verificar email: " + e.getMessage());
-        return ResponseEntity.ok(response);
-    }
-}
+            response.put("mensagem", "Conta atualizada com sucesso!");
+            response.put("contaId", contaExistente.getPkConta());
+            response.put("pessoaId", pessoaExistente.getPkPessoa());
 
-@GetMapping("/conta_buscar/{id}")
-@Transactional(readOnly = true)
-public ResponseEntity<?> buscarContaPorId(@PathVariable Integer id) {
-    System.out.println("=== BUSCANDO CONTA ID: " + id + " ===");
-    
-    Map<String, Object> response = new HashMap<>();
-    
-    try {
-        Optional<Conta> contaOpt = contaRepository.findById(id);
-        
-        if (!contaOpt.isPresent()) {
-            System.out.println("❌ Conta não encontrada: ID " + id);
+            return ResponseEntity.ok(response);
+
+        } catch (DataIntegrityViolationException e) {
+            String mensagemErro = "Erro de integridade de dados";
+            String detalheErro = "";
+
+            if (e.getMessage() != null) {
+                if (e.getMessage().contains("pessoa_identificacao_key")) {
+                    mensagemErro = "Esta identificação já está em uso por outra pessoa";
+                    detalheErro = "identificacao_duplicada";
+                } else if (e.getMessage().contains("conta_email_key")) {
+                    mensagemErro = "Este email já está em uso por outra conta";
+                    detalheErro = "email_duplicado";
+                } else if (e.getMessage().contains("duplicate key")) {
+                    mensagemErro = "Já existe um registro com estes dados";
+                    detalheErro = "registro_duplicado";
+                }
+            }
+
+            System.err.println("DataIntegrityViolationException: " + e.getMessage());
+            e.printStackTrace();
+
             response.put("sucesso", false);
-            response.put("mensagem", "Conta não encontrada");
+            response.put("mensagem", mensagemErro);
+            response.put("erroDetalhe", detalheErro);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.err.println("Erro ao atualizar conta: " + e.getMessage());
+            e.printStackTrace();
+
+            response.put("sucesso", false);
+            response.put("mensagem", "Erro ao atualizar conta: " + e.getMessage());
             return ResponseEntity.ok(response);
         }
-        
-        Conta conta = contaOpt.get();
-        System.out.println("✅ Conta encontrada: " + conta.getEmail());
-        
-        Map<String, Object> contaMap = new HashMap<>();
-        
-        // Dados básicos da conta
-        contaMap.put("pkConta", conta.getPkConta());
-        contaMap.put("email", conta.getEmail());
-        contaMap.put("tipoConta", conta.getTipoConta() != null ? conta.getTipoConta().name() : null);
-        contaMap.put("estado", conta.getEstado() != null ? conta.getEstado() : 1);
-        
-        if (conta.getFkPessoa() != null) {
+    }
+
+    @DeleteMapping("/conta_excluir/{id}")
+    @Transactional
+    public ResponseEntity<?> excluirConta(@PathVariable Integer id) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            Optional<Conta> contaExistenteOpt = contaRepository.findById(id);
+
+            if (!contaExistenteOpt.isPresent()) {
+                response.put("sucesso", false);
+                response.put("mensagem", "Conta não encontrada");
+                return ResponseEntity.ok(response);
+            }
+
+            Conta conta = contaExistenteOpt.get();
             Pessoa pessoa = conta.getFkPessoa();
-            System.out.println("Pessoa associada: " + pessoa.getNome());
-            
-            contaMap.put("nomeCompleto", pessoa.getNome());
-            contaMap.put("identificacao", pessoa.getIdentificacao());
-            
-            // Telefone
-            if (pessoa.getTelefones() != null && !pessoa.getTelefones().isEmpty()) {
-                Telefone telefonePrincipal = pessoa.getTelefones().get(0);
-                contaMap.put("telefone", telefonePrincipal.getNumero());
-                System.out.println("Telefone: " + telefonePrincipal.getNumero());
+
+            // Verificar se a conta está ativa (opcional, para prevenção)
+            if (conta.getEstado() != null && conta.getEstado() == 1) {
+                response.put("sucesso", false);
+                response.put("mensagem", "Não é possível excluir uma conta ativa. Desative-a primeiro.");
+                return ResponseEntity.ok(response);
             }
-            
-            // Gênero
-            if (pessoa.getFkGenero() != null) {
-                contaMap.put("fkGenero", pessoa.getFkGenero().getPkGenero());
-                System.out.println("Gênero ID: " + pessoa.getFkGenero().getPkGenero());
+
+            // 1. Excluir todas as associações conta-perfil
+            List<ContaPerfil> associacoesContaPerfil = contaPerfilRepository.findAllByFkConta(conta);
+            if (associacoesContaPerfil != null && !associacoesContaPerfil.isEmpty()) {
+                contaPerfilRepository.deleteAll(associacoesContaPerfil);
+                System.out.println("Excluídas " + associacoesContaPerfil.size() + " associações conta-perfil");
             }
-            
-            // Estado Civil
-            if (pessoa.getFkEstadoCivil() != null) {
-                contaMap.put("fkEstadoCivil", pessoa.getFkEstadoCivil().getPkEstadoCivil());
-                System.out.println("Estado Civil ID: " + pessoa.getFkEstadoCivil().getPkEstadoCivil());
+
+            // 2. Excluir a conta
+            contaRepository.delete(conta);
+            System.out.println("Conta ID " + id + " excluída");
+
+            // 3. Verificar se deve excluir a pessoa (apenas se não estiver vinculada a outras contas)
+            if (pessoa != null) {
+                Long contasDaPessoa = contaRepository.countByFkPessoa(pessoa);
+                if (contasDaPessoa == null || contasDaPessoa == 0) {
+                    // Verificar se a pessoa tem telefones
+                    if (pessoa.getTelefones() != null && !pessoa.getTelefones().isEmpty()) {
+                        // Poderia excluir telefones aqui se necessário
+                        System.out.println("Pessoa tem " + pessoa.getTelefones().size() + " telefones");
+                    }
+
+                    pessoaRepository.delete(pessoa);
+                    System.out.println("Pessoa ID " + pessoa.getPkPessoa() + " excluída");
+                } else {
+                    System.out.println("Pessoa mantida pois está vinculada a " + contasDaPessoa + " outras contas");
+                }
             }
-            
-            // Data de Nascimento
-            if (pessoa.getDataNascimento() != null) {
-                contaMap.put("dataNascimento", pessoa.getDataNascimento().toString());
-                System.out.println("Data Nascimento: " + pessoa.getDataNascimento().toString());
+
+            response.put("sucesso", true);
+            response.put("mensagem", "Conta excluída com sucesso");
+            response.put("contaId", id);
+
+            return ResponseEntity.ok(response);
+
+        } catch (DataIntegrityViolationException e) {
+            System.err.println("Erro de integridade ao excluir conta: " + e.getMessage());
+            e.printStackTrace();
+
+            String mensagemErro = "Não é possível excluir a conta pois está associada a outros registros no sistema";
+
+            // Análise mais detalhada do erro
+            if (e.getMessage() != null) {
+                if (e.getMessage().contains("foreign key constraint")) {
+                    mensagemErro = "Esta conta está vinculada a outros registros do sistema. "
+                            + "Desvincule todas as associações antes de excluir.";
+                }
             }
-            
-            // Informações de endereço
-            if (pessoa.getLocalidade() != null) {
-                Localidade localidade = pessoa.getLocalidade();
-                System.out.println("Localidade encontrada: " + localidade.getNome());
-                
-                contaMap.put("nomeRua", localidade.getNomeRua());
-                
-                String provincia = extrairProvincia(localidade);
-                String municipio = extrairMunicipio(localidade);
-                String bairro = extrairBairro(localidade);
-                
-                contaMap.put("provincia", provincia);
-                contaMap.put("municipio", municipio);
-                contaMap.put("bairro", bairro);
-                
-                System.out.println("Endereço extraído: Província=" + provincia + 
-                                   ", Município=" + municipio + ", Bairro=" + bairro);
+
+            response.put("sucesso", false);
+            response.put("mensagem", mensagemErro);
+            response.put("erroTecnico", e.getMessage());
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.err.println("Erro ao excluir conta: " + e.getMessage());
+            e.printStackTrace();
+
+            response.put("sucesso", false);
+            response.put("mensagem", "Erro ao excluir conta: " + e.getMessage());
+            return ResponseEntity.ok(response);
+        }
+    }
+
+    @PutMapping("/conta_alternar_estado/{id}")
+    @Transactional
+    public ResponseEntity<?> alternarEstadoConta(@PathVariable Integer id) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            Optional<Conta> contaExistenteOpt = contaRepository.findById(id);
+
+            if (!contaExistenteOpt.isPresent()) {
+                response.put("sucesso", false);
+                response.put("mensagem", "Conta não encontrada");
+                return ResponseEntity.ok(response);
+            }
+
+            Conta conta = contaExistenteOpt.get();
+
+            // Alternar estado (0 = inativo, 1 = ativo)
+            Integer estadoAtual = conta.getEstado();
+            Integer novoEstado = (estadoAtual == 1) ? 0 : 1;
+
+            conta.setEstado(novoEstado);
+            contaRepository.save(conta);
+
+            // Atualizar também nas associações conta-perfil
+            List<ContaPerfil> contaPerfis = contaPerfilRepository.findAllByFkConta(conta);
+            for (ContaPerfil cp : contaPerfis) {
+                cp.setEstado(novoEstado);
+                contaPerfilRepository.save(cp);
+            }
+
+            String estadoStr = (novoEstado == 1) ? "ativada" : "desativada";
+
+            response.put("sucesso", true);
+            response.put("mensagem", "Conta " + estadoStr + " com sucesso");
+            response.put("estadoAnterior", estadoAtual);
+            response.put("novoEstado", novoEstado);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.err.println("Erro ao alternar estado da conta: " + e.getMessage());
+            e.printStackTrace();
+
+            response.put("sucesso", false);
+            response.put("mensagem", "Erro ao alterar estado da conta: " + e.getMessage());
+            return ResponseEntity.ok(response);
+        }
+    }
+
+    @GetMapping("/conta_por_email/{email}")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> buscarContaPorEmail(@PathVariable String email) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            Optional<Conta> contaOpt = contaRepository.findByEmail(email.toLowerCase());
+
+            if (!contaOpt.isPresent()) {
+                response.put("sucesso", true);
+                response.put("existe", false);
+                response.put("mensagem", "Email disponível");
+                return ResponseEntity.ok(response);
+            }
+
+            Conta conta = contaOpt.get();
+
+            Map<String, Object> dadosConta = new HashMap<>();
+            dadosConta.put("pkConta", conta.getPkConta());
+            dadosConta.put("email", conta.getEmail());
+            dadosConta.put("estado", conta.getEstado());
+
+            if (conta.getFkPessoa() != null) {
+                dadosConta.put("nomePessoa", conta.getFkPessoa().getNome());
+            }
+
+            response.put("sucesso", true);
+            response.put("existe", true);
+            response.put("dados", dadosConta);
+            response.put("mensagem", "Email já está em uso");
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            response.put("sucesso", false);
+            response.put("mensagem", "Erro ao verificar email: " + e.getMessage());
+            return ResponseEntity.ok(response);
+        }
+    }
+
+    @GetMapping("/conta_buscar/{id}")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> buscarContaPorId(@PathVariable Integer id) {
+        System.out.println("=== BUSCANDO CONTA ID: " + id + " ===");
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            Optional<Conta> contaOpt = contaRepository.findById(id);
+
+            if (!contaOpt.isPresent()) {
+                System.out.println("❌ Conta não encontrada: ID " + id);
+                response.put("sucesso", false);
+                response.put("mensagem", "Conta não encontrada");
+                return ResponseEntity.ok(response);
+            }
+
+            Conta conta = contaOpt.get();
+            System.out.println("✅ Conta encontrada: " + conta.getEmail());
+
+            Map<String, Object> contaMap = new HashMap<>();
+
+            // Dados básicos da conta
+            contaMap.put("pkConta", conta.getPkConta());
+            contaMap.put("email", conta.getEmail());
+            contaMap.put("tipoConta", conta.getTipoConta() != null ? conta.getTipoConta().name() : null);
+            contaMap.put("estado", conta.getEstado() != null ? conta.getEstado() : 1);
+
+            if (conta.getFkPessoa() != null) {
+                Pessoa pessoa = conta.getFkPessoa();
+                System.out.println("Pessoa associada: " + pessoa.getNome());
+
+                contaMap.put("nomeCompleto", pessoa.getNome());
+                contaMap.put("identificacao", pessoa.getIdentificacao());
+
+                // Telefone
+                if (pessoa.getTelefones() != null && !pessoa.getTelefones().isEmpty()) {
+                    Telefone telefonePrincipal = pessoa.getTelefones().get(0);
+                    contaMap.put("telefone", telefonePrincipal.getNumero());
+                    System.out.println("Telefone: " + telefonePrincipal.getNumero());
+                }
+
+                // Gênero
+                if (pessoa.getFkGenero() != null) {
+                    contaMap.put("fkGenero", pessoa.getFkGenero().getPkGenero());
+                    System.out.println("Gênero ID: " + pessoa.getFkGenero().getPkGenero());
+                }
+
+                // Estado Civil
+                if (pessoa.getFkEstadoCivil() != null) {
+                    contaMap.put("fkEstadoCivil", pessoa.getFkEstadoCivil().getPkEstadoCivil());
+                    System.out.println("Estado Civil ID: " + pessoa.getFkEstadoCivil().getPkEstadoCivil());
+                }
+
+                // Data de Nascimento
+                if (pessoa.getDataNascimento() != null) {
+                    contaMap.put("dataNascimento", pessoa.getDataNascimento().toString());
+                    System.out.println("Data Nascimento: " + pessoa.getDataNascimento().toString());
+                }
+
+                // Informações de endereço
+                if (pessoa.getLocalidade() != null) {
+                    Localidade localidade = pessoa.getLocalidade();
+                    System.out.println("Localidade encontrada: " + localidade.getNome());
+
+                    contaMap.put("nomeRua", localidade.getNomeRua());
+
+                    String provincia = extrairProvincia(localidade);
+                    String municipio = extrairMunicipio(localidade);
+                    String bairro = extrairBairro(localidade);
+
+                    contaMap.put("provincia", provincia);
+                    contaMap.put("municipio", municipio);
+                    contaMap.put("bairro", bairro);
+
+                    System.out.println("Endereço extraído: Província=" + provincia +
+                            ", Município=" + municipio + ", Bairro=" + bairro);
+                } else {
+                    System.out.println("⚠️ Nenhuma localidade associada à pessoa");
+                }
             } else {
-                System.out.println("⚠️ Nenhuma localidade associada à pessoa");
+                System.out.println("⚠️ Nenhuma pessoa associada à conta");
             }
-        } else {
-            System.out.println("⚠️ Nenhuma pessoa associada à conta");
+
+            // Buscar associação conta-perfil
+            Optional<ContaPerfil> contaPerfilOpt = contaPerfilRepository.findByFkConta(conta);
+            if (contaPerfilOpt.isPresent()) {
+                ContaPerfil contaPerfil = contaPerfilOpt.get();
+                contaMap.put("fkPerfil", contaPerfil.getFkPerfil().getPkPerfil());
+                System.out.println("Perfil associado: ID " + contaPerfil.getFkPerfil().getPkPerfil());
+            } else {
+                System.out.println("ℹ️ Nenhuma associação conta-perfil encontrada");
+            }
+
+            System.out.println("📊 Dados retornados pela API: " + contaMap.toString());
+
+            response.put("sucesso", true);
+            response.put("mensagem", "Conta encontrada");
+            response.put("conta", contaMap);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.err.println("❌ ERRO em conta_buscar: " + e.getMessage());
+            e.printStackTrace();
+
+            response.put("sucesso", false);
+            response.put("mensagem", "Erro ao buscar conta: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
-        
-        // Buscar associação conta-perfil
-        Optional<ContaPerfil> contaPerfilOpt = contaPerfilRepository.findByFkConta(conta);
-        if (contaPerfilOpt.isPresent()) {
-            ContaPerfil contaPerfil = contaPerfilOpt.get();
-            contaMap.put("fkPerfil", contaPerfil.getFkPerfil().getPkPerfil());
-            System.out.println("Perfil associado: ID " + contaPerfil.getFkPerfil().getPkPerfil());
-        } else {
-            System.out.println("ℹ️ Nenhuma associação conta-perfil encontrada");
+    }
+
+
+    @PostMapping("/tipo_funcionalidade_importar")
+    @Transactional
+    public ResponseEntity<?> importarTipoFuncionalidade(@RequestParam("file") MultipartFile file) {
+        System.out.println("=== INICIANDO IMPORTAÇÃO APENAS DE TIPO FUNCIONALIDADE ===");
+
+        try {
+            // Processar apenas a folha de tipos (folha 2)
+            Map<String, Object> resultado = TipoFuncionalidadeLoader.insertOnlyTypeSheet(
+                    file, tipoFuncionalidadeRepository, versaoService);
+
+            return ResponseEntity.ok(resultado);
+
+        } catch (Exception e) {
+            Map<String, Object> erro = new HashMap<>();
+            erro.put("erro", "❌ Erro durante a importação: " + e.getMessage());
+            erro.put("sucesso", false);
+            return ResponseEntity.badRequest().body(erro);
         }
-        
-        System.out.println("📊 Dados retornados pela API: " + contaMap.toString());
-        
-        response.put("sucesso", true);
-        response.put("mensagem", "Conta encontrada");
-        response.put("conta", contaMap);
-        
-        return ResponseEntity.ok(response);
-        
-    } catch (Exception e) {
-        System.err.println("❌ ERRO em conta_buscar: " + e.getMessage());
-        e.printStackTrace();
-        
-        response.put("sucesso", false);
-        response.put("mensagem", "Erro ao buscar conta: " + e.getMessage());
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
-}
-    
 
+    @PostMapping("/funcionalidade_apenas_importar")
+    @Transactional
+    public ResponseEntity<?> importarApenasFuncionalidade(@RequestParam("file") MultipartFile file) {
 
+        System.out.println("=== INICIANDO IMPORTAÇÃO APENAS DE FUNCIONALIDADE ===");
 
+        try {
 
+            // Processar apenas a folha de funcionalidades (folha 1)
+            Map<String, Object> resultado = TipoFuncionalidadeLoader.insertOnlyFuncionalidadeSheet(
+                    file, funcionalidadeRepository, tipoFuncionalidadeRepository, versaoService);
 
+            return ResponseEntity.ok(resultado);
 
-@PostMapping("/tipo_funcionalidade_importar")
-@Transactional
-public ResponseEntity<?> importarTipoFuncionalidade(@RequestParam("file") MultipartFile file) {
-    System.out.println("=== INICIANDO IMPORTAÇÃO APENAS DE TIPO FUNCIONALIDADE ===");
+        } catch (Exception e) {
+            Map<String, Object> erro = new HashMap<>();
+            erro.put("erro", "❌ Erro durante a importação: " + e.getMessage());
+            erro.put("sucesso", false);
+            return ResponseEntity.badRequest().body(erro);
+        }
 
-    try {
-        // Processar apenas a folha de tipos (folha 2)
-        Map<String, Object> resultado = TipoFuncionalidadeLoader.insertOnlyTypeSheet(
-                file, tipoFuncionalidadeRepository, versaoService);
-
-        return ResponseEntity.ok(resultado);
-
-    } catch (Exception e) {
-        Map<String, Object> erro = new HashMap<>();
-        erro.put("erro", "❌ Erro durante a importação: " + e.getMessage());
-        erro.put("sucesso", false);
-        return ResponseEntity.badRequest().body(erro);
     }
-}
-
-@PostMapping("/funcionalidade_apenas_importar")
-@Transactional
-public ResponseEntity<?> importarApenasFuncionalidade(@RequestParam("file") MultipartFile file) {
-    System.out.println("=== INICIANDO IMPORTAÇÃO APENAS DE FUNCIONALIDADE ===");
-
-    try {
-        // Processar apenas a folha de funcionalidades (folha 1)
-        Map<String, Object> resultado = TipoFuncionalidadeLoader.insertOnlyFuncionalidadeSheet(
-                file, funcionalidadeRepository, tipoFuncionalidadeRepository, versaoService);
-
-        return ResponseEntity.ok(resultado);
-
-    } catch (Exception e) {
-        Map<String, Object> erro = new HashMap<>();
-        erro.put("erro", "❌ Erro durante a importação: " + e.getMessage());
-        erro.put("sucesso", false);
-        return ResponseEntity.badRequest().body(erro);
-    }
-}
 
 /*@GetMapping("/tipo_funcionalidade_listar")
 @Transactional(readOnly = true)
@@ -2089,83 +2109,80 @@ public ResponseEntity<?> listarTipoFuncionalidade() {
 */
 
 
+    /**
+     * Valida se já existe uma funcionalidade com mesma designação e mesmo pai
+     * Atende às regras: designacao + fkPai devem ser únicos
+     * Descrição pode repetir, PK deve ser única
+     */
+    private Map<String, Object> validarDuplicidadeDesignacaoPai(
+            String designacao,
+            Integer fkPaiId,
+            Integer pkFuncionalidadeAtual) {
 
+        Map<String, Object> resultado = new HashMap<>();
+        resultado.put("valido", true);
 
+        // Se designação for nula ou vazia, não valida
+        if (designacao == null || designacao.trim().isEmpty()) {
+            return resultado;
+        }
 
-/**
- * Valida se já existe uma funcionalidade com mesma designação e mesmo pai
- * Atende às regras: designacao + fkPai devem ser únicos
- * Descrição pode repetir, PK deve ser única
- */
-private Map<String, Object> validarDuplicidadeDesignacaoPai(
-        String designacao, 
-        Integer fkPaiId, 
-        Integer pkFuncionalidadeAtual) {
-    
-    Map<String, Object> resultado = new HashMap<>();
-    resultado.put("valido", true);
-    
-    // Se designação for nula ou vazia, não valida
-    if (designacao == null || designacao.trim().isEmpty()) {
+        designacao = designacao.trim();
+        List<Funcionalidade> duplicatas;
+
+        if (fkPaiId != null && fkPaiId > 0) {
+            if (pkFuncionalidadeAtual != null) {
+                // Validação para edição (exclui o próprio ID)
+                duplicatas = funcionalidadeRepository
+                        .findByDesignacaoAndFkFuncionalidadePaiPkFuncionalidadeAndPkFuncionalidadeNot(
+                                designacao, fkPaiId, pkFuncionalidadeAtual);
+            } else {
+                // Validação para cadastro
+                duplicatas = funcionalidadeRepository
+                        .findByDesignacaoAndFkFuncionalidadePaiPkFuncionalidade(designacao, fkPaiId);
+            }
+        } else {
+            // Pai é null (funcionalidade raiz)
+            if (pkFuncionalidadeAtual != null) {
+                // Validação para edição (exclui o próprio ID)
+                duplicatas = funcionalidadeRepository
+                        .findByDesignacaoAndFkFuncionalidadePaiIsNullAndPkFuncionalidadeNot(
+                                designacao, pkFuncionalidadeAtual);
+            } else {
+                // Validação para cadastro
+                duplicatas = funcionalidadeRepository
+                        .findByDesignacaoAndFkFuncionalidadePaiIsNull(designacao);
+            }
+        }
+
+        if (!duplicatas.isEmpty()) {
+            resultado.put("valido", false);
+
+            String mensagemPai = (fkPaiId != null && fkPaiId > 0) ?
+                    " com o pai ID " + fkPaiId : " no nível raiz";
+
+            resultado.put("mensagem", String.format(
+                    "Já existe uma funcionalidade com a designação '%s'%s. " +
+                            "Designação deve ser única para cada pai.",
+                    designacao, mensagemPai
+            ));
+
+            resultado.put("duplicatas", duplicatas.stream()
+                    .map(f -> {
+                        Map<String, Object> duplicataInfo = new HashMap<>();
+                        duplicataInfo.put("pkFuncionalidade", f.getPkFuncionalidade());
+                        duplicataInfo.put("designacao", f.getDesignacao());
+                        duplicataInfo.put("descricao", f.getDescricao());
+                        duplicataInfo.put("paiId", (f.getFkFuncionalidadePai() != null) ?
+                                f.getFkFuncionalidadePai().getPkFuncionalidade() : null);
+                        duplicataInfo.put("paiDesignacao", (f.getFkFuncionalidadePai() != null) ?
+                                f.getFkFuncionalidadePai().getDesignacao() : "Raiz");
+                        return duplicataInfo;
+                    })
+                    .collect(Collectors.toList()));
+        }
+
         return resultado;
     }
-    
-    designacao = designacao.trim();
-    List<Funcionalidade> duplicatas;
-    
-    if (fkPaiId != null && fkPaiId > 0) {
-        if (pkFuncionalidadeAtual != null) {
-            // Validação para edição (exclui o próprio ID)
-            duplicatas = funcionalidadeRepository
-                .findByDesignacaoAndFkFuncionalidadePaiPkFuncionalidadeAndPkFuncionalidadeNot(
-                    designacao, fkPaiId, pkFuncionalidadeAtual);
-        } else {
-            // Validação para cadastro
-            duplicatas = funcionalidadeRepository
-                .findByDesignacaoAndFkFuncionalidadePaiPkFuncionalidade(designacao, fkPaiId);
-        }
-    } else {
-        // Pai é null (funcionalidade raiz)
-        if (pkFuncionalidadeAtual != null) {
-            // Validação para edição (exclui o próprio ID)
-            duplicatas = funcionalidadeRepository
-                .findByDesignacaoAndFkFuncionalidadePaiIsNullAndPkFuncionalidadeNot(
-                    designacao, pkFuncionalidadeAtual);
-        } else {
-            // Validação para cadastro
-            duplicatas = funcionalidadeRepository
-                .findByDesignacaoAndFkFuncionalidadePaiIsNull(designacao);
-        }
-    }
-    
-    if (!duplicatas.isEmpty()) {
-        resultado.put("valido", false);
-        
-        String mensagemPai = (fkPaiId != null && fkPaiId > 0) ? 
-                            " com o pai ID " + fkPaiId : " no nível raiz";
-        
-        resultado.put("mensagem", String.format(
-            "Já existe uma funcionalidade com a designação '%s'%s. " +
-            "Designação deve ser única para cada pai.",
-            designacao, mensagemPai
-        ));
-        
-        resultado.put("duplicatas", duplicatas.stream()
-            .map(f -> {
-                Map<String, Object> duplicataInfo = new HashMap<>();
-                duplicataInfo.put("pkFuncionalidade", f.getPkFuncionalidade());
-                duplicataInfo.put("designacao", f.getDesignacao());
-                duplicataInfo.put("descricao", f.getDescricao());
-                duplicataInfo.put("paiId", (f.getFkFuncionalidadePai() != null) ? 
-                                 f.getFkFuncionalidadePai().getPkFuncionalidade() : null);
-                duplicataInfo.put("paiDesignacao", (f.getFkFuncionalidadePai() != null) ? 
-                                 f.getFkFuncionalidadePai().getDesignacao() : "Raiz");
-                return duplicataInfo;
-            })
-            .collect(Collectors.toList()));
-    }
-    
-    return resultado;
-}
 
 }

@@ -1,23 +1,13 @@
 package com.ucan.plataformadenuncias.entities;
 
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
-import java.util.Objects;
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import java.util.HashSet;
+import java.util.Set;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-/**
- *
- * @author cristiano
- */
 @Getter
 @Setter
 @Builder
@@ -56,6 +46,10 @@ public class Funcionalidade {
     @Column(name = "versao", length = 100)
     private String versao;
 
+    // ⚠️ mappedBy deve ser o nome exato do campo na entidade FuncionalidadePerfil
+    @OneToMany(mappedBy = "fkFuncionalidade", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<FuncionalidadePerfil> perfis = new HashSet<>();
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -67,46 +61,4 @@ public class Funcionalidade {
     public Funcionalidade(Integer pkFuncionalidade) {
         this.pkFuncionalidade = pkFuncionalidade;
     }
-
-    public Funcionalidade(String url, String funcionalidadesPartilhadas, Funcionalidade fkFuncionalidadePai, Integer grupo, TipoFuncionalidade fkTipoFuncionalidade, String designacao, String descricao, Integer pkFuncionalidade) {
-        this.url = url;
-        this.funcionalidadesPartilhadas = funcionalidadesPartilhadas;
-        this.fkFuncionalidadePai = fkFuncionalidadePai;
-        this.grupo = grupo;
-        this.fkTipoFuncionalidade = fkTipoFuncionalidade;
-        this.designacao = designacao;
-        this.descricao = descricao;
-        this.pkFuncionalidade = pkFuncionalidade;
-    }
-
-    public Funcionalidade(Integer pkFuncionalidade, String descricao, String designacao, TipoFuncionalidade fkTipoFuncionalidade, Integer grupo, Funcionalidade fkFuncionalidadePai, String funcionalidadesPartilhadas, String url, String versao) {
-        this.pkFuncionalidade = pkFuncionalidade;
-        this.descricao = descricao;
-        this.designacao = designacao;
-        this.fkTipoFuncionalidade = fkTipoFuncionalidade;
-        this.grupo = grupo;
-        this.fkFuncionalidadePai = fkFuncionalidadePai;
-        this.funcionalidadesPartilhadas = funcionalidadesPartilhadas;
-        this.url = url;
-        this.versao = versao;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Funcionalidade that = (Funcionalidade) o;
-        return Objects.equals(pkFuncionalidade, that.pkFuncionalidade) && Objects.equals(descricao, that.descricao) && Objects.equals(designacao, that.designacao) && Objects.equals(fkTipoFuncionalidade, that.fkTipoFuncionalidade) && Objects.equals(grupo, that.grupo) && Objects.equals(fkFuncionalidadePai, that.fkFuncionalidadePai) ;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(pkFuncionalidade, descricao, designacao, fkTipoFuncionalidade, grupo, fkFuncionalidadePai);
-    }
-
-    public boolean isGingogo(Funcionalidade o)
-    {
-        return  Objects.equals(descricao, o.descricao) && Objects.equals(designacao, o.designacao) && Objects.equals(fkTipoFuncionalidade, o.fkTipoFuncionalidade) && Objects.equals(grupo, o.grupo) && Objects.equals(fkFuncionalidadePai, o.fkFuncionalidadePai) ;
-    }
-
 }

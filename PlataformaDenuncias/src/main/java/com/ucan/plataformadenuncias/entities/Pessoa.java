@@ -73,7 +73,7 @@ public class Pessoa {
         if (this == o) return true;
         if (!(o instanceof Pessoa)) return false;
         Pessoa pessoa = (Pessoa) o;
-        return Objects.equals(pkPessoa, pessoa.pkPessoa);
+        return Objects.equals(pkPessoa, pessoa.pkPessoa) ;
     }
 
     @Override
