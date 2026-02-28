@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaUser, FaLock, FaSignInAlt } from 'react-icons/fa';
 
-export default function Login({ setLoggedIn }) {
+export default function Login() {
     const navigate = useNavigate();
 
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    
     const [loading, setLoading] = useState(false);
 
     const handleLogin = async (e) => {
@@ -16,6 +17,7 @@ export default function Login({ setLoggedIn }) {
         setLoading(true);
 
         try {
+
             const response = await fetch('http://localhost:9090/api/auth/login', {
                 method: 'POST',
                 headers: {
@@ -33,13 +35,18 @@ export default function Login({ setLoggedIn }) {
                 throw new Error(data.mensagem || 'Credenciais inválidas');
             }
 
-            // Guarda token
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('email', data.email);
-            localStorage.setItem('perfil', data.perfil);
 
-            setLoggedIn(true);
-            navigate('/');
+            const userSession = {
+                token: data.token,
+                email: data.email,
+                perfil: data.perfil,
+                isLoggedIn: true
+            };
+
+            sessionStorage.setItem('user', JSON.stringify(userSession));
+
+           // setLoggedIn(true);
+          navigate('/home');
 
         } catch (err) {
             setError(err.message);
@@ -48,52 +55,100 @@ export default function Login({ setLoggedIn }) {
         }
     };
 
-    return (
-        <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
-            <div className="card shadow p-4" style={{ maxWidth: 400, width: '100%' }}>
-                <h3 className="text-center mb-4">
-                    <FaSignInAlt className="me-2" />
-                    Login
-                </h3>
+return (
+    <div
+        className="d-flex justify-content-center align-items-center vh-100"
+        style={{
+            backgroundColor: "#0B0B0B"
+        }}
+    >
+        <div
+            className="card shadow-lg p-4"
+            style={{
+                maxWidth: 420,
+                width: "100%",
+                backgroundColor: "#111111",
+                border: "1px solid #D4AF37",
+                borderRadius: "12px"
+            }}
+        >
+            <h3
+                className="text-center mb-4"
+                style={{
+                    color: "#D4AF37",
+                    fontWeight: "bold"
+                }}
+            >
+                <FaSignInAlt className="me-2" />
+Login            </h3>
 
-                {error && <div className="alert alert-danger">{error}</div>}
+            {error && (
+                <div className="alert alert-danger text-center">
+                    {error}
+                </div>
+            )}
 
-                <form onSubmit={handleLogin}>
-                    <div className="mb-3">
-                        <label className="form-label">
-                            <FaUser className="me-2" /> Usuário
-                        </label>
-                        <input
-                            type="text"
-                            className="form-control"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            required
-                        />
-                    </div>
-
-                    <div className="mb-4">
-                        <label className="form-label">
-                            <FaLock className="me-2" /> Senha
-                        </label>
-                        <input
-                            type="password"
-                            className="form-control"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
-                    </div>
-
-                    <button
-                        type="submit"
-                        className="btn btn-primary w-100"
-                        disabled={loading}
+            <form onSubmit={handleLogin}>
+                <div className="mb-3">
+                    <label
+                        className="form-label"
+                        style={{ color: "#F5F5F5" }}
                     >
-                        {loading ? 'Entrando...' : 'Entrar'}
-                    </button>
-                </form>
-            </div>
+                        <FaUser className="me-2" /> Usuário
+                    </label>
+
+                    <input
+                        type="text"
+                        className="form-control"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        required
+                        style={{
+                            backgroundColor: "#1a1a1a",
+                            color: "#fff",
+                            border: "1px solid #D4AF37"
+                        }}
+                    />
+                </div>
+
+                <div className="mb-4">
+                    <label
+                        className="form-label"
+                        style={{ color: "#F5F5F5" }}
+                    >
+                        <FaLock className="me-2" /> Senha
+                    </label>
+
+                    <input
+                        type="password"
+                        className="form-control"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        style={{
+                            backgroundColor: "#1a1a1a",
+                            color: "#fff",
+                            border: "1px solid #D4AF37"
+                        }}
+                    />
+                </div>
+
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="btn w-100"
+                    style={{
+                        backgroundColor: "#D4AF37",
+                        color: "#000",
+                        fontWeight: "bold",
+                        border: "none"
+                    }}
+                >
+                    {loading ? "Entrando..." : "Entrar"}
+                </button>
+            </form>
         </div>
-    );
+    </div>
+);
+
 }

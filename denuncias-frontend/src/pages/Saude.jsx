@@ -5,7 +5,7 @@ import {
   FaCheckCircle, FaHourglassHalf, FaClock
 } from 'react-icons/fa';
 import { useParams } from 'react-router-dom';
-
+import Footer from './Footer';
 export default function Saude() {
   const { tipo } = useParams();
   const [anonimo, setAnonimo] = useState(false);
@@ -706,6 +706,8 @@ export default function Saude() {
           )}
         </div>
       </main>
+       <Footer/>
     </div>
+    
   );
 }

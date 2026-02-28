@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import {Routes, Route, Navigate, Link, NavLink, useLocation} from 'react-router-dom';
 import axios from 'axios';
-import { FaHeartbeat, FaWater, FaGraduationCap, FaBullhorn } from 'react-icons/fa';
-
-export default function Home() {
+import { FaHeartbeat, FaWater, FaGraduationCap, FaBullhorn, FaSignOutAlt } from 'react-icons/fa';
+import Footer from './Footer';
+export default function Home({ setLoggedIn }) {
   const [mensagem, setMensagem] = useState('');
+
+ // setMensagem("Seja bem vindoo");
 
   useEffect(() => {
     axios.get('http://localhost:9090/api/denuncias/home')
@@ -23,6 +26,15 @@ export default function Home() {
   }}
 >
   <div className="container text-center py-5">
+    <div className="d-flex ms-3">
+                                    <Link
+                                        to="/login"
+                                        className="btn pnd-gold-btn d-flex align-items-center fw-semibold"
+                                       
+                                    >
+                                        <FaSignOutAlt className="me-1 pnd-gold"/> Login
+                                    </Link>
+                                </div>
     <div className="mb-4">
       <img
         src="/brasao-angola.png"
@@ -63,7 +75,7 @@ export default function Home() {
         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#b5942d'}
         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#D4AF37'}
       >
-        Fazer uma Denúncia
+        Consultar Denúncia
       </button>
     </div>
   </div>
@@ -83,14 +95,23 @@ export default function Home() {
                 <div className="icon-circle bg-danger bg-opacity-10 text-danger mx-auto mb-3">
                   <FaHeartbeat className="fs-2" />
                 </div>
-                <h4 className="fw-bold mb-3 text-danger">Saúde</h4>
+                <h4 className="fw-bold mb-3 text-danger">Saúde - </h4>
                 <p className="text-muted small">
                   Denuncie negligência, falta de medicamentos, corrupção ou mau atendimento
                   em hospitais e centros de saúde públicos.
                 </p>
-                <button className="btn btn-outline-danger w-100 fw-semibold">
-                  Denunciar Saúde
-                </button>
+                 <Link
+                                                        to="/saude/registrar"
+                                                        className="btn btn-outline-danger w-100 fw-semibold"
+                                                        onClick={() => {
+                                                            sessionStorage.removeItem('user');
+                                                           // setLoggedIn(false);
+                                                            //();
+                                                        }}
+                                                    >
+                                                          Denunciar Saúde
+                                                    </Link>
+                
               </div>
             </div>
 
@@ -105,9 +126,18 @@ export default function Home() {
                   Relate problemas de fornecimento, má gestão, desvios de recursos ou
                   irregularidades no setor de abastecimento público.
                 </p>
-                <button className="btn btn-outline-info w-100 fw-semibold ">
-                  Denunciar Água
-                </button>
+                <Link
+                                                        to="/agua/registrar"
+                                                        className="btn btn-outline-info w-100 fw-semibold "
+                                                        onClick={() => {
+                                                            sessionStorage.removeItem('user');
+                                                           // setLoggedIn(false);
+                                                            //();
+                                                        }}
+                                                    >
+                                                          Denunciar Água
+                                                    </Link>
+                
               </div>
             </div>
 
@@ -117,21 +147,32 @@ export default function Home() {
                 <div className="icon-circle bg-primary bg-opacity-10 text-primary mx-auto mb-3">
                   <FaGraduationCap className="fs-2" />
                 </div>
-                <h4 className="fw-bold mb-3 text-primary">Educação</h4>
+                <h4 className="fw-bold mb-3 text-primary">Educação </h4>
                 <p className="text-muted small">
                   Registe denúncias sobre infraestrutura precária, má conduta de professores
                   ou corrupção em instituições de ensino.
                 </p>
-                <button className="btn btn-outline-primary w-100 fw-semibold">
-                  Denunciar Educação
-                </button>
+                <Link
+                                                        to="/educacao/registrar"
+                                                        className="btn btn-outline-primary w-100 fw-semibold"
+                                                        onClick={() => {
+                                                            sessionStorage.removeItem('user');
+                                                           // setLoggedIn(false);
+                                                            //();
+                                                        }}
+                                                    >
+                                                          Denunciar Educação
+                                                    </Link>
+               
               </div>
             </div>
           </div>
         </div>
       </main>
-
+       <Footer/>                                                  
      
     </div>
+   
   );
+  
 }

@@ -3,6 +3,7 @@ package com.ucan.plataformadenuncias.controllers;
 import com.ucan.plataformadenuncias.dto.LoginDTO;
 import com.ucan.plataformadenuncias.entities.Conta;
 import com.ucan.plataformadenuncias.entities.ContaPerfil;
+import com.ucan.plataformadenuncias.entities.Perfil;
 import com.ucan.plataformadenuncias.repositories.ContaPerfilRepository;
 import com.ucan.plataformadenuncias.repositories.ContaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,12 +24,11 @@ public class LoginController {
     @Autowired
     private ContaPerfilRepository contaPerfilRepository;
 
-
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginDTO login) {
 
         // 1️⃣ Verifica usuário
-        Conta conta = contaRepository.findByEmail(login.getUsername()).get();
+        Conta conta = contaRepository.findByEmail(login.getUsername()).orElseThrow();
 
         System.out.println(conta.getPasswordHash());
         System.out.println(conta.getEmail());
@@ -41,7 +41,7 @@ public class LoginController {
         }
 
         // 2️⃣ Verifica senha
-        if ( !login.getPassword().equals(conta.getPasswordHash()) ) {
+        if (!login.getPassword().equals(conta.getPasswordHash())) {
             return ResponseEntity.status(401).body(Map.of(
                     "sucesso", false,
                     "mensagem", "Usuário ou senha inválidos"
@@ -49,24 +49,28 @@ public class LoginController {
         }
 
         // 3️⃣ Busca perfil
-        Optional<ContaPerfil> contaPerfilOpt =
-                contaPerfilRepository.findByFkConta(conta);
+        Optional<ContaPerfil> contaPerfilOpt = contaPerfilRepository.findByFkConta(conta);
 
-        if (contaPerfilOpt.isEmpty()) {
+        ContaPerfil contaPerfil = contaPerfilOpt.get();
+        Perfil perfil = contaPerfil.getFkPerfil();
+
+        System.out.println( contaPerfil );
+
+        System.out.println("Valor do perfil: ");
+        System.out.println( perfil );
+
+        if (perfil == null) {
             return ResponseEntity.status(403).body(Map.of(
                     "sucesso", false,
                     "mensagem", "Perfil não associado à conta"
             ));
         }
 
-        ContaPerfil contaPerfil = contaPerfilOpt.get();
-        String perfil = contaPerfil.getFkPerfil().getDesignacao();
-
         // 4️⃣ Retorno simples sem JWT
         return ResponseEntity.ok(Map.of(
                 "sucesso", true,
                 "email", conta.getEmail(),
-                "perfil", perfil
+                "perfil", perfil.getDescricao()
         ));
     }
 

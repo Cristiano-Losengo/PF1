@@ -5,7 +5,7 @@ import {
   FaCheckCircle, FaHourglassHalf, FaClock
 } from 'react-icons/fa';
 import { useParams } from 'react-router-dom';
-
+import Footer from './Footer';
 export default function Educacao() {
   const { tipo } = useParams();
   const [anonimo, setAnonimo] = useState(false);
@@ -712,6 +712,7 @@ export default function Educacao() {
           )}
         </div>
       </main>
+      <Footer/>
     </div>
   );
 }

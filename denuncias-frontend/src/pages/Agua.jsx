@@ -5,7 +5,7 @@ import {
   FaPhoneAlt, FaPaperclip, FaListAlt, FaComments, FaCheckCircle, FaHourglassHalf,
   FaCheck, FaTimes, FaEnvelope, FaClock // ✅ Adicione o FaClock aqui
 } from 'react-icons/fa';
-
+import Footer from './Footer';
 export default function Agua() {
   const { tipo } = useParams();
   const [anonimo, setAnonimo] = useState(false);
@@ -1126,6 +1126,7 @@ export default function Agua() {
           )}
         </div>
       </main>
+       <Footer/>
     </div>
   );
 }

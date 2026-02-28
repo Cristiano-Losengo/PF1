@@ -3,7 +3,8 @@ package com.ucan.plataformadenuncias.enumerable;
 public enum TipoContaEnum {
 
     ADMIN,
-    GESTOR_PROVINCIAL,
+    ADMIN_MUNICIPAL,
+    ADMIN_SECTORIAL,
     CIDADAO
 
 }

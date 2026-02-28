@@ -39,6 +39,13 @@ public class DenunciaController {
     @Autowired
     private GeneroRepository generoRepository; // ADICIONADO: Repositório para buscar gêneros
 
+    @GetMapping("/home")
+    public Map<String, String> home() {
+        return Map.of(
+                "mensagem", "Seja bem-vindo à Plataforma Nacional de Denúncias 🇦🇴"
+        );
+    }
+
     // 🔧 ADICIONE @Transactional(readOnly = true) AQUI
     @GetMapping
     @Transactional(readOnly = true)
