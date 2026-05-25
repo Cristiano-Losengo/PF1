@@ -22,7 +22,7 @@ public class Denuncia {
     @Column(name = "pk_denuncia")
     private Integer pkDenuncia;
 
-    private String nome;
+     private String codigo;
 
     @Column(name = "descricao_detalhada", columnDefinition = "TEXT")
     private String descricaoDetalhada;
@@ -39,7 +39,7 @@ public class Denuncia {
 
     private boolean anonima;
 
-    //private String contacto;
+    private String contacto;
     private String email;
 
     private LocalDateTime dataRegistro = LocalDateTime.now();

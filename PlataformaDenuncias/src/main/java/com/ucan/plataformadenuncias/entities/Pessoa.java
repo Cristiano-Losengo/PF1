@@ -40,7 +40,7 @@ public class Pessoa {
 
     @NotBlank
     @Size(max = 50)
-    @Column(unique = true, nullable = false, length = 50)
+    @Column(unique = true, nullable = true, length = 50)
     private String identificacao;
 
     @CreationTimestamp

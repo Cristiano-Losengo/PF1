@@ -34,4 +34,7 @@ public interface DenunciaRepository extends JpaRepository<Denuncia, Integer> {
     """)
     List<Denuncia> findAllComRelacoes();
 
+    Denuncia findByCodigo(String codigo);
+    
+
 }

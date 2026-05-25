@@ -1,44 +1,36 @@
 import { useParams } from 'react-router-dom';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import html2canvas from "html2canvas";
 import {
-  FaMapMarkerAlt, FaTint, FaExclamationCircle, FaCalendarAlt, FaFileAlt, FaUser,
-  FaPhoneAlt, FaPaperclip, FaListAlt, FaComments, FaCheckCircle, FaHourglassHalf,
-  FaCheck, FaTimes, FaEnvelope, FaClock // ✅ Adicione o FaClock aqui
+  FaMapMarkerAlt, FaTint, FaCalendarAlt, FaFileAlt, FaUser,
+  FaPhoneAlt, FaPaperclip, FaListAlt, FaCheckCircle, FaHourglassHalf,
+  FaCheck, FaTimes, FaEnvelope, FaArrowLeft
 } from 'react-icons/fa';
 
 export default function Agua() {
   const { tipo } = useParams();
-  const [anonimo, setAnonimo] = useState(false);
-  const [formData, setFormData] = useState({
-    localEspecificoDaOcorrencia: '',
-    municipio: 'Luanda',
-    bairro: 'Sambizanga',
-    nomeRua: '',
-    dataOcorrecia: '',
-    subtipo: 'agua_inexistente',
-    descricaoDetalhada: '',
-    nome: '',
-    contacto: '',
-    email: '',
-    anexo: null
-  });
-
-  const [errors, setErrors] = useState({});
-  const [denuncias, setDenuncias] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [codigoDenuncia, setCodigoDenuncia] = useState(null);
+  const [denunciaFinal, setDenunciaFinal] = useState(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [touched, setTouched] = useState({});
   const [submitErrors, setSubmitErrors] = useState([]);
+  const [anonimo, setAnonimo] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [denuncias, setDenuncias] = useState([]);
+  const [touched, setTouched] = useState({});
+  const comprovativoRef = useRef(null);
 
-  // --- MUNICÍPIOS E BAIRROS ---
-  const municipios = [
-    "Belas", "Cacuaco", "Cazenga", "Ícolo_e_Bengo",
-    "Luanda", "KilambaKiaxi", "Quiçama", "Talatona", "Viana"
-  ];
+  const [formData, setFormData] = useState({
+    localEspecificoDaOcorrencia: '', municipio: 'Luanda', bairro: 'Sambizanga',
+    nomeRua: '', dataOcorrecia: '', subtipo: 'agua_inexistente', descricaoDetalhada: '',
+    nome: '', contacto: '', email: '', anexo: null
+  });
+  const [errors, setErrors] = useState({});
 
+  const municipios = ["Belas", "Cacuaco", "Cazenga", "Ícolo_e_Bengo", "Luanda", "KilambaKiaxi", "Quiçama", "Talatona", "Viana"];
   const bairrosPorMunicipio = {
     Luanda: ["Ingombota", "Maianga", "Sambizanga", "Rangel", "Kinaxixi", "Mutamba"],
-    Viana: ["Zango 1", "Zango 2", "Zango 3", "Zango 4", "Estalagem", "Vila de Viana", "Capalanga"],
+    Viana: ["Zango 1", "Zango 2", "Zango 3", "Zango 4", "Estalagem", "Vila de Viana"],
     Cazenga: ["Hoji-ya-Henda", "Mabor", "Tala Hady", "Cazenga Popular"],
     Belas: ["Benfica", "Morro Bento", "Camama", "Kilamba", "Talismã"],
     Cacuaco: ["Sequele", "Ngola Kiluanje", "Kikolo", "Mulenvos"],
@@ -48,1084 +40,399 @@ export default function Agua() {
     Quiçama: ["Mumbondo", "Demba Chio", "Muxima"]
   };
 
-  // --- FUNÇÃO PARA MAPEAR SUBTIPO PARA TIPO ESPECÍFICO ---
-  const getTipoEspecifico = (subtipo) => {
-    const mapeamento = {
-      'agua_inexistente': 'Falta total de água',
-      'agua_suja': 'contaminada/suja',
-      'vazamento na Infraestrutura': 'Vazamento',
-      'conta_abusiva': 'Cobrança indevida',
-      'infraestrutura': 'Problemas na infraestrutura',
-      'corte': 'Corte Abusivo'
-    };
-    return mapeamento[subtipo] || 'Problema de Água';
-  };
+  const tiposProblema = [
+    { value: 'agua_inexistente', label: 'Falta total de água', icon: '🚱' },
+    { value: 'agua_suja', label: 'Água contaminada/suja', icon: '🦠' },
+    { value: 'vazamento', label: 'Vazamento', icon: '💧' },
+    { value: 'conta_abusiva', label: 'Cobrança indevida', icon: '💰' },
+    { value: 'infraestrutura', label: 'Problemas na infraestrutura', icon: '🏗️' },
+    { value: 'corte', label: 'Corte Abusivo', icon: '✂️' }
+  ];
 
-  // --- TESTAR CONEXÃO COM BACKEND ---
-  const testarConexaoBackend = async () => {
-    try {
-      console.log('🔄 Testando conexão com backend...');
-      console.log('URL: http://localhost:9090/api/denuncias');
-
-      const res = await fetch("http://localhost:9090/api/denuncias", {
-        method: "GET",
-        headers: { "Content-Type": "application/json" }
-      });
-
-      if (res.ok) {
-        console.log('✅ Backend está respondendo! Status:', res.status);
-        const data = await res.json();
-        console.log('Total de denúncias:', data.length);
-        console.log('Primeira denúncia:', data[0]);
-        console.log('Província da primeira:', data[0]?.provincia);
-        console.log('DataRegistro da primeira:', data[0]?.dataRegistro);
-        return true;
-      } else {
-        console.log('❌ Backend respondeu com erro. Status:', res.status);
-        const errorText = await res.text();
-        console.log('Resposta do erro:', errorText);
-        return false;
-      }
-    } catch (err) {
-      console.log('❌ Não foi possível conectar ao backend:', err.message);
-      console.log('Tipo de erro:', err.name);
-      console.log('Stack:', err.stack);
-      return false;
+  const validarCampo = (name, value) => {
+    const v = value?.toString().trim() || '';
+    switch (name) {
+      case 'municipio': return !v ? 'Selecione o município' : null;
+      case 'bairro': return !v ? 'Selecione o bairro' : null;
+      case 'nomeRua': return !v ? 'Nome da Rua é obrigatório' : null;
+      case 'localEspecificoDaOcorrencia': return !v ? 'Local é obrigatório' : null;
+      case 'dataOcorrecia': return !v ? 'Data é obrigatória' : null;
+      case 'subtipo': return !v ? 'Selecione o tipo de problema' : null;
+      case 'descricaoDetalhada': return v.length < 10 ? 'Mínimo 10 caracteres' : null;
+      case 'nome': return !anonimo && !v ? 'Nome é obrigatório' : (!anonimo && v.length < 3 ? 'Mínimo 3 caracteres' : null);
+      case 'contacto': return !anonimo && !v ? 'Contacto é obrigatório' : (!anonimo && !/^9\d{8}$/.test(v) ? 'Contacto inválido (9XXXXXXXX)' : null);
+      case 'email': return !anonimo && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? 'Email inválido' : null;
+      default: return null;
     }
   };
 
-  // --- BUSCAR DADOS INICIAIS ---
-  useEffect(() => {
-    console.log('🔄 Componente Agua montado');
-    console.log('Frontend URL:', window.location.href);
-    console.log('Backend URL:', 'http://localhost:9090');
-
-    // Testar conexão
-    testarConexaoBackend();
-    fetchDenuncias();
-  }, []);
-
-  const fetchDenuncias = async () => {
-    try {
-      setLoading(true);
-      console.log('🔄 Buscando denúncias...');
-      const res = await fetch("http://localhost:9090/api/denuncias");
-      console.log('Resposta do GET denúncias:', res.status, res.statusText);
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error('Erro ao buscar denúncias:', errorText);
-        throw new Error(`Erro ${res.status}: ${errorText}`);
-      }
-
-      const data = await res.json();
-      console.log('Dados recebidos da API:', data);
-      console.log('Primeira denúncia:', data[0]);
-      console.log('Província da primeira:', data[0]?.provincia);
-      console.log('DataRegistro da primeira:', data[0]?.dataRegistro);
-      console.log('Denúncias recebidas:', data.length);
-
-      // ✅ CORREÇÃO: Agora filtra por categoriaNome (do DTO) em vez de categoria.nome
-      const denunciasAgua = data.filter(d =>
-        d.categoriaNome && d.categoriaNome === "Água"
-      );
-
-      console.log('Denúncias de água filtradas:', denunciasAgua.length);
-      setDenuncias(denunciasAgua || []);
-    } catch (err) {
-      console.error('fetchDenuncias error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // --- FUNÇÕES DE VALIDAÇÃO ---
-  const validarSomenteLetras = (valor) => {
-    return /^[A-Za-zÀ-ÿ\s]+$/.test(valor);
-  };
-
-  const validarContacto = (valor) => {
-    return /^9\d{8}$/.test(valor.replace(/\s/g, ''));
-  };
-
-  const validarEmail = (valor) => {
-    if (!valor || valor.trim() === '') return true; // Email é opcional
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(valor);
-  };
-
-  const validarDescricao = (valor) => {
-    return valor.trim().length >= 10;
-  };
-
-  const validarData = (data) => {
-    if (!data) return false;
-
-    const dataSelecionada = new Date(data);
-    const hoje = new Date();
-    const dataMinima = new Date();
-    dataMinima.setFullYear(dataMinima.getFullYear() - 1);
-
-    return dataSelecionada <= hoje && dataSelecionada >= dataMinima;
-  };
-
-  // --- FUNÇÕES DE VALIDAÇÃO ADICIONADAS PARA CARACTERES ESPECIAIS/NÚMEROS ---
-  const validarNaoApenasNumeros = (valor) => {
-    if (!valor || valor.trim() === '') return true;
-    // Verificar se contém apenas números (incluindo espaços entre números)
-    const apenasNumeros = /^[0-9\s]+$/.test(valor);
-    return !apenasNumeros;
-  };
-
-  const validarNaoApenasEspeciais = (valor) => {
-    if (!valor || valor.trim() === '') return true;
-    // Remover espaços para verificar caracteres especiais
-    const textoSemEspacos = valor.replace(/\s/g, '');
-    // Lista de caracteres especiais
-    const apenasEspeciais = /^[!@#$%^&*()_+\-=\[\]{}|\\:;"'<>,.?\/]+$/.test(textoSemEspacos);
-    return !apenasEspeciais;
-  };
-
-  // FUNÇÃO MELHORADA: Verificar se contém apenas números E/OU caracteres especiais (sem letras)
-  const validarApenasNumerosEspeciais = (valor) => {
-    if (!valor || valor.trim() === '') return false;
-
-    // Remover espaços para análise
-    const textoSemEspacos = valor.replace(/\s/g, '');
-
-    // Verificar se contém alguma letra (incluindo acentuadas)
-    const temLetra = /[a-zA-ZÀ-ÿ]/.test(textoSemEspacos);
-
-    // Se não tem letra, verificar se tem apenas números e/ou caracteres especiais
-    if (!temLetra) {
-      // Verificar se todos os caracteres são números OU caracteres especiais
-      const apenasNumerosEspeciais = /^[0-9!@#$%^&*()_+\-=\[\]{}|\\:;"'<>,.?\/]+$/.test(textoSemEspacos);
-      return apenasNumerosEspeciais;
-    }
-
-    return false;
-  };
-
-  const validarTemLetra = (valor) => {
-    if (!valor || valor.trim() === '') return false;
-    // Verificar se contém pelo menos uma letra (incluindo acentuadas)
-    return /[a-zA-ZÀ-ÿ]/.test(valor);
-  };
-
-  const validarCampoTextoCompleto = (valor, nomeCampo) => {
-    const valorTrim = valor.toString().trim();
-
-    if (!valorTrim) {
-      return `${nomeCampo} é obrigatório.`;
-    }
-
-    if (valorTrim.length < 1) {
-      return `${nomeCampo} deve ter pelo menos 1 caracteres.`;
-    }
-
-    // Verificar se contém apenas números e/ou caracteres especiais (sem letras)
-    if (validarApenasNumerosEspeciais(valorTrim)) {
-      return `${nomeCampo} não pode conter apenas números e caracteres especiais. Deve incluir pelo menos uma letra.`;
-    }
-
-    // Verificar se contém pelo menos uma letra
-    if (!validarTemLetra(valorTrim)) {
-      return `${nomeCampo} deve conter pelo menos uma letra.`;
-    }
-
-    return null;
-  };
-
-  // --- MANIPULAÇÃO DOS CAMPOS ---
   const handleChange = (e) => {
-    const { name, value, files, type, checked } = e.target;
-
-    if (type === 'file') {
-      setFormData(prev => ({ ...prev, [name]: files?.[0] || null }));
-      // Limpar erro do anexo quando um novo arquivo é selecionado
-      if (errors.anexo) {
-        setErrors(prev => {
-          const newErrors = { ...prev };
-          delete newErrors.anexo;
-          return newErrors;
-        });
-      }
-    } else if (type === 'checkbox') {
-      if (name === 'anonimo') setAnonimo(checked);
-      setFormData(prev => ({ ...prev, [name]: checked }));
-    } else {
-      let valorProcessado = value;
-
-      if (name === 'nome') {
-        valorProcessado = value.replace(/[0-9]/g, '');
-      } else if (name === 'contacto') {
-        valorProcessado = value.replace(/[^\d]/g, '');
-      }
-
-      setFormData(prev => ({ ...prev, [name]: valorProcessado }));
-
-      // Validação em tempo real apenas para feedback visual
-      if (touched[name]) {
-        const fieldError = validarCampo(name, valorProcessado);
-        if (fieldError) {
-          setErrors(prev => ({ ...prev, [name]: fieldError }));
-        } else {
-          setErrors(prev => {
-            const newErrors = { ...prev };
-            delete newErrors[name];
-            return newErrors;
-          });
-        }
-      }
-    }
+    const { name, value, files } = e.target;
+    let valor = value;
+    if (name === 'nome') valor = value.replace(/[0-9]/g, '');
+    if (name === 'contacto') valor = value.replace(/\D/g, '').slice(0, 9);
+    setFormData(prev => ({ ...prev, [name]: files?.[0] || valor }));
+    const error = validarCampo(name, valor);
+    if (error) setErrors(prev => ({ ...prev, [name]: error }));
+    else { const newErrors = { ...errors }; delete newErrors[name]; setErrors(newErrors); }
   };
 
   const handleBlur = (e) => {
     const { name, value } = e.target;
-    if (!touched[name]) {
-      setTouched(prev => ({ ...prev, [name]: true }));
-    }
-
-    const fieldError = validarCampo(name, value);
-    if (fieldError) {
-      setErrors(prev => ({ ...prev, [name]: fieldError }));
-    } else {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
-      });
-    }
+    setTouched(prev => ({ ...prev, [name]: true }));
+    const error = validarCampo(name, value);
+    if (error) setErrors(prev => ({ ...prev, [name]: error }));
   };
 
-  const validarCampo = (name, value) => {
-    const valorTrim = value.toString().trim();
-
-    switch (name) {
-      case 'localEspecificoDaOcorrencia':
-        return validarCampoTextoCompleto(valorTrim, 'Local Específico da Ocorrência');
-
-      case 'municipio':
-        if (!valorTrim) return 'Selecione o município.';
-        return null;
-
-      case 'bairro':
-        if (!valorTrim) return 'Selecione o bairro.';
-        return null;
-
-      case 'nomeRua':
-        return validarCampoTextoCompleto(valorTrim, 'Nome da Rua / Número');
-
-      case 'dataOcorrecia':
-        if (!valorTrim) return 'Informe a data da ocorrência.';
-        if (!validarData(valorTrim)) return 'Data deve ser entre 1 ano atrás e hoje.';
-        return null;
-
-      case 'subtipo':
-        if (!valorTrim) return 'Selecione o tipo de problema.';
-        return null;
-
-      case 'descricaoDetalhada':
-        // Validação específica para descrição detalhada
-        if (!valorTrim) return 'Descreva o problema.';
-        if (valorTrim.length < 10) return 'Descrição deve ter pelo menos 10 caracteres.';
-
-        // Verificar se contém apenas números e/ou caracteres especiais (sem letras)
-        if (validarApenasNumerosEspeciais(valorTrim)) {
-          return 'Descrição não pode conter apenas números e caracteres especiais. Deve incluir pelo menos uma letra.';
-        }
-
-        // Verificar se contém pelo menos uma letra
-        if (!validarTemLetra(valorTrim)) {
-          return 'Descrição deve conter pelo menos uma letra.';
-        }
-
-        return null;
-
-      case 'nome':
-        if (!anonimo) {
-          if (!valorTrim) return 'Informe o nome completo.';
-          if (!validarSomenteLetras(valorTrim)) return 'Nome deve conter apenas letras.';
-          if (valorTrim.length < 3) return 'Nome deve ter pelo menos 3 caracteres.';
-          if (valorTrim.split(' ').length < 2) return 'Informe nome e sobrenome.';
-        }
-        return null;
-
-      case 'contacto':
-        if (!anonimo) {
-          if (!valorTrim) return 'Informe o contacto.';
-          if (!validarContacto(valorTrim)) return 'Contacto inválido. Use formato: 9XXXXXXXX';
-        }
-        return null;
-
-      case 'email':
-        if (!anonimo && valorTrim) {
-          if (!validarEmail(valorTrim)) return 'Email inválido. Use formato: exemplo@dominio.com';
-        }
-        return null;
-
-      default:
-        return null;
-    }
-  };
-
-  // --- VALIDAÇÃO COMPLETA ---
-  const validarFormulario = () => {
-    const newErrors = {};
-
-    Object.keys(formData).forEach(key => {
-      if (key !== 'anexo') {
-        const error = validarCampo(key, formData[key]);
-        if (error) {
-          newErrors[key] = error;
-        }
-      }
-    });
-
-    return newErrors;
-  };
-
-  // --- UPLOAD DE ARQUIVO ---
-  const handleFileUpload = async (file) => {
+  // Upload de arquivo
+  const uploadArquivo = async (file) => {
     if (!file) return null;
-
-    const tiposPermitidos = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf',
-      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    const tamanhoMaximo = 5 * 1024 * 1024;
-
-    if (!tiposPermitidos.includes(file.type)) {
-      throw new Error('Tipo de arquivo não permitido. Use JPG, PNG, PDF ou DOC.');
-    }
-
-    if (file.size > tamanhoMaximo) {
-      throw new Error('Arquivo muito grande. Tamanho máximo: 5MB.');
-    }
-
-    try {
-      console.log('📤 Iniciando upload do arquivo:', file.name);
-      const uploadFormData = new FormData();
-      uploadFormData.append('file', file);
-
-      const res = await fetch("http://localhost:9090/api/denuncias/upload", {
-        method: "POST",
-        body: uploadFormData
-      });
-
-      if (res.ok) {
-        const nomeArquivo = await res.text();
-        console.log('✅ Upload concluído:', nomeArquivo);
-        return nomeArquivo;
-      } else {
-        const errorText = await res.text();
-        console.error('❌ Erro no upload:', errorText);
-        throw new Error('Erro ao fazer upload do arquivo.');
-      }
-    } catch (err) {
-      console.error('❌ Erro no handleFileUpload:', err);
-      throw new Error('Falha ao conectar com servidor.');
-    }
+    const formDataUpload = new FormData();
+    formDataUpload.append('file', file);
+    const res = await fetch("http://localhost:9090/api/denuncias/upload", { method: "POST", body: formDataUpload });
+    if (res.ok) return await res.text();
+    throw new Error("Falha no upload");
   };
 
-  // --- ENVIO DA DENÚNCIA ---
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    console.log('=== INICIANDO ENVIO DA DENÚNCIA ===');
-    console.log('FormData:', formData);
-    console.log('Anônimo:', anonimo);
-
-    // Limpar erros anteriores do submit
+  const handleSubmit = async () => {
+    setLoading(true);
     setSubmitErrors([]);
-
-    // Marcar todos os campos como tocados
-    const allTouched = {};
-    Object.keys(formData).forEach(key => {
-      allTouched[key] = true;
-    });
-    setTouched(allTouched);
-
-    // Validar formulário
-    const newErrors = validarFormulario();
-    setErrors(newErrors);
-
-    // Verificar se há erros de validação
-    if (Object.keys(newErrors).length > 0) {
-      console.log('❌ Erros de validação:', newErrors);
-      const firstErrorField = Object.keys(newErrors)[0];
-      const errorElement = document.getElementById(firstErrorField);
-      if (errorElement) {
-        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        errorElement.focus();
-      }
-      return;
-    }
-
     try {
-      setLoading(true);
-
-      // Upload do anexo
       let nomeArquivo = null;
       if (formData.anexo) {
-        try {
-          nomeArquivo = await handleFileUpload(formData.anexo);
-        } catch (uploadError) {
-          console.error('❌ Erro no upload do arquivo:', uploadError);
-          setSubmitErrors([uploadError.message]);
-          setLoading(false);
-          return;
-        }
+        nomeArquivo = await uploadArquivo(formData.anexo);
       }
-
-      // 🔧🔧🔧 PAYLOAD CORRETO PARA O DTO DO BACKEND (COM CORREÇÕES)
-      const tipoEspecifico = getTipoEspecifico(formData.subtipo);
 
       const payload = {
         nome: anonimo ? null : formData.nome.trim(),
-        email: anonimo ? null : (formData.email ? formData.email.trim() : null), // ✅ ADICIONADO EMAIL
-        descricaoDetalhada: formData.descricaoDetalhada.trim(),
-        tipoEspecifico: tipoEspecifico, // ✅ VALOR DIFERENTE DO SUBTIPO
-        subtipo: formData.subtipo, // ✅ VALOR ORIGINAL DO SELECT
-        anexo: nomeArquivo,
-        localEspecificoDaOcorrencia: formData.localEspecificoDaOcorrencia.trim(),
-        anonima: anonimo,
+        email: anonimo ? null : formData.email?.trim(),
         contacto: anonimo ? null : formData.contacto,
+        descricaoDetalhada: formData.descricaoDetalhada.trim(),
+        subtipo: formData.subtipo,
+        anonima: anonimo,
         dataOcorrecia: formData.dataOcorrecia,
         municipio: formData.municipio,
         bairro: formData.bairro,
         nomeRua: formData.nomeRua.trim(),
-        local: formData.localEspecificoDaOcorrencia.trim(),
+        localEspecificoDaOcorrencia: formData.localEspecificoDaOcorrencia.trim(),
+        anexo: nomeArquivo,
         categoriaNome: "Água"
       };
 
-      // ✅ DEBUG PARA VERIFICAR OS DADOS ENVIADOS
-      console.log('📤 Enviando payload para DTO:', {
-        ...payload,
-        tipoEspecifico,
-        subtipo: formData.subtipo,
-        emailIncluido: !!(anonimo ? null : formData.email)
-      });
-      console.log('📤 Email do formData:', formData.email);
-      console.log('📤 Anônimo?:', anonimo);
-      console.log('📤 Tipo Específico:', tipoEspecifico);
-      console.log('📤 Subtipo:', formData.subtipo);
-      console.log('📤 URL: http://localhost:9090/api/denuncias');
-
-      // Enviar denúncia
       const res = await fetch("http://localhost:9090/api/denuncias", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
 
-      console.log('📥 Resposta recebida:', res.status, res.statusText);
-
       if (res.ok) {
         const nova = await res.json();
-        console.log('✅ Denúncia salva com sucesso:', nova);
-        console.log('✅ Email salvo?', nova.email);
-        console.log('✅ Tipo Específico salvo?', nova.tipoEspecifico);
-        console.log('✅ Subtipo salvo?', nova.subtipo);
-
-        setDenuncias(prev => [...prev, nova]);
-
-        // Reset do formulário
-        setFormData({
-          localEspecificoDaOcorrencia: '',
-          municipio: 'Luanda',
-          bairro: 'Sambizanga',
-          nomeRua: '',
-          dataOcorrecia: '',
-          subtipo: 'agua_inexistente',
-          descricaoDetalhada: '',
-          nome: '',
-          contacto: '',
-          email: '',
-          anexo: null
-        });
-
-        setAnonimo(false);
-        setErrors({});
-        setTouched({});
+        const dadosCompletos = { ...nova, ...payload, codigo: nova.codigo };
+        setDenunciaFinal(dadosCompletos);
+        setCodigoDenuncia(nova.codigo);
         setSubmitSuccess(true);
-
+        setFormData({
+          localEspecificoDaOcorrencia: '', municipio: 'Luanda', bairro: 'Sambizanga',
+          nomeRua: '', dataOcorrecia: '', subtipo: 'agua_inexistente', descricaoDetalhada: '',
+          nome: '', contacto: '', email: '', anexo: null
+        });
         setTimeout(() => setSubmitSuccess(false), 5000);
-        fetchDenuncias();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else setSubmitErrors([await res.text()]);
+    } catch (err) { setSubmitErrors([err.message]); }
+    finally { setLoading(false); }
+  };
 
-      } else {
-        const errorText = await res.text();
-        console.error('❌ Erro no POST:', res.status, errorText);
-
-        // Melhor tratamento de erro
-        let errorMessage = 'Erro ao enviar denúncia.';
-
-        // Verificar tipo de erro
-        if (!res.ok) {
-          if (res.status === 0 || res.status >= 500) {
-            errorMessage = 'Erro no servidor. Tente novamente mais tarde.';
-          } else if (res.status === 404) {
-            errorMessage = 'Endpoint não encontrado. Verifique a URL.';
-          } else if (res.status === 400) {
-            errorMessage = 'Dados inválidos. Verifique os campos.';
-          } else if (res.status === 401 || res.status === 403) {
-            errorMessage = 'Acesso não autorizado.';
-          } else if (res.status === 415) {
-            errorMessage = 'Tipo de conteúdo não suportado.';
-          }
-        }
-
-        // Tentar extrair mensagem do backend
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.message || errorData.error || errorMessage;
-        } catch {
-          if (errorText && errorText.trim() !== '') {
-            errorMessage = errorText;
-          }
-        }
-
-        console.error('❌ Erro detalhado:', errorMessage);
-        setSubmitErrors([errorMessage]);
-      }
-    } catch (err) {
-      console.error('❌ handleSubmit catch:', err);
-
-      // Identificar tipo de erro
-      let errorMessage = 'Falha ao conectar com servidor.';
-
-      if (err.name === 'TypeError' && err.message.includes('Failed to fetch')) {
-        errorMessage = 'Não foi possível conectar ao servidor. Verifique:';
-        errorMessage += '\n1. O backend está rodando?';
-        errorMessage += '\n2. A URL está correta?';
-        errorMessage += '\n3. Há problemas de CORS?';
-      } else if (err.message && err.message.includes('NetworkError')) {
-        errorMessage = 'Erro de rede. Verifique sua conexão com a internet.';
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-
-      console.error('❌ Erro final:', errorMessage);
-      setSubmitErrors([errorMessage]);
-
-    } finally {
-      setLoading(false);
+ const gerarImagem = async () => {
+  try {
+    if (!comprovativoRef.current || !denunciaFinal) {
+      console.error('Referência ou dados não disponíveis');
+      alert('Aguardando dados do comprovativo...');
+      return;
     }
-  };
-
-  // --- EXIBIR STATUS VISUAL ---
-  const renderStatusBadge = (d) => {
-    const status = d.status || (d.resposta ? 'Resolvido' : 'Pendente');
-    if (status === 'Resolvido' || status === 'Concluído') {
-      return <span className="badge bg-success"><FaCheckCircle className="me-1" /> {status}</span>;
+    
+    // DIAGNÓSTICO: Verifica o conteúdo do elemento
+    console.log('Conteúdo HTML do elemento:', comprovativoRef.current.innerHTML);
+    console.log('Dimensões:', {
+      width: comprovativoRef.current.offsetWidth,
+      height: comprovativoRef.current.offsetHeight,
+      scrollWidth: comprovativoRef.current.scrollWidth,
+      scrollHeight: comprovativoRef.current.scrollHeight
+    });
+    
+    // Verifica se tem o código
+    console.log('Código da denúncia:', denunciaFinal.codigo);
+    
+    // Aguarda a renderização
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Força o reflow do DOM
+    comprovativoRef.current.offsetHeight;
+    
+    const canvas = await html2canvas(comprovativoRef.current, { 
+      scale: 2, 
+      backgroundColor: '#ffffff'
+    });
+    
+    // Verifica se o canvas tem conteúdo
+    if (canvas.width === 0 || canvas.height === 0) {
+      throw new Error('Canvas gerado com dimensões zero');
     }
-    return <span className="badge bg-warning text-dark"><FaHourglassHalf className="me-1" /> {status}</span>;
-  };
+    
+    const link = document.createElement("a");
+    link.href = canvas.toDataURL("image/png");
+    link.download = `comprovativo_${denunciaFinal.codigo}.png`;
+    link.click();
+    
+  } catch (error) {
+    console.error('ERRO AO GERAR IMAGEM:', error);
+    alert('Erro ao gerar o comprovativo: ' + error.message + '\n\nVerifique o console para mais detalhes.');
+  }
+};
 
-  // --- FORMATAR CONTACTO ---
-  const formatarContacto = (valor) => {
-    if (!valor) return '';
-    const apenasNumeros = valor.replace(/\D/g, '');
-    if (apenasNumeros.length <= 3) return apenasNumeros;
-    if (apenasNumeros.length <= 6) return `${apenasNumeros.slice(0, 3)} ${apenasNumeros.slice(3)}`;
-    return `${apenasNumeros.slice(0, 3)} ${apenasNumeros.slice(3, 6)} ${apenasNumeros.slice(6, 9)}`;
-  };
+  const getTipoLabel = (subtipo) => tiposProblema.find(t => t.value === subtipo)?.label || subtipo;
 
-  // --- INTERFACE ---
-  return (
-    <div className="page">
-      <main>
-        <div className="container py-4">
+  useEffect(() => {
+    fetch("http://localhost:9090/api/denuncias")
+      .then(res => res.json())
+      .then(data => setDenuncias(data.filter(d => d.categoriaNome === "Água") || []))
+      .catch(console.error);
+  }, []);
 
-          {/* MENSAGEM DE SUCESSO */}
-          {submitSuccess && (
-            <div className="alert alert-success alert-dismissible fade show" role="alert">
-              <FaCheck className="me-2" />
-              <strong>✅ Denúncia registrada com sucesso!</strong> Sua denúncia foi enviada e será analisada.
-              <button type="button" className="btn-close" onClick={() => setSubmitSuccess(false)}></button>
+  if (tipo === "registrar") {
+    return (
+      <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: "'Inter', sans-serif" }}>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+        {/* Hero Section */}
+        <div style={{ background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)', padding: '3rem 1rem', textAlign: 'center' }}>
+          <div style={{ display: 'inline-flex', padding: '1rem', borderRadius: '50%', background: 'rgba(212,175,55,0.15)', marginBottom: '1rem' }}>
+            <FaTint style={{ fontSize: '2rem', color: '#D4AF37' }} />
+          </div>
+          <h1 style={{ color: '#D4AF37', fontSize: '2rem', fontWeight: 'bold', margin: 0 }}>Registrar Denúncia - Água</h1>
+          <p style={{ color: '#aaa', marginTop: '0.5rem' }}>Preencha os dados abaixo para registrar sua denúncia sobre problemas de água</p>
+        </div>
+
+        {/* Formulário */}
+        <div style={{ maxWidth: '800px', margin: '-40px auto 0', padding: '2rem', background: 'white', borderRadius: '20px', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
+          {submitSuccess && <div style={{ background: '#10b981', color: 'white', padding: '1rem', borderRadius: '12px', marginBottom: '1rem' }}>✅ Denúncia registrada com sucesso!</div>}
+          {submitErrors.map((e, i) => <div key={i} style={{ background: '#ef4444', color: 'white', padding: '0.5rem 1rem', borderRadius: '8px', marginBottom: '0.5rem' }}>❌ {e}</div>)}
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}><FaListAlt style={{ color: '#D4AF37' }} /> Tipo de Problema *</label>
+            <select name="subtipo" value={formData.subtipo} onChange={handleChange} onBlur={handleBlur} style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${errors.subtipo ? '#ef4444' : '#e5e7eb'}` }}>
+              {tiposProblema.map(t => <option key={t.value} value={t.value}>{t.icon} {t.label}</option>)}
+            </select>
+            {errors.subtipo && <small style={{ color: '#ef4444' }}>{errors.subtipo}</small>}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div>
+              <label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}><FaMapMarkerAlt style={{ color: '#D4AF37' }} /> Município *</label>
+              <select name="municipio" value={formData.municipio} onChange={handleChange} onBlur={handleBlur} style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${errors.municipio ? '#ef4444' : '#e5e7eb'}` }}>
+                {municipios.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+              {errors.municipio && <small style={{ color: '#ef4444' }}>{errors.municipio}</small>}
+            </div>
+            <div>
+              <label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}><FaMapMarkerAlt style={{ color: '#D4AF37' }} /> Bairro *</label>
+              <select name="bairro" value={formData.bairro} onChange={handleChange} onBlur={handleBlur} style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${errors.bairro ? '#ef4444' : '#e5e7eb'}` }}>
+                {(bairrosPorMunicipio[formData.municipio] || []).map(b => <option key={b} value={b}>{b}</option>)}
+              </select>
+              {errors.bairro && <small style={{ color: '#ef4444' }}>{errors.bairro}</small>}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}><FaMapMarkerAlt style={{ color: '#D4AF37' }} /> Nome da Rua / Número *</label>
+            <input type="text" name="nomeRua" value={formData.nomeRua} onChange={handleChange} onBlur={handleBlur} placeholder="Ex: Rua 12 de Julho, nº 45" style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${errors.nomeRua ? '#ef4444' : '#e5e7eb'}` }} />
+            {errors.nomeRua && <small style={{ color: '#ef4444' }}>{errors.nomeRua}</small>}
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}><FaMapMarkerAlt style={{ color: '#D4AF37' }} /> Local Específico da Avaria *</label>
+            <input type="text" name="localEspecificoDaOcorrencia" value={formData.localEspecificoDaOcorrencia} onChange={handleChange} onBlur={handleBlur} placeholder="Ex: Canal, reservatório, torneira pública..." style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${errors.localEspecificoDaOcorrencia ? '#ef4444' : '#e5e7eb'}` }} />
+            {errors.localEspecificoDaOcorrencia && <small style={{ color: '#ef4444' }}>{errors.localEspecificoDaOcorrencia}</small>}
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}><FaCalendarAlt style={{ color: '#D4AF37' }} /> Data da Ocorrência *</label>
+            <input type="date" name="dataOcorrecia" value={formData.dataOcorrecia} onChange={handleChange} onBlur={handleBlur} max={new Date().toISOString().split('T')[0]} style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${errors.dataOcorrecia ? '#ef4444' : '#e5e7eb'}` }} />
+            {errors.dataOcorrecia && <small style={{ color: '#ef4444' }}>{errors.dataOcorrecia}</small>}
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}><FaFileAlt style={{ color: '#D4AF37' }} /> Descrição Detalhada *</label>
+            <textarea name="descricaoDetalhada" value={formData.descricaoDetalhada} onChange={handleChange} onBlur={handleBlur} rows="4" placeholder="Descreva detalhadamente o problema..." style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${errors.descricaoDetalhada ? '#ef4444' : '#e5e7eb'}`, resize: 'vertical' }} />
+            {errors.descricaoDetalhada && <small style={{ color: '#ef4444' }}>{errors.descricaoDetalhada}</small>}
+            <small style={{ color: '#666' }}>Mínimo 10 caracteres</small>
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}>
+              <FaPaperclip style={{ color: '#D4AF37' }} /> Anexo (opcional)
+            </label>
+            <input 
+              type="file" 
+              name="anexo" 
+              onChange={(e) => setFormData(prev => ({ ...prev, anexo: e.target.files[0] }))} 
+              accept=".pdf,.jpg,.jpeg,.png"
+              style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '2px solid #e5e7eb' }}
+            />
+            {formData.anexo && (
+              <small style={{ color: '#10b981', display: 'block', marginTop: '0.5rem' }}>
+                ✅ Arquivo selecionado: {formData.anexo.name}
+              </small>
+            )}
+            <small style={{ color: '#666', display: 'block', marginTop: '0.25rem' }}>
+              Formatos permitidos: JPG, PNG, PDF. Máximo: 5MB
+            </small>
+          </div>
+
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+              <input type="checkbox" checked={anonimo} onChange={(e) => setAnonimo(e.target.checked)} />
+              <span>Deseja permanecer anônimo?</span>
+            </label>
+          </div>
+
+          {!anonimo && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div><input type="text" name="nome" value={formData.nome} onChange={handleChange} onBlur={handleBlur} placeholder="Nome completo" style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${errors.nome ? '#ef4444' : '#e5e7eb'}` }} /><small style={{ color: '#ef4444' }}>{errors.nome}</small></div>
+              <div><input type="tel" name="contacto" value={formData.contacto} onChange={handleChange} onBlur={handleBlur} placeholder="Contacto (9XXXXXXXX)" style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${errors.contacto ? '#ef4444' : '#e5e7eb'}` }} /><small style={{ color: '#ef4444' }}>{errors.contacto}</small></div>
+              <div style={{ gridColumn: 'span 2' }}><input type="email" name="email" value={formData.email} onChange={handleChange} onBlur={handleBlur} placeholder="Email (opcional)" style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${errors.email ? '#ef4444' : '#e5e7eb'}` }} /><small style={{ color: '#ef4444' }}>{errors.email}</small></div>
             </div>
           )}
-          {submitErrors.length > 0 && (
-            <div className="alert alert-danger alert-dismissible fade show" role="alert">
-              <FaTimes className="me-2" />
-              <strong>Erro ao enviar denúncia:</strong>
-              <ul className="mb-0 mt-2">
-                {submitErrors.map((error, index) => (
-                  <li key={index}>{error}</li>
-                ))}
-              </ul>
-              <button type="button" className="btn-close" onClick={() => setSubmitErrors([])}></button>
+
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+            <button onClick={() => window.history.back()} style={{ padding: '0.75rem 1.5rem', borderRadius: '50px', border: '2px solid #D4AF37', background: 'transparent', color: '#D4AF37', fontWeight: 'bold', cursor: 'pointer' }}><FaArrowLeft /> Voltar</button>
+            <button onClick={() => { const newErrors = {}; Object.keys(formData).forEach(k => { const err = validarCampo(k, formData[k]); if (err) newErrors[k] = err; }); setErrors(newErrors); if (Object.keys(newErrors).length === 0) setShowPreview(true); }} style={{ flex: 1, padding: '0.75rem', borderRadius: '50px', border: 'none', background: 'linear-gradient(135deg, #D4AF37, #FFE55C)', color: '#000', fontWeight: 'bold', cursor: 'pointer' }}>Enviar Denúncia</button>
+          </div>
+        </div>
+
+        {/* Modal Preview */}
+        {showPreview && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+            <div style={{ background: 'white', borderRadius: '20px', maxWidth: '500px', width: '90%', maxHeight: '80vh', overflow: 'auto', padding: '2rem' }}>
+              <h3 style={{ color: '#D4AF37' }}>Revisar Denúncia</h3>
+              <hr />
+              <p><strong>Tipo:</strong> {tiposProblema.find(t => t.value === formData.subtipo)?.label}</p>
+              <p><strong>Local:</strong> {formData.municipio}, {formData.bairro}, {formData.nomeRua}</p>
+              <p><strong>Data:</strong> {formData.dataOcorrecia}</p>
+              <p><strong>Descrição:</strong> {formData.descricaoDetalhada}</p>
+              {!anonimo && <><p><strong>Nome:</strong> {formData.nome}</p><p><strong>Contacto:</strong> {formData.contacto}</p><p><strong>Email:</strong> {formData.email}</p></>}
+              {formData.anexo && <p><strong>Anexo:</strong> {formData.anexo.name}</p>}
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                <button onClick={() => setShowPreview(false)} style={{ padding: '0.75rem 1.5rem', borderRadius: '50px', border: '2px solid #ccc', background: 'white', cursor: 'pointer' }}>Editar</button>
+                <button onClick={async () => { setShowPreview(false); await handleSubmit(); }} style={{ flex: 1, padding: '0.75rem', borderRadius: '50px', border: 'none', background: 'linear-gradient(135deg, #D4AF37, #FFE55C)', fontWeight: 'bold', cursor: 'pointer' }}>{loading ? 'Enviando...' : 'Confirmar'}</button>
+              </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* FORMULÁRIO DE DENÚNCIA */}
-          {tipo === "registrar" && (
-            <form className="container mt-5" onSubmit={handleSubmit} style={{ maxWidth: "800px" }}>
-              <h3 className="mb-4 text-primary">
-                <FaTint className="me-2 text-primary" /> Registrar Ocorrência - Setor de Água
-              </h3>
-
-              {/* LOCAL */}
-              <div className="mb-3">
-                <label htmlFor="localEspecificoDaOcorrencia" className="form-label">
-                  <FaMapMarkerAlt className="me-2" /> Local Específico da avaria *
-                </label>
-                <input
-                  type="text"
-                  id="localEspecificoDaOcorrencia"
-                  name="localEspecificoDaOcorrencia"
-                  value={formData.localEspecificoDaOcorrencia}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={`form-control ${errors.localEspecificoDaOcorrencia ? 'is-invalid' : touched.localEspecificoDaOcorrencia && !errors.localEspecificoDaOcorrencia ? 'is-valid' : ''}`}
-                  placeholder="Ex: Canal, reservatório, torneira pública..."
-                  maxLength="100"
-                />
-                {errors.localEspecificoDaOcorrencia && <div className="invalid-feedback">{errors.localEspecificoDaOcorrencia}</div>}
-                <small className="text-muted">Mínimo 3 caracteres. Deve incluir pelo menos uma letra.</small>
+        {/* Modal Comprovativo  */}
+        {denunciaFinal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+            <div style={{ background: 'white', borderRadius: '20px', maxWidth: '600px', width: '90%', padding: '2rem' }}>
+              <h3 style={{ color: '#10b981' }}>✅ Denúncia Registada!</h3>
+              <p><strong>Código:</strong> <span style={{ fontFamily: 'monospace', fontSize: '1.2rem' }}>{denunciaFinal.codigo}</span></p>
+              <hr />
+              <p><strong>Tipo:</strong> {getTipoLabel(denunciaFinal.subtipo)}</p>
+              <p><strong>Local:</strong> {denunciaFinal.municipio}, {denunciaFinal.bairro}</p>
+              <p><strong>Data:</strong> {new Date(denunciaFinal.dataOcorrecia).toLocaleDateString('pt-AO')}</p>
+              <p><strong>Descrição:</strong> {denunciaFinal.descricaoDetalhada}</p>
+              <p><strong>Nome:</strong> {denunciaFinal.nome || 'Anónimo'}</p>
+              <p><strong>Contacto:</strong> {denunciaFinal.contacto || 'Não informado'}</p>
+              <p><strong>Email:</strong> {denunciaFinal.email || 'Não informado'}</p>
+              <p><strong>Anexo:</strong> {denunciaFinal.anexo || 'Nenhum anexo'}</p>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                <button onClick={() => setDenunciaFinal(null)} style={{ padding: '0.75rem 1.5rem', borderRadius: '50px', border: '2px solid #ccc', background: 'white', cursor: 'pointer' }}>Fechar</button>
+                <button onClick={gerarImagem} style={{ flex: 1, padding: '0.75rem', borderRadius: '50px', border: 'none', background: 'linear-gradient(135deg, #D4AF37, #FFE55C)', fontWeight: 'bold', cursor: 'pointer' }}>📥 Baixar Comprovativo</button>
               </div>
+            </div>
+          </div>
+        )}
 
-              {/* MUNICÍPIO */}
-              <div className="mb-3">
-                <label htmlFor="municipio" className="form-label">
-                  <FaMapMarkerAlt className="me-2" /> Município *
-                </label>
-                <select
-                  id="municipio"
-                  name="municipio"
-                  value={formData.municipio}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={`form-select ${errors.municipio ? 'is-invalid' : touched.municipio && !errors.municipio ? 'is-valid' : ''}`}
-                >
-                  <option value="">Selecione o município...</option>
-                  {municipios.map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
-                {errors.municipio && <div className="invalid-feedback">{errors.municipio}</div>}
-              </div>
-
-              {/* BAIRRO */}
-              {formData.municipio && (
-                <div className="mb-3">
-                  <label htmlFor="bairro" className="form-label">
-                    <FaMapMarkerAlt className="me-2" /> Bairro *
-                  </label>
-                  <select
-                    id="bairro"
-                    name="bairro"
-                    value={formData.bairro}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className={`form-select ${errors.bairro ? 'is-invalid' : touched.bairro && !errors.bairro ? 'is-valid' : ''}`}
-                  >
-                    <option value="">Selecione o bairro...</option>
-                    {(bairrosPorMunicipio[formData.municipio] || []).map((b) => (
-                      <option key={b} value={b}>{b}</option>
-                    ))}
-                  </select>
-                  {errors.bairro && <div className="invalid-feedback">{errors.bairro}</div>}
-                </div>
-              )}
-
-              {/* RUA */}
-              <div className="mb-3">
-                <label htmlFor="nomeRua" className="form-label">
-                  <FaMapMarkerAlt className="me-2" /> Nome da Rua / Número *
-                </label>
-                <input
-                  type="text"
-                  id="nomeRua"
-                  name="nomeRua"
-                  value={formData.nomeRua}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={`form-control ${errors.nomeRua ? 'is-invalid' : touched.nomeRua && !errors.nomeRua ? 'is-valid' : ''}`}
-                  placeholder="Ex: Rua 12 de Julho, nº 45"
-                  maxLength="100"
-                />
-                {errors.nomeRua && <div className="invalid-feedback">{errors.nomeRua}</div>}
-                <small className="text-muted">Mínimo 2 caracteres. Deve incluir pelo menos uma letra.</small>
-              </div>
-
-              {/* DATA */}
-              <div className="mb-3">
-                <label htmlFor="dataOcorrecia" className="form-label">
-                  <FaCalendarAlt className="me-2" /> Data da Ocorrência *
-                </label>
-                <input
-                  type="date"
-                  id="dataOcorrecia"
-                  name="dataOcorrecia"
-                  value={formData.dataOcorrecia}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={`form-control ${errors.dataOcorrecia ? 'is-invalid' : touched.dataOcorrecia && !errors.dataOcorrecia ? 'is-valid' : ''}`}
-                  max={new Date().toISOString().split('T')[0]}
-                  min={new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString().split('T')[0]}
-                />
-                {errors.dataOcorrecia && <div className="invalid-feedback">{errors.dataOcorrecia}</div>}
-                <small className="text-muted">Máximo 1 ano atrás</small>
-              </div>
-
-              {/* SUBTIPO */}
-              <div className="mb-3">
-                <label htmlFor="subtipo" className="form-label">
-                  <FaListAlt className="me-2" /> Tipo Específico *
-                </label>
-                <select
-                  id="subtipo"
-                  name="subtipo"
-                  value={formData.subtipo}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={`form-select ${errors.subtipo ? 'is-invalid' : touched.subtipo && !errors.subtipo ? 'is-valid' : ''}`}
-                >
-                  <option value="">Selecione o tipo de problema...</option>
-                  <option value="agua_inexistente">Falta total de água</option>
-                  <option value="agua_suja">Água contaminada/suja</option>
-                  <option value="vazamento">Vazamento</option>
-                  <option value="conta_abusiva">Cobrança indevida</option>
-                  <option value="infraestrutura">Problemas na infraestrutura</option>
-                  <option value="desperdicio">Desperdício</option>
-                  <option value="corte">Corte Abusivo</option>
-                </select>
-                {errors.subtipo && <div className="invalid-feedback">{errors.subtipo}</div>}
-                <small className="text-muted">
-                  Será salvo como: <strong>{getTipoEspecifico(formData.subtipo)}</strong>
-                </small>
-              </div>
-
-              {/* DESCRIÇÃO */}
-              <div className="mb-3">
-                <label htmlFor="descricaoDetalhada" className="form-label">
-                  <FaFileAlt className="me-2" /> Descrição Detalhada *
-                </label>
-                <textarea
-                  id="descricaoDetalhada"
-                  name="descricaoDetalhada"
-                  value={formData.descricaoDetalhada}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={`form-control ${errors.descricaoDetalhada ? 'is-invalid' : touched.descricaoDetalhada && !errors.descricaoDetalhada ? 'is-valid' : ''}`}
-                  rows="4"
-                  placeholder="Descreva detalhadamente o problema encontrado..."
-                  maxLength="1000"
-                />
-                {errors.descricaoDetalhada && <div className="invalid-feedback">{errors.descricaoDetalhada}</div>}
-                <small className="text-muted">
-                  Mínimo 10 caracteres. Deve incluir pelo menos uma letra.
-                  Restam {1000 - formData.descricaoDetalhada.length} caracteres
-                </small>
-              </div>
-
-              {/* IDENTIFICAÇÃO */}
-              {!anonimo && (
-                <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <label htmlFor="nome" className="form-label">
-                      <FaUser className="me-2" /> Nome do Denunciante *
-                    </label>
-                    <input
-                      type="text"
-                      id="nome"
-                      name="nome"
-                      value={formData.nome}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      className={`form-control ${errors.nome ? 'is-invalid' : touched.nome && !errors.nome ? 'is-valid' : ''}`}
-                      placeholder="Seu nome completo"
-                      maxLength="100"
-                    />
-                    {errors.nome && <div className="invalid-feedback">{errors.nome}</div>}
-                    <small className="text-muted">Apenas letras, nome e sobrenome</small>
-                  </div>
-
-                  <div className="col-md-6 mb-3">
-                    <label htmlFor="contacto" className="form-label">
-                      <FaPhoneAlt className="me-2" /> Contacto *
-                    </label>
-                    <input
-                      type="tel"
-                      id="contacto"
-                      name="contacto"
-                      value={formatarContacto(formData.contacto)}
-                      onChange={(e) => {
-                        const apenasNumeros = e.target.value.replace(/\D/g, '');
-                        setFormData(prev => ({ ...prev, contacto: apenasNumeros }));
-                      }}
-                      onBlur={handleBlur}
-                      className={`form-control ${errors.contacto ? 'is-invalid' : touched.contacto && !errors.contacto ? 'is-valid' : ''}`}
-                      placeholder="9XX XXX XXX"
-                      maxLength="11"
-                    />
-                    {errors.contacto && <div className="invalid-feedback">{errors.contacto}</div>}
-                    <small className="text-muted">Formato: 9XXXXXXXX (9 dígitos)</small>
-                  </div>
-                </div>
-              )}
-
-              {/* EMAIL (OPCIONAL) - Agora será salvo no backend */}
-              {!anonimo && (
-                <div className="mb-3">
-                  <label htmlFor="email" className="form-label">
-                    <FaEnvelope className="me-2" /> Email (opcional)
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className={`form-control ${errors.email ? 'is-invalid' : touched.email && !errors.email ? 'is-valid' : ''}`}
-                    placeholder="seu.email@exemplo.com"
-                    maxLength="100"
-                  />
-                  {errors.email && <div className="invalid-feedback">{errors.email}</div>}
-                  <small className="text-muted">Para contato adicional (opcional)</small>
-                </div>
-              )}
-
-              {/* ANEXO */}
-              <div className="mb-3">
-                <label htmlFor="anexo" className="form-label">
-                  <FaPaperclip className="me-2" /> Anexo (opcional)
-                </label>
-                <input
-                  type="file"
-                  id="anexo"
-                  name="anexo"
-                  onChange={handleChange}
-                  className={`form-control ${errors.anexo ? 'is-invalid' : ''}`}
-                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                />
-                {errors.anexo && <div className="invalid-feedback">{errors.anexo}</div>}
-                {formData.anexo && !errors.anexo && (
-                  <div className="mt-2">
-                    <small className="text-success">
-                      <FaCheck className="me-1" />
-                      Arquivo selecionado: {formData.anexo.name}
-                    </small>
-                    <small className="d-block text-muted">
-                      Tamanho: {(formData.anexo.size / 1024).toFixed(2)} KB
-                    </small>
-                  </div>
-                )}
-                <small className="text-muted">Tipos permitidos: JPG, PNG, PDF, DOC. Máximo: 5MB</small>
-              </div>
-
-              {/* ANÔNIMO */}
-              <div className="form-check mb-4">
-                <input
-                  type="checkbox"
-                  id="anonimo"
-                  name="anonimo"
-                  className="form-check-input"
-                  checked={anonimo}
-                  onChange={(e) => {
-                    const isChecked = e.target.checked;
-                    setAnonimo(isChecked);
-                    if (isChecked) {
-                      setErrors(prev => {
-                        const newErrors = { ...prev };
-                        delete newErrors.nome;
-                        delete newErrors.contacto;
-                        delete newErrors.email;
-                        return newErrors;
-                      });
-                    }
-                  }}
-                />
-                <label htmlFor="anonimo" className="form-check-label">Deseja permanecer anônimo?</label>
-                {anonimo && (
-                  <small className="d-block text-muted mt-1">
-                    <FaExclamationCircle className="me-1" />
-                    Se selecionar esta opção, seu nome, contacto e email não serão armazenados.
-                  </small>
-                )}
-              </div>
-
-              {/* RESUMO DOS CAMPOS OBRIGATÓRIOS 
-              <div className="alert alert-info mb-4">
-                <FaExclamationCircle className="me-2" />
-                <strong>Campos marcados com * são obrigatórios.</strong> Todos os dados serão tratados com confidencialidade.
-              </div>*/}
-
-              <button
-                type="submit"
-                className="btn btn-primary w-100 py-2"
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                    Enviando...
-                  </>
-                ) : (
-                  <>
-                    <FaFileAlt className="me-2" />
-                    Enviar Denúncia
-                  </>
-                )}
-              </button>
-            </form>
-          )}
-
-          {/* LISTAGEM DE DENÚNCIAS (COM AS CORREÇÕES SOLICITADAS) */}
-          {tipo === "minhas" && (
-            <div className="container mt-5">
-              <h2 className="mb-4 text-success">
-                <FaListAlt className="me-2" /> Minhas Denúncias - Setor de Água
-              </h2>
-
-              {loading ? (
-                <div className="text-center">
-                  <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Carregando...</span>
-                  </div>
-                  <p className="mt-2">Carregando denúncias...</p>
-                </div>
-              ) : denuncias.length === 0 ? (
-                <div className="alert alert-info">
-                  <FaExclamationCircle className="me-2" />
-                  Ainda não existem denúncias registadas para o setor de água.
-                </div>
-              ) : (
-                <div className="table-responsive">
-                  <table className="table table-bordered table-striped table-hover">
-                    <thead className="table-light">
-                      <tr>
-                        <th><FaExclamationCircle className="me-2 text-danger" /> Problema</th>
-                        <th><FaFileAlt className="me-2 text-primary" /> Descrição</th>
-                        <th><FaMapMarkerAlt className="me-2" /> Localização</th>
-                        <th><FaClock className="me-2" /> Data e Hora do Registro</th>
-                        <th><FaCheckCircle className="me-2 text-success" /> Status</th>
-                        <th><FaComments className="me-2 text-info" /> Comentário / Resposta</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {denuncias.map((d) => (
-                        <tr key={d.pkDenuncia || d.id}>
-                          <td>
-                            <strong>
-                              {d.tipoEspecifico ? d.tipoEspecifico : (
-                                d.subtipo === 'agua_inexistente' ? 'Falta total de água' :
-                                  d.subtipo === 'agua_suja' ? 'Água contaminada' :
-                                    d.subtipo === 'vazamento' ? 'Vazamento' :
-                                      d.subtipo === 'conta_abusiva' ? 'Cobrança indevida' :
-                                        d.subtipo === 'infraestrutura' ? 'Problemas na infraestrutura' :
-                                          d.subtipo === 'desperdicio' ? 'Desperdício' :
-                                            d.subtipo === 'corte' ? 'Corte Abusivo' :
-                                              d.subtipo || 'Não especificado'
-                              )}
-                            </strong>
-                          </td>
-
-                          <td style={{ maxWidth: 300 }}>
-                            <div className="text-truncate" title={d.descricaoDetalhada || d.descricao}>
-                              {d.descricaoDetalhada || d.descricao}
-                            </div>
-                          </td>
-
-                          <td>
-                            <div className="location-info">
-                              <div className="mb-2">
-                                <span className="fw-semibold">Província:</span> {d.provincia || 'Luanda'}
-                              </div>
-                              <div className="mb-2">
-                                <span className="fw-semibold">Município:</span> {d.municipio || '—'}
-                              </div>
-                              <div className="mb-2">
-                                <span className="fw-semibold">Bairro:</span> {d.bairro || 'Zango 4'}
-                              </div>
-                              <div className="mb-2">
-                                <span className="fw-semibold">Rua:</span> {d.nomeRua || 'np'}
-                              </div>
-
-                              <div className="mb-3">
-                                <span className="fw-semibold">Local específico da avaria:</span> {d.localEspecificoDaOcorrencia || 'torneira'}
-                              </div>
-
-                              {d.email && (
-                                <div className="mb-2 text-muted">
-                                  <FaEnvelope className="me-1" />
-                                  email: {d.email}
-                                </div>
-                              )}
-
-                              {d.contacto && (
-                                <div className="mb-2 text-muted">
-                                  <FaPhoneAlt className="me-1" />
-                                  contacto: {formatarContacto(d.contacto)}
-                                </div>
-                              )}
-
-                              {/* ANEXO */}
-                              {d.anexo && (
-                                <div className="mb-2 text-muted">
-                                  <FaPaperclip className="me-1" />
-                                  Anexo: {d.anexo}
-                                </div>
-                              )}
-                            </div>
-                          </td>
-
-
-                          <td>
-                            <div className="datetime-info">
-                              {d.dataRegistro ? (
-                                <>
-                                  <div>
-                                    {new Date(d.dataRegistro).toLocaleDateString('pt-AO', {
-                                      day: '2-digit',
-                                      month: '2-digit',
-                                      year: 'numeric'
-                                    })}
-                                  </div>
-                                  <div className="small text-muted">
-                                    <FaClock className="me-1" />
-                                    {new Date(d.dataRegistro).toLocaleTimeString('pt-AO', {
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                      hour12: false
-                                    })}
-                                  </div>
-                                </>
-                              ) : (
-                                '—'
-                              )}
-                            </div>
-                          </td>
-
-                          {/* COLUNA STATUS */}
-                          <td>{renderStatusBadge(d)}</td>
-
-                          <td>
-                            <em>{d.resposta?.comentario || d.comentario || 'Aguardando resposta...'}</em>
-                            {d.resposta && d.resposta.dataResposta && (
-                              <small className="d-block text-muted">
-                                Respondido em: {new Date(d.resposta.dataResposta).toLocaleDateString('pt-AO', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric'
-                                })}
-                              </small>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+        {/* Comprovativo para impressão  */}
+        <div ref={comprovativoRef} style={{ position: 'fixed', top: '-9999px', left: 0,  width: '800px', padding: '20px', background: 'white' }}>
+          {denunciaFinal && (
+            <div style={{ padding: '20px', border: '1px solid #D4AF37', borderRadius: '10px' }}>
+              <h2 style={{ textAlign: 'center', color: '#D4AF37' }}>REPÚBLICA DE ANGOLA</h2>
+              <h4 style={{ textAlign: 'center' }}>COMPROVATIVO DE DENÚNCIA - ÁGUA</h4>
+              <hr />
+              <p><strong>Código:</strong> {denunciaFinal.codigo}</p>
+              <p><strong>Tipo:</strong> {getTipoLabel(denunciaFinal.subtipo)}</p>
+              <p><strong>Local:</strong> {denunciaFinal.municipio}, {denunciaFinal.bairro}</p>
+              <p><strong>Data da ocorrência:</strong> {new Date(denunciaFinal.dataOcorrecia).toLocaleDateString('pt-AO')}</p>
+              <p><strong>Descrição:</strong> {denunciaFinal.descricaoDetalhada}</p>
+              <p><strong>Nome:</strong> {denunciaFinal.nome || 'Anónimo'}</p>
+              <p><strong>Contacto:</strong> {denunciaFinal.contacto || 'Não informado'}</p>
+              <p><strong>Email:</strong> {denunciaFinal.email || 'Não informado'}</p>
+              <p><strong>Anexo:</strong> {denunciaFinal.anexo || 'Nenhum anexo'}</p>
+              <hr />
+              <p style={{ textAlign: 'center', fontSize: '12px' }}>Guarde este código para acompanhar sua denúncia</p>
             </div>
           )}
         </div>
-      </main>
+      </div>
+    );
+  }
+
+  // Listagem
+  return (
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem 1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+        <FaTint style={{ color: '#D4AF37', fontSize: '2rem' }} />
+        <h2 style={{ color: '#D4AF37', margin: 0, fontWeight: 'bold' }}>Denúncias - Água</h2>
+      </div>
+
+      {denuncias.length === 0 ? (
+        <div style={{ background: '#e0f2fe', color: '#0369a1', padding: '1rem', borderRadius: '12px', textAlign: 'center' }}>
+          Ainda não existem denúncias registadas para o setor de água.
+        </div>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', background: 'white', borderRadius: '16px', overflow: 'hidden' }}>
+            <thead>
+              <tr style={{ background: '#1a1a1a', color: '#D4AF37' }}>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Problema</th>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Descrição</th>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Localização</th>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Data</th>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Nome</th>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Contacto</th>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Email</th>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Status</th>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Comentário</th>
+
+              </tr>
+            </thead>
+            <tbody>
+              {denuncias.map(d => (
+                <tr key={d.pkDenuncia} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: '1rem' }}><strong>{getTipoLabel(d.subtipo)}</strong></td>
+                  <td style={{ padding: '1rem' }}>{d.descricaoDetalhada?.substring(0, 50)}...</td>
+                  <td style={{ padding: '1rem' }}>{d.municipio}, {d.bairro}</td>
+                  <td style={{ padding: '1rem' }}>{new Date(d.dataOcorrecia).toLocaleDateString('pt-AO')}</td>
+                  <td style={{ padding: '1rem' }}>{d.nome || 'Anónimo'}</td>
+                  <td style={{ padding: '1rem' }}>{d.contacto || '—'}</td>
+                  <td style={{ padding: '1rem' }}>{d.email || '—'}</td>
+                  <td style={{ padding: '1rem' }}>
+                    <span style={{
+                      background: d.status === 'Resolvido' ? '#10b981' : '#f59e0b',
+                      color: 'white',
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '50px',
+                      fontSize: '0.75rem'
+                    }}>
+                      {d.status || 'Pendente'}
+                    </span>
+                   </td>
+                 </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

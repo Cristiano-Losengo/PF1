@@ -49,14 +49,14 @@ public class DenunciaRequestDTO {
     
         public DenunciaRequestDTO(Denuncia denuncia) {
         this.pkDenuncia = denuncia.getPkDenuncia();
-        this.nome = denuncia.getNome();
+        this.nome = denuncia.getPessoa().getNome();
         this.descricaoDetalhada = denuncia.getDescricaoDetalhada();
         this.tipoEspecifico = denuncia.getTipoEspecifico();
         this.subtipo = denuncia.getSubtipo();
         this.anexo = denuncia.getAnexo();
         this.localEspecificoDaOcorrencia = denuncia.getLocalEspecificoDaOcorrencia();
         this.anonima = denuncia.isAnonima();
-//        this.contacto = denuncia.getContacto();
+        this.contacto = denuncia.getContacto();
         this.email = denuncia.getEmail();
         this.dataOcorrecia = denuncia.getDataOcorrecia();
         this.dataRegistro = denuncia.getDataRegistro();

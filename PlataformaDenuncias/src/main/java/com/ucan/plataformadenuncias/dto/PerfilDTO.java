@@ -21,6 +21,6 @@ public class PerfilDTO {
     private Integer estado;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private Set<String> funcionalidades; // Apenas nomes das funcionalidades
-
+    private Set<String> funcionalidades; 
+     private List<Integer> herdarDePerfis;
 }

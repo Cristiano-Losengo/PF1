@@ -243,3 +243,41 @@ h1, h2, h3, h4, h5, h6, .navbar-brand, .fw-bold {
 .breadcrumb-item.active {
   color: #495057;
 }
+
+
+
+
+
+
+  @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate__animated {
+          animation-duration: 0.8s;
+          animation-fill-mode: both;
+        }
+        
+        .animate__fadeInUp {
+          animation-name: fadeInUp;
+        }
+        
+        .animate__delay-1s {
+          animation-delay: 0.3s;
+        }
+        
+        .hover-card:hover .icon-circle {
+          transform: scale(1.1);
+        }
+        
+        .text-white-70 {
+          color: rgba(255, 255, 255, 0.7);
+        }
+

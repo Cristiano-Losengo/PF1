@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { 
   FaUserPlus, FaUsers, FaToggleOn, FaToggleOff, FaCircle, 
-  FaInfoCircle, FaRoad, FaArrowLeft, FaEdit, FaSave, FaSpinner 
+  FaInfoCircle, FaRoad, FaArrowLeft, FaEdit, FaSave, FaSpinner,
+  FaEnvelope, FaPhoneAlt, FaCalendarAlt, FaIdCard, FaHome
 } from "react-icons/fa";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
@@ -300,13 +301,13 @@ export default function ContaCadastrar() {
     }
   };
 
-  // Função para carregar conta específica para edição
+ 
   const carregarContaParaEdicao = async (idConta) => {
     try {
       setLoading(true);
       console.log("Carregando conta para edição ID:", idConta);
       
-      // Buscar conta específica da API usando o endpoint correto
+     
       const response = await fetch(`http://localhost:9090/api/seguranca/conta_buscar/${idConta}`);
       
       if (!response.ok) {
@@ -327,7 +328,6 @@ export default function ContaCadastrar() {
       setContaId(conta.pkConta);
       setEditando(true);
       
-      // CORREÇÃO: Converter data de nascimento para o formato correto (YYYY-MM-DD)
       let dataNascimentoFormatada = "";
       if (conta.dataNascimento) {
         const data = new Date(conta.dataNascimento);
@@ -350,7 +350,7 @@ export default function ContaCadastrar() {
         identificacao: conta.identificacao || "",
         telefone: conta.telefone || "",
         email: conta.email || "",
-        passwordHash: "", // Deixar vazio na edição
+        passwordHash: "", 
         tipoConta: conta.tipoConta || "",
         fkPerfil: conta.fkPerfil?.toString() || "",
         estado: conta.estado?.toString() || "1",
@@ -388,19 +388,15 @@ export default function ContaCadastrar() {
     }
   };
 
-  // CORREÇÃO: useEffect simplificado e mais robusto
   useEffect(() => {
     console.log("🚀 ContaCadastrar CARREGANDO...");
     console.log("ID da URL:", id);
     
-    // Carregar dados gerais (perfis, gêneros, etc.)
     carregarDados();
     
-    // Verificar se estamos editando via ID na URL
     if (id) {
       console.log("📝 Modo edição via ID da URL:", id);
       
-      // Pequeno delay para garantir que os dados gerais foram carregados
       const timer = setTimeout(() => {
         carregarContaParaEdicao(id);
       }, 500);
@@ -837,7 +833,6 @@ export default function ContaCadastrar() {
       const timeoutId = setTimeout(() => controller.abort(), 30000);
 
       try {
-        // CORREÇÃO: Usar o endpoint correto com base no modo (editar ou cadastrar)
         const url = editando && contaId 
           ? `http://localhost:9090/api/seguranca/conta_atualizar/${contaId}`
           : "http://localhost:9090/api/seguranca/conta_cadastrar";
@@ -1025,711 +1020,217 @@ export default function ContaCadastrar() {
     return formatacoes[nome] || nome;
   };
 
-  return (
-    <div className="container mt-5 d-flex justify-content-center">
-      <div className="card p-4 shadow w-100" style={{ maxWidth: '900px' }}>
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <h3 className="mb-0 text-primary">
-            <FaUserPlus className="me-2" /> Gestão Inteligente - {editando ? 'Editar' : 'Cadastrar'} Conta
-            {editando && contaId && <span className="badge bg-warning ms-2">Editando ID: {contaId}</span>}
-          </h3>
-          
-          {editando && (
-            <button
-              type="button"
-              className="btn btn-light btn-sm px-4 py-2"
-              onClick={() => navigate('/conta/listar')}
-              disabled={isSubmitting}
-              style={{
-                borderRadius: '30px',
-                transition: 'all 0.3s ease',
-                fontWeight: '600',
-                boxShadow: '0 4px 10px rgba(0, 0, 0, 0.15)',
-                border: 'none',
-                background: 'rgba(255, 255, 255, 0.9)',
-                backdropFilter: 'blur(10px)'
-              }}
-            >
-              <FaArrowLeft className="me-2" />
-              Cancelar Edição
-            </button>
-          )}
+  // ==================== ESTILO PND ====================
+  
+  if (carregandoListas) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <FaSpinner style={{ fontSize: '2rem', color: '#D4AF37', animation: 'spin 1s linear infinite' }} />
+          <h4 style={{ marginTop: '1rem' }}>Carregando dados...</h4>
         </div>
+      </div>
+    );
+  }
 
+  return (
+    <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: "'Inter', sans-serif" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+      {/* Hero Section */}
+      <div style={{ background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)', padding: '2rem 1rem', textAlign: 'center' }}>
+        <div style={{ display: 'inline-flex', padding: '1rem', borderRadius: '50%', background: 'rgba(212,175,55,0.15)', marginBottom: '1rem' }}>
+          <FaUserPlus style={{ fontSize: '2rem', color: '#D4AF37' }} />
+        </div>
+        <h1 style={{ color: '#D4AF37', fontSize: '2rem', fontWeight: 'bold', margin: 0 }}>
+          {editando ? "Editar Conta" : "Cadastrar Conta"}
+        </h1>
+        <p style={{ color: '#aaa', marginTop: '0.5rem' }}>
+          {editando ? "Modifique as informações da conta" : "Crie uma nova conta no sistema"}
+        </p>
+      </div>
+
+      <div style={{ maxWidth: '900px', margin: '-40px auto 0', padding: '2rem' }}>
         {mensagem && (
-          <div className={`alert alert-${mensagem.tipo} text-center`} role="alert">
-            <div className="d-flex align-items-center justify-content-center">
-              {mensagem.tipo === "success" && <span className="me-2">✅</span>}
-              {mensagem.tipo === "danger" && <span className="me-2">❌</span>}
-              {mensagem.tipo === "info" && <span className="me-2">ℹ️</span>}
-              <strong>{mensagem.texto}</strong>
+          <div style={{
+            background: mensagem.tipo === 'success' ? '#d1fae5' : (mensagem.tipo === 'info' ? '#dbeafe' : '#fee2e2'),
+            color: mensagem.tipo === 'success' ? '#065f46' : (mensagem.tipo === 'info' ? '#1e40af' : '#991b1b'),
+            padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>{mensagem.texto}</span>
+              <button onClick={() => setMensagem(null)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
             </div>
-            {mensagem.tipo === "danger" && (
-              <div className="mt-2">
-                <small className="text-muted">
-                  <FaInfoCircle className="me-1" /> 
-                  Verifique todos os campos e tente novamente.
-                </small>
-              </div>
-            )}
-            {mensagem.tipo === "success" && (
-              <div className="mt-2">
-                <small className="text-muted">
-                  <FaInfoCircle className="me-1" /> 
-                  Redirecionando para a lista de contas...
-                </small>
-              </div>
-            )}
           </div>
         )}
 
-        {loading && !carregandoListas && (
-          <div className="alert alert-info text-center">
-            <span className="spinner-border spinner-border-sm me-2"></span>
-            {editando ? "Carregando dados da conta..." : "Processando..."}
-          </div>
-        )}
-
-        {carregandoListas && (
-          <div className="alert alert-info text-center">
-            <span className="spinner-border spinner-border-sm me-2"></span>
-            Carregando dados de perfis, gêneros e endereços...
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="mt-3">
-          <div className="card mb-4">
-            <div className="card-header bg-primary text-white">
-              <h5 className="mb-0">Dados Pessoais</h5>
-            </div>
-            <div className="card-body">
-              <div className="row">
-                <div className="col-md-6 mb-3">
-                  <label className="form-label fw-bold">Nome Completo *</label>
-                  <input
-                    type="text"
-                    className={`form-control ${getCampoStatus('nomeCompleto')}`}
-                    name="nomeCompleto"
-                    value={formData.nomeCompleto}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    placeholder="Digite o nome completo (apenas letras)"
-                    required
-                    disabled={loading || carregandoListas}
-                    maxLength={100}
-                  />
-                  {erros.nomeCompleto ? (
-                    <div className="invalid-feedback d-flex align-items-center">
-                      <FaInfoCircle className="me-1" />
-                      <strong>{erros.nomeCompleto}</strong>
-                    </div>
-                  ) : (
-                    tocado.nomeCompleto && formData.nomeCompleto && !erros.nomeCompleto && (
-                      <div className="valid-feedback d-flex align-items-center">
-                        <FaInfoCircle className="me-1" />
-                        <strong>Nome válido</strong>
-                      </div>
-                    )
-                  )}
-                  <small className="text-muted">Apenas letras são permitidas (não aceita números nem caracteres especiais)</small>
-                </div>
-
-                <div className="col-md-6 mb-3">
-                  <label className="form-label fw-bold">Data de Nascimento *</label>
-                  <input
-                    type="date"
-                    className={`form-control ${getCampoStatus('dataNascimento')}`}
-                    name="dataNascimento"
-                    value={formData.dataNascimento}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    required
-                    disabled={loading || carregandoListas}
-                    max={new Date().toISOString().split('T')[0]}
-                  />
-                  {erros.dataNascimento ? (
-                    <div className="invalid-feedback d-flex align-items-center">
-                      <FaInfoCircle className="me-1" />
-                      <strong>{erros.dataNascimento}</strong>
-                    </div>
-                  ) : (
-                    tocado.dataNascimento && formData.dataNascimento && !erros.dataNascimento && (
-                      <div className="valid-feedback d-flex align-items-center">
-                        <FaInfoCircle className="me-1" />
-                        <strong>Data válida</strong>
-                      </div>
-                    )
-                  )}
-                </div>
-
-                <div className="col-md-6 mb-3">
-                  <label className="form-label fw-bold">Gênero *</label>
-                  <select
-                    className={`form-select ${getCampoStatus('fkGenero')}`}
-                    name="fkGenero"
-                    value={formData.fkGenero}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    required
-                    disabled={loading || carregandoListas || generos.length === 0}
-                  >
-                    <option value="">Selecione o gênero...</option>
-                    {generos.map((genero) => (
-                      <option key={genero.pkGenero} value={genero.pkGenero}>
-                        {genero.nome}
-                      </option>
-                    ))}
-                  </select>
-                  {erros.fkGenero ? (
-                    <div className="invalid-feedback d-flex align-items-center">
-                      <FaInfoCircle className="me-1" />
-                      <strong>{erros.fkGenero}</strong>
-                    </div>
-                  ) : (
-                    tocado.fkGenero && formData.fkGenero && !erros.fkGenero && (
-                      <div className="valid-feedback d-flex align-items-center">
-                        <FaInfoCircle className="me-1" />
-                        <strong>Gênero selecionado</strong>
-                      </div>
-                    )
-                  )}
-                  {carregandoListas && generos.length === 0 && (
-                    <small className="text-muted">Carregando gêneros...</small>
-                  )}
-                </div>
-
-                <div className="col-md-6 mb-3">
-                  <label className="form-label fw-bold">Estado Civil *</label>
-                  <select
-                    className={`form-select ${getCampoStatus('fkEstadoCivil')}`}
-                    name="fkEstadoCivil"
-                    value={formData.fkEstadoCivil}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    required
-                    disabled={loading || carregandoListas || estadosCivis.length === 0}
-                  >
-                    <option value="">Selecione o estado civil...</option>
-                    {estadosCivis.map((estadoCivil) => (
-                      <option key={estadoCivil.pkEstadoCivil} value={estadoCivil.pkEstadoCivil}>
-                        {formatarEstadoCivil(estadoCivil.nome)}
-                      </option>
-                    ))}
-                  </select>
-                  {erros.fkEstadoCivil ? (
-                    <div className="invalid-feedback d-flex align-items-center">
-                      <FaInfoCircle className="me-1" />
-                      <strong>{erros.fkEstadoCivil}</strong>
-                    </div>
-                  ) : (
-                    tocado.fkEstadoCivil && formData.fkEstadoCivil && !erros.fkEstadoCivil && (
-                      <div className="valid-feedback d-flex align-items-center">
-                        <FaInfoCircle className="me-1" />
-                        <strong>Estado civil selecionado</strong>
-                      </div>
-                    )
-                  )}
-                  {carregandoListas && estadosCivis.length === 0 && (
-                    <small className="text-muted">Carregando estados civis...</small>
-                  )}
-                </div>
-
-                <div className="col-md-6 mb-3">
-                  <label className="form-label fw-bold">Bilhete de Identidade *</label>
-                  <input
-                    type="text"
-                    className={`form-control ${getCampoStatus('identificacao')}`}
-                    name="identificacao"
-                    value={formData.identificacao}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    placeholder="Digite o número do BI"
-                    required
-                    disabled={loading || carregandoListas}
-                    pattern="[A-Za-z0-9\-]+"
-                    title="Apenas letras, números e hífen são permitidos"
-                  />
-                  {erros.identificacao ? (
-                    <div className="invalid-feedback d-flex align-items-center">
-                      <FaInfoCircle className="me-1" />
-                      <strong>{erros.identificacao}</strong>
-                    </div>
-                  ) : (
-                    tocado.identificacao && formData.identificacao && !erros.identificacao && (
-                      <div className="valid-feedback d-flex align-items-center">
-                        <FaInfoCircle className="me-1" />
-                        <strong>BI válido</strong>
-                      </div>
-                    )
-                  )}
-                  <small className="text-muted">Apenas letras, números e hífen são permitidos</small>
-                </div>
-
-                <div className="col-md-6 mb-3">
-                  <label className="form-label fw-bold">Telefone *</label>
-                  <input
-                    type="tel"
-                    className={`form-control ${getCampoStatus('telefone')}`}
-                    name="telefone"
-                    value={formData.telefone}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    placeholder="Digite o telefone (ex: 923456789)"
-                    required
-                    disabled={loading || carregandoListas}
-                    pattern="[0-9]{9}"
-                    title="Digite 9 dígitos (ex: 923456789)"
-                  />
-                  {erros.telefone ? (
-                    <div className="invalid-feedback d-flex align-items-center">
-                      <FaInfoCircle className="me-1" />
-                      <strong>{erros.telefone}</strong>
-                    </div>
-                  ) : (
-                    tocado.telefone && formData.telefone && !erros.telefone && (
-                      <div className="valid-feedback d-flex align-items-center">
-                        <FaInfoCircle className="me-1" />
-                        <strong>Telefone válido</strong>
-                      </div>
-                    )
-                  )}
-                  <small className="text-muted">9 dígitos (ex: 923456789)</small>
-                </div>
+        <form onSubmit={handleSubmit} style={{ background: 'white', borderRadius: '20px', padding: '2rem', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
+          {/* Dados Pessoais */}
+          <div style={{ marginBottom: '2rem' }}>
+            <h3 style={{ color: '#D4AF37', borderBottom: '2px solid #D4AF37', paddingBottom: '0.5rem', marginBottom: '1.5rem' }}>Dados Pessoais</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <label style={{ fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>Nome Completo *</label>
+                <input type="text" name="nomeCompleto" value={formData.nomeCompleto} onChange={handleChange} onBlur={handleBlur}
+                  placeholder="Digite o nome completo" style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${erros.nomeCompleto ? '#ef4444' : '#e5e7eb'}`, outline: 'none' }} />
+                {erros.nomeCompleto && <small style={{ color: '#ef4444' }}>{erros.nomeCompleto}</small>}
+              </div>
+              <div>
+                <label style={{ fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>Data de Nascimento *</label>
+                <input type="date" name="dataNascimento" value={formData.dataNascimento} onChange={handleChange} onBlur={handleBlur}
+                  max={new Date().toISOString().split('T')[0]} style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${erros.dataNascimento ? '#ef4444' : '#e5e7eb'}`, outline: 'none' }} />
+                {erros.dataNascimento && <small style={{ color: '#ef4444' }}>{erros.dataNascimento}</small>}
+              </div>
+              <div>
+                <label style={{ fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>Gênero *</label>
+                <select name="fkGenero" value={formData.fkGenero} onChange={handleChange} onBlur={handleBlur}
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${erros.fkGenero ? '#ef4444' : '#e5e7eb'}`, background: 'white' }}>
+                  <option value="">Selecione...</option>
+                  {generos.map(g => <option key={g.pkGenero} value={g.pkGenero}>{g.nome}</option>)}
+                </select>
+                {erros.fkGenero && <small style={{ color: '#ef4444' }}>{erros.fkGenero}</small>}
+              </div>
+              <div>
+                <label style={{ fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>Estado Civil *</label>
+                <select name="fkEstadoCivil" value={formData.fkEstadoCivil} onChange={handleChange} onBlur={handleBlur}
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${erros.fkEstadoCivil ? '#ef4444' : '#e5e7eb'}`, background: 'white' }}>
+                  <option value="">Selecione...</option>
+                  {estadosCivis.map(e => <option key={e.pkEstadoCivil} value={e.pkEstadoCivil}>{e.nome}</option>)}
+                </select>
+                {erros.fkEstadoCivil && <small style={{ color: '#ef4444' }}>{erros.fkEstadoCivil}</small>}
+              </div>
+              <div>
+                <label style={{ fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>Bilhete de Identidade *</label>
+                <input type="text" name="identificacao" value={formData.identificacao} onChange={handleChange} onBlur={handleBlur}
+                  placeholder="Número do BI" style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${erros.identificacao ? '#ef4444' : '#e5e7eb'}`, outline: 'none' }} />
+                {erros.identificacao && <small style={{ color: '#ef4444' }}>{erros.identificacao}</small>}
+              </div>
+              <div>
+                <label style={{ fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>Telefone *</label>
+                <input type="tel" name="telefone" value={formData.telefone} onChange={handleChange} onBlur={handleBlur}
+                  placeholder="9XXXXXXXX" maxLength="9" style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${erros.telefone ? '#ef4444' : '#e5e7eb'}`, outline: 'none' }} />
+                {erros.telefone && <small style={{ color: '#ef4444' }}>{erros.telefone}</small>}
               </div>
             </div>
           </div>
 
-          <div className="card mb-4">
-            <div className="card-header bg-secondary text-white">
-              <h5 className="mb-0">Dados da Conta</h5>
-            </div>
-            <div className="card-body">
-              <div className="row">
-                <div className="col-md-6 mb-3">
-                  <label className="form-label fw-bold">Email *</label>
-                  <input
-                    type="email"
-                    className={`form-control ${getCampoStatus('email')}`}
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    placeholder="exemplo@dominio.com"
-                    required
-                    disabled={loading || carregandoListas}
-                  />
-                  {erros.email ? (
-                    <div className="invalid-feedback d-flex align-items-center">
-                      <FaInfoCircle className="me-1" />
-                      <strong>{erros.email}</strong>
-                    </div>
-                  ) : (
-                    tocado.email && formData.email && !erros.email && (
-                      <div className="valid-feedback d-flex align-items-center">
-                        <FaInfoCircle className="me-1" />
-                        <strong>Email válido</strong>
-                      </div>
-                    )
-                  )}
-                  <small className="text-muted">Não pode conter números no nome de usuário</small>
-                </div>
-
-                <div className="col-md-6 mb-3">
-                  <label className="form-label fw-bold">Senha *</label>
-                  <input
-                    type="password"
-                    className={`form-control ${getCampoStatus('passwordHash')}`}
-                    name="passwordHash"
-                    value={formData.passwordHash}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    placeholder="Mínimo 6 caracteres"
-                    required={!editando}
-                    disabled={loading || carregandoListas}
-                    minLength={6}
-                  />
-                  {erros.passwordHash ? (
-                    <div className="invalid-feedback d-flex align-items-center">
-                      <FaInfoCircle className="me-1" />
-                      <strong>{erros.passwordHash}</strong>
-                    </div>
-                  ) : (
-                    tocado.passwordHash && formData.passwordHash && !erros.passwordHash && (
-                      <div className="valid-feedback d-flex align-items-center">
-                        <FaInfoCircle className="me-1" />
-                        <strong>Senha válida</strong>
-                      </div>
-                    )
-                  )}
-                  {editando && (
-                    <small className="text-muted">
-                      Deixe em branco se não quiser alterar a senha
-                    </small>
-                  )}
-                </div>
-
-                <div className="col-md-6 mb-3">
-                  <label className="form-label fw-bold">Tipo de Conta *</label>
-                  <select
-                    className={`form-select ${getCampoStatus('tipoConta')}`}
-                    name="tipoConta"
-                    value={formData.tipoConta}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    required
-                    disabled={loading || carregandoListas}
-                  >
-                    <option value="">Selecione o tipo de conta...</option>
-                    <option value="ADMIN">ADMIN</option>
-                    <option value="GESTOR_PROVINCIAL">GESTOR PROVINCIAL</option>
-                    <option value="CIDADAO">CIDADÃO</option>
-                  </select>
-                  {erros.tipoConta ? (
-                    <div className="invalid-feedback d-flex align-items-center">
-                      <FaInfoCircle className="me-1" />
-                      <strong>{erros.tipoConta}</strong>
-                    </div>
-                  ) : (
-                    tocado.tipoConta && formData.tipoConta && !erros.tipoConta && (
-                      <div className="valid-feedback d-flex align-items-center">
-                        <FaInfoCircle className="me-1" />
-                        <strong>Tipo de conta selecionado</strong>
-                      </div>
-                    )
-                  )}
-                </div>
-
-                <div className="col-md-6 mb-3">
-                  <label className="form-label fw-bold d-flex align-items-center">
-                    <FaUsers className="me-2" /> Perfil *
-                  </label>
-                  <select
-                    className={`form-select ${getCampoStatus('fkPerfil')}`}
-                    name="fkPerfil"
-                    value={formData.fkPerfil}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    required
-                    disabled={loading || carregandoListas || perfis.length === 0}
-                  >
-                    <option value="">Selecione um perfil...</option>
-                    {perfis.map((p) => (
-                      <option key={p.pkPerfil} value={p.pkPerfil}>
-                        {p.designacao} {p.estado === 1 ? '(ATIVO)' : '(INATIVO)'}
-                      </option>
-                    ))}
-                  </select>
-                  {erros.fkPerfil ? (
-                    <div className="invalid-feedback d-flex align-items-center">
-                      <FaInfoCircle className="me-1" />
-                      <strong>{erros.fkPerfil}</strong>
-                    </div>
-                  ) : (
-                    tocado.fkPerfil && formData.fkPerfil && !erros.fkPerfil && (
-                      <div className="valid-feedback d-flex align-items-center">
-                        <FaInfoCircle className="me-1" />
-                        <strong>Perfil selecionado</strong>
-                      </div>
-                    )
-                  )}
-                  {carregandoListas && perfis.length === 0 && (
-                    <small className="text-muted">Carregando perfis...</small>
-                  )}
-                </div>
-
-                <div className="col-12 mb-3">
-                  <label className="form-label fw-bold d-flex align-items-center">
-                    <div className="me-3 p-2 rounded-circle shadow-sm" style={{
-                      background: 'linear-gradient(135deg, #20c997 0%, #0dcaf0 100%)',
-                      width: '40px',
-                      height: '40px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: '0 4px 10px rgba(32, 201, 151, 0.3)'
-                    }}>
-                      {formData.estado === "1" ? (
-                        <FaToggleOn className="text-white" style={{ fontSize: '1.4rem' }} />
-                      ) : (
-                        <FaToggleOff className="text-white" style={{ fontSize: '1.4rem' }} />
-                      )}
-                    </div>
-                    <div>
-                      <span style={{ fontSize: '1.1rem' }}>Estado da Conta *</span>
-                      <div className="d-flex align-items-center mt-1">
-                        <FaCircle className="text-danger me-1" style={{ fontSize: '0.5rem' }} />
-                        <small className="text-muted ms-1">Campo obrigatório</small>
-                      </div>
-                    </div>
-                  </label>
-                  <select
-                    className={`form-select form-select-lg ${getCampoStatus('estado')}`}
-                    style={{
-                      borderRadius: '12px',
-                      border: '2px solid #e0e0e0',
-                      padding: '14px 50px 14px 20px',
-                      transition: 'all 0.3s ease',
-                      fontSize: '1rem',
-                      background: 'white',
-                      boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.05)',
-                      cursor: 'pointer',
-                      backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e")`,
-                      backgroundRepeat: 'no-repeat',
-                      backgroundPosition: 'right 20px center',
-                      backgroundSize: '16px 12px',
-                      appearance: 'none'
-                    }}
-                    name="estado"
-                    value={formData.estado}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    required
-                    disabled={isSubmitting || salvoComSucesso || carregandoListas}
-                  >
-                    <option value="1" className="text-success fw-medium">
-                      <span className="d-inline-block me-2" style={{ width: '10px', height: '10px', background: '#28a745', borderRadius: '50%' }}></span>
-                      ✅ ATIVO - Conta disponível para uso
-                    </option>
-                    <option value="0" className="text-danger fw-medium">
-                      <span className="d-inline-block me-2" style={{ width: '10px', height: '10px', background: '#dc3545', borderRadius: '50%' }}></span>
-                      ❌ INATIVO - Conta desativada
-                    </option>
-                  </select>
-                  {erros.estado ? (
-                    <small className="text-danger fw-semibold d-block mt-2 d-flex align-items-center">
-                      <FaInfoCircle className="me-1" />
-                      <strong>{erros.estado}</strong>
-                    </small>
-                  ) : (
-                    tocado.estado && formData.estado && !erros.estado && (
-                      <small className="text-success fw-semibold d-block mt-2 d-flex align-items-center">
-                        <FaInfoCircle className="me-1" />
-                        <strong>Estado da conta definido</strong>
-                      </small>
-                    )
-                  )}
-                </div>
+          {/* Dados da Conta */}
+          <div style={{ marginBottom: '2rem' }}>
+            <h3 style={{ color: '#D4AF37', borderBottom: '2px solid #D4AF37', paddingBottom: '0.5rem', marginBottom: '1.5rem' }}>Dados da Conta</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <label style={{ fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>Email *</label>
+                <input type="email" name="email" value={formData.email} onChange={handleChange} onBlur={handleBlur}
+                  placeholder="exemplo@dominio.com" style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${erros.email ? '#ef4444' : '#e5e7eb'}`, outline: 'none' }} />
+                {erros.email && <small style={{ color: '#ef4444' }}>{erros.email}</small>}
+              </div>
+              <div>
+                <label style={{ fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>Senha {!editando && '*'}</label>
+                <input type="password" name="passwordHash" value={formData.passwordHash} onChange={handleChange} onBlur={handleBlur}
+                  placeholder="Mínimo 6 caracteres" style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${erros.passwordHash ? '#ef4444' : '#e5e7eb'}`, outline: 'none' }} />
+                {erros.passwordHash && <small style={{ color: '#ef4444' }}>{erros.passwordHash}</small>}
+                {editando && <small style={{ color: '#666' }}>Deixe em branco para manter a senha atual</small>}
+              </div>
+              <div>
+                <label style={{ fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>Tipo de Conta *</label>
+                <select name="tipoConta" value={formData.tipoConta} onChange={handleChange} onBlur={handleBlur}
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${erros.tipoConta ? '#ef4444' : '#e5e7eb'}`, background: 'white' }}>
+                  <option value="">Selecione...</option>
+                  <option value="ADMIN">ADMIN</option>
+                  <option value="GESTOR_PROVINCIAL">GESTOR PROVINCIAL</option>
+                  <option value="CIDADAO">CIDADÃO</option>
+                </select>
+                {erros.tipoConta && <small style={{ color: '#ef4444' }}>{erros.tipoConta}</small>}
+              </div>
+              <div>
+                <label style={{ fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>Perfil *</label>
+                <select name="fkPerfil" value={formData.fkPerfil} onChange={handleChange} onBlur={handleBlur}
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${erros.fkPerfil ? '#ef4444' : '#e5e7eb'}`, background: 'white' }}>
+                  <option value="">Selecione...</option>
+                  {perfis.map(p => <option key={p.pkPerfil} value={p.pkPerfil}>{p.designacao}</option>)}
+                </select>
+                {erros.fkPerfil && <small style={{ color: '#ef4444' }}>{erros.fkPerfil}</small>}
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <label style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  {formData.estado === "1" ? <FaToggleOn style={{ color: '#10b981' }} /> : <FaToggleOff />} Estado da Conta *
+                </label>
+                <select name="estado" value={formData.estado} onChange={handleChange} onBlur={handleBlur}
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${erros.estado ? '#ef4444' : '#e5e7eb'}`, background: 'white' }}>
+                  <option value="1">✅ ATIVO</option>
+                  <option value="0">❌ INATIVO</option>
+                </select>
+                {erros.estado && <small style={{ color: '#ef4444' }}>{erros.estado}</small>}
               </div>
             </div>
           </div>
 
-          <div className="card mb-4">
-            <div className="card-header bg-info text-white">
-              <h5 className="mb-0">Endereço Completo</h5>
-            </div>
-            <div className="card-body">
-              <div className="row">
-                <div className="col-md-4 mb-3">
-                  <label className="form-label fw-bold">Província *</label>
-                  <select
-                    className={`form-select ${getCampoStatus('provincia')}`}
-                    name="provincia"
-                    value={formData.provincia}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    required
-                    disabled={loading || carregandoListas || provincias.length === 0}
-                  >
-                    <option value="">Selecione a província...</option>
-                    {provincias.map((p) => {
-                      const nomeProvincia = p.nome || p.designacao;
-                      return (
-                        <option key={nomeProvincia} value={nomeProvincia}>
-                          {nomeProvincia}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  {erros.provincia ? (
-                    <div className="invalid-feedback d-flex align-items-center">
-                      <FaInfoCircle className="me-1" />
-                      <strong>{erros.provincia}</strong>
-                    </div>
-                  ) : (
-                    tocado.provincia && formData.provincia && !erros.provincia && (
-                      <div className="valid-feedback d-flex align-items-center">
-                        <FaInfoCircle className="me-1" />
-                        <strong>Província selecionada</strong>
-                      </div>
-                    )
-                  )}
-                </div>
-
-                <div className="col-md-4 mb-3">
-                  <label className="form-label fw-bold">Município *</label>
-                  <select
-                    className={`form-select ${getCampoStatus('municipio')}`}
-                    name="municipio"
-                    value={formData.municipio}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    required
-                    disabled={loading || carregandoListas || !formData.provincia || municipiosFiltrados.length === 0}
-                  >
-                    <option value="">Selecione o município...</option>
-                    {municipiosFiltrados.map((m) => {
-                      const nomeMunicipio = m.nome || m.designacao;
-                      return (
-                        <option key={nomeMunicipio} value={nomeMunicipio}>
-                          {nomeMunicipio}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  {erros.municipio ? (
-                    <div className="invalid-feedback d-flex align-items-center">
-                      <FaInfoCircle className="me-1" />
-                      <strong>{erros.municipio}</strong>
-                    </div>
-                  ) : (
-                    tocado.municipio && formData.municipio && !erros.municipio && (
-                      <div className="valid-feedback d-flex align-items-center">
-                        <FaInfoCircle className="me-1" />
-                        <strong>Município selecionado</strong>
-                      </div>
-                    )
-                  )}
-                  {formData.provincia && municipiosFiltrados.length === 0 && (
-                    <small className="text-muted">
-                      {carregandoListas ? 'Carregando municípios...' : 'Nenhum município disponível para esta província'}
-                    </small>
-                  )}
-                </div>
-
-                <div className="col-md-4 mb-3">
-                  <label className="form-label fw-bold">Bairro *</label>
-                  <select
-                    className={`form-select ${getCampoStatus('bairro')}`}
-                    name="bairro"
-                    value={formData.bairro}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    required
-                    disabled={loading || carregandoListas || !formData.municipio || bairrosFiltrados.length === 0}
-                  >
-                    <option value="">Selecione o bairro...</option>
-                    {bairrosFiltrados.map((b) => {
-                      const nomeBairro = b.nome || b.designacao;
-                      return (
-                        <option key={nomeBairro} value={nomeBairro}>
-                          {nomeBairro}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  {erros.bairro ? (
-                    <div className="invalid-feedback d-flex align-items-center">
-                      <FaInfoCircle className="me-1" />
-                      <strong>{erros.bairro}</strong>
-                    </div>
-                  ) : (
-                    tocado.bairro && formData.bairro && !erros.bairro && (
-                      <div className="valid-feedback d-flex align-items-center">
-                        <FaInfoCircle className="me-1" />
-                        <strong>Bairro selecionado</strong>
-                      </div>
-                    )
-                  )}
-                  {formData.municipio && bairrosFiltrados.length === 0 && (
-                    <small className="text-muted">
-                      {carregandoListas ? 'Carregando bairros...' : 'Nenhum bairro disponível para este município'}
-                    </small>
-                  )}
-                </div>
-
-                <div className="col-md-12 mb-3">
-                  <label className="form-label fw-bold d-flex align-items-center">
-                    <FaRoad className="me-2" /> Nome da Rua / Número
-                  </label>
-                  <input
-                    type="text"
-                    className={`form-control ${getCampoStatus('nomeRua')}`}
-                    name="nomeRua"
-                    value={formData.nomeRua}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    placeholder="Digite o nome da rua, avenida ou travessa"
-                    disabled={loading || carregandoListas}
-                    maxLength={150}
-                  />
-                  {erros.nomeRua ? (
-                    <div className="invalid-feedback d-flex align-items-center">
-                      <FaInfoCircle className="me-1" />
-                      <strong>{erros.nomeRua}</strong>
-                    </div>
-                  ) : (
-                    tocado.nomeRua && formData.nomeRua && !erros.nomeRua && (
-                      <div className="valid-feedback d-flex align-items-center">
-                        <FaInfoCircle className="me-1" />
-                        <strong>Nome da rua válido</strong>
-                      </div>
-                    )
-                  )}
-                  <small className="text-muted">
-                    Ex: Avenida 4 de Fevereiro, Rua Amílcar Cabral. 
-                    Deve incluir pelo menos uma letra e não pode conter apenas números com caracteres especiais.
-                  </small>
-                </div>
+          {/* Endereço */}
+          <div style={{ marginBottom: '2rem' }}>
+            <h3 style={{ color: '#D4AF37', borderBottom: '2px solid #D4AF37', paddingBottom: '0.5rem', marginBottom: '1.5rem' }}>Endereço</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+              <div>
+                <label style={{ fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>Província *</label>
+                <select name="provincia" value={formData.provincia} onChange={handleChange} onBlur={handleBlur}
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${erros.provincia ? '#ef4444' : '#e5e7eb'}`, background: 'white' }}>
+                  <option value="">Selecione...</option>
+                  {provincias.map(p => <option key={p.id || p.pkProvincia} value={p.nome || p.designacao}>{p.nome || p.designacao}</option>)}
+                </select>
+                {erros.provincia && <small style={{ color: '#ef4444' }}>{erros.provincia}</small>}
+              </div>
+              <div>
+                <label style={{ fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>Município *</label>
+                <select name="municipio" value={formData.municipio} onChange={handleChange} onBlur={handleBlur} disabled={!formData.provincia}
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${erros.municipio ? '#ef4444' : '#e5e7eb'}`, background: 'white', opacity: !formData.provincia ? 0.6 : 1 }}>
+                  <option value="">Selecione...</option>
+                  {municipiosFiltrados.map(m => <option key={m.id || m.pkMunicipio} value={m.nome || m.designacao}>{m.nome || m.designacao}</option>)}
+                </select>
+                {erros.municipio && <small style={{ color: '#ef4444' }}>{erros.municipio}</small>}
+              </div>
+              <div>
+                <label style={{ fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>Bairro *</label>
+                <select name="bairro" value={formData.bairro} onChange={handleChange} onBlur={handleBlur} disabled={!formData.municipio}
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${erros.bairro ? '#ef4444' : '#e5e7eb'}`, background: 'white', opacity: !formData.municipio ? 0.6 : 1 }}>
+                  <option value="">Selecione...</option>
+                  {bairrosFiltrados.map(b => <option key={b.id || b.pkBairro} value={b.nome || b.designacao}>{b.nome || b.designacao}</option>)}
+                </select>
+                {erros.bairro && <small style={{ color: '#ef4444' }}>{erros.bairro}</small>}
+              </div>
+              <div style={{ gridColumn: 'span 3' }}>
+                <label style={{ fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}><FaRoad style={{ color: '#D4AF37' }} /> Nome da Rua / Número</label>
+                <input type="text" name="nomeRua" value={formData.nomeRua} onChange={handleChange} onBlur={handleBlur}
+                  placeholder="Ex: Avenida 4 de Fevereiro, nº 45" style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${erros.nomeRua ? '#ef4444' : '#e5e7eb'}`, outline: 'none' }} />
+                {erros.nomeRua && <small style={{ color: '#ef4444' }}>{erros.nomeRua}</small>}
               </div>
             </div>
           </div>
 
-          <div className="text-center mt-4">
-            <button
-              type="submit"
-              className="btn btn-primary me-2 px-4"
-              disabled={loading || isSubmitting || carregandoListas}
-            >
-              {isSubmitting ? (
-                <>
-                  <FaSpinner className="fa-spin me-2" />
-                  {editando ? "Atualizando..." : "Cadastrando..."}
-                </>
-              ) : carregandoListas ? (
-                <>
-                  <FaSpinner className="fa-spin me-2" />
-                  Carregando dados...
-                </>
-              ) : editando ? (
-                <>
-                  <FaEdit className="me-2" />
-                  Atualizar Conta
-                </>
-              ) : (
-                <>
-                  <FaSave className="me-2" />
-                  Cadastrar Conta
-                </>
-              )}
+          {/* Botões */}
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
+            <button type="submit" disabled={isSubmitting}
+              style={{ background: 'linear-gradient(135deg, #D4AF37, #FFE55C)', color: '#000', border: 'none', padding: '0.75rem 2rem', borderRadius: '50px', fontWeight: 'bold', cursor: 'pointer', opacity: isSubmitting ? 0.6 : 1 }}>
+              {isSubmitting ? <FaSpinner style={{ animation: 'spin 1s linear infinite' }} /> : (editando ? <FaEdit /> : <FaSave />)} {editando ? "Atualizar" : "Cadastrar"}
             </button>
-
-            <button
-              type="button"
-              className="btn btn-secondary px-4 me-2"
-              onClick={resetForm}
-              disabled={loading || carregandoListas}
-            >
-              {editando ? "Cancelar Edição" : "Limpar Formulário"}
+            <button type="button" onClick={resetForm}
+              style={{ background: 'transparent', border: '2px solid #D4AF37', color: '#D4AF37', padding: '0.75rem 2rem', borderRadius: '50px', fontWeight: 'bold', cursor: 'pointer' }}>
+              {editando ? "Cancelar" : "Limpar"}
             </button>
-
             {editando && (
-              <button
-                type="button"
-                className="btn btn-warning px-4"
-                onClick={() => {
-                  if (window.confirm("Deseja cancelar a edição e voltar à lista?")) {
-                    navigate('/conta/listar');
-                  }
-                }}
-                disabled={loading || carregandoListas}
-              >
-                <FaArrowLeft className="me-2" />
-                Voltar à Lista
+              <button type="button" onClick={() => navigate('/conta/listar')}
+                style={{ background: 'transparent', border: '2px solid #dc3545', color: '#dc3545', padding: '0.75rem 2rem', borderRadius: '50px', fontWeight: 'bold', cursor: 'pointer' }}>
+                <FaArrowLeft /> Voltar
               </button>
             )}
           </div>
         </form>
       </div>
+
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

@@ -1,711 +1,430 @@
-import React, { useState, useEffect } from 'react';
-import {
-  FaMapMarkerAlt, FaCalendarAlt, FaExclamationCircle, FaUser, FaPhoneAlt, FaEnvelope,
-  FaFileAlt, FaStethoscope, FaHeartbeat, FaListAlt, FaPaperclip, FaHospital, FaComments, 
-  FaCheckCircle, FaHourglassHalf, FaClock
-} from 'react-icons/fa';
 import { useParams } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import html2canvas from "html2canvas";
+import {
+  FaMapMarkerAlt, FaCalendarAlt, FaUser, FaPhoneAlt, FaEnvelope,
+  FaFileAlt, FaHeartbeat, FaListAlt, FaPaperclip, FaCheckCircle,
+  FaHourglassHalf, FaCheck, FaTimes, FaArrowLeft
+} from 'react-icons/fa';
 
 export default function Saude() {
   const { tipo } = useParams();
+  const [showPreview, setShowPreview] = useState(false);
+  const [denunciaFinal, setDenunciaFinal] = useState(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitErrors, setSubmitErrors] = useState([]);
+  const [touched, setTouched] = useState({});
   const [anonimo, setAnonimo] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [denuncias, setDenuncias] = useState([]);
+  const comprovativoRef = useRef(null);
+
   const [formData, setFormData] = useState({
-    unidade: 'centro-de-saude',
-    municipio: 'Cazenga',
-    bairro: 'Hoji-ya-Henda',
-    rua: '',
-    local: '',
-    data: '',
-    subtipo: 'nao-atendido',
-    descricao: '',
-    nome: '',
-    contacto: '',
-    email: '',
-    anexo: null
+    municipio: 'Cazenga', bairro: 'Hoji-ya-Henda', nomeRua: '', localEspecificoDaOcorrencia: '',
+    dataOcorrecia: '', subtipo: 'nao-atendido', descricaoDetalhada: '', nome: '', contacto: '', email: '', anexo: null
   });
   const [errors, setErrors] = useState({});
-  
-  // Estado para denúncias (AGORA ARMAZENANDO LOCALMENTE)
-  const [denuncias, setDenuncias] = useState(() => {
-    // Recupera denúncias salvas no localStorage
-    const saved = localStorage.getItem('denunciasSaude');
-    return saved ? JSON.parse(saved) : [];
-  });
 
-  // Lista de municípios e bairros
-  const municipios = [
-    "Belas", "Cacuaco", "Cazenga", "Ícolo_e_Bengo",
-    "Luanda", "KilambaKiaxi", "Quiçama", "Talatona", "Viana"
-  ];
-
+  const municipios = ["Belas", "Cacuaco", "Cazenga", "Ícolo_e_Bengo", "Luanda", "KilambaKiaxi", "Quiçama", "Talatona", "Viana"];
   const bairrosPorMunicipio = {
     Luanda: ["Ingombota", "Maianga", "Sambizanga", "Rangel", "Kinaxixi", "Mutamba"],
-    Viana: ["Zango 1", "Zango 2", "Zango 3", "Zango 4", "Estalagem", "Vila de Viana", "Capalanga"],
+    Viana: ["Zango 1", "Zango 2", "Zango 3", "Zango 4", "Estalagem", "Vila de Viana"],
     Cazenga: ["Hoji-ya-Henda", "Mabor", "Tala Hady", "Cazenga Popular"],
     Belas: ["Benfica", "Morro Bento", "Camama", "Kilamba", "Talismã"],
     Cacuaco: ["Sequele", "Ngola Kiluanje", "Kikolo", "Mulenvos"],
     Talatona: ["Patriota", "Futungo", "Cidade Universitária", "Morro Bento II"],
     KilambaKiaxi: ["Golfe 1", "Golfe 2", "Palanca", "Sapú", "Terra Nova"],
-    Ícolo_e_Bengo: ["Catete", "Cabiri", "Cassoneca", "Bom Jesus"],
-    Quicama: ["Mumbondo", "Demba Chio", "Muxima"]
+    "Ícolo_e_Bengo": ["Catete", "Cabiri", "Cassoneca", "Bom Jesus"],
+    Quiçama: ["Mumbondo", "Demba Chio", "Muxima"]
   };
 
-  // Função para formatar contacto
-  const formatarContacto = (contacto) => {
-    if (!contacto) return '—';
-    return contacto;
-  };
+  const tiposProblema = [
+    { value: 'nao-atendido', label: 'Paciente não foi atendido', icon: '🚑' },
+    { value: 'diagnostico-errado', label: 'Diagnóstico incorreto', icon: '🩺' },
+    { value: 'espera', label: 'Tempo de Espera Excessivo', icon: '⏰' },
+    { value: 'Corrupção', label: 'Corrupção ou Pagamento Indevido', icon: '💰' },
+    { value: 'sem-medicamentos', label: 'Medicamentos em Falta', icon: '💊' },
+    { value: 'negligencia', label: 'Negligência Médica', icon: '⚠️' },
+    { value: 'sem-enfermeiros', label: 'Falta de Enfermeiros', icon: '👩‍⚕️' },
+    { value: 'sem-medicos', label: 'Falta de Médicos', icon: '👨‍⚕️' },
+    { value: 'abandono', label: 'Abandono durante o atendimento', icon: '🏃' }
+  ];
 
-  // Função para renderizar badge de status
-  const renderStatusBadge = (denuncia) => {
-    const status = denuncia.status || 'Pendente';
-    switch(status.toLowerCase()) {
-      case 'resolvido':
-        return (
-          <span className="badge bg-success">
-            <FaCheckCircle className="me-1" /> Resolvido
-          </span>
-        );
-      case 'em_andamento':
-        return (
-          <span className="badge bg-info">
-            <FaHourglassHalf className="me-1" /> Em andamento
-          </span>
-        );
-      case 'pendente':
-        return (
-          <span className="badge bg-warning text-dark">
-            <FaHourglassHalf className="me-1" /> Pendente
-          </span>
-        );
-      default:
-        return (
-          <span className="badge bg-secondary">
-            {status}
-          </span>
-        );
+  const validarCampo = (name, value) => {
+    const v = value?.toString().trim() || '';
+    switch (name) {
+      case 'municipio': return !v ? 'Selecione o município' : null;
+      case 'bairro': return !v ? 'Selecione o bairro' : null;
+      case 'nomeRua': return !v ? 'Nome da Rua é obrigatório' : null;
+      case 'localEspecificoDaOcorrencia': return !v ? 'Local é obrigatório' : null;
+      case 'dataOcorrecia': return !v ? 'Data é obrigatória' : null;
+      case 'subtipo': return !v ? 'Selecione o tipo de problema' : null;
+      case 'descricaoDetalhada': return v.length < 10 ? 'Mínimo 10 caracteres' : null;
+      case 'nome': return !anonimo && !v ? 'Nome é obrigatório' : (!anonimo && v.length < 3 ? 'Mínimo 3 caracteres' : null);
+      case 'contacto': return !anonimo && !v ? 'Contacto é obrigatório' : (!anonimo && !/^9\d{8}$/.test(v) ? 'Contacto inválido (9XXXXXXXX)' : null);
+      case 'email': return !anonimo && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? 'Email inválido' : null;
+      default: return null;
     }
   };
-
-  // ✅ Funções de validação atualizadas
-  const validarNome = (nome) => {
-    const regex = /^[A-Za-zÀ-ÿ\s]+$/; // Apenas letras e espaços
-    return regex.test(nome) && nome.trim().length > 0;
-  };
-
-  const validarContacto = (contacto) => {
-    const regex = /^[0-9+\s()-]+$/; // Apenas números e caracteres de telefone
-    return regex.test(contacto) && contacto.trim().length >= 8;
-  };
-
-  const validarEmail = (email) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email) || email.trim() === '';
-  };
-
-  const validarLocalDescricao = (texto) => {
-    if (!texto.trim()) return false;
-    
-    // Verifica se contém apenas caracteres especiais e números
-    const regexSomenteEspeciaisNumeros = /^[\d\s\W_]+$/;
-    if (regexSomenteEspeciaisNumeros.test(texto.trim())) {
-      return false;
-    }
-    
-    // Verifica se contém pelo menos uma letra
-    const regexLetras = /[A-Za-zÀ-ÿ]/;
-    return regexLetras.test(texto);
-  };
-
-  const validarRua = (rua) => {
-    if (!rua.trim()) return false;
-    
-    // Permite letras, números, espaços e alguns caracteres especiais comuns em endereços
-    const regex = /^[A-Za-zÀ-ÿ0-9\s\-\/,\.ºª]+$/;
-    return regex.test(rua);
-  };
-
-  // ✅ Função para validar data (não pode ser futura - CORRIGIDA)
-  const validarData = (data) => {
-    if (!data) return false;
-    
-    const dataSelecionada = new Date(data);
-    const hoje = new Date();
-    
-    // Zerar horas para comparar apenas a data
-    dataSelecionada.setHours(0, 0, 0, 0);
-    hoje.setHours(0, 0, 0, 0);
-    
-    // Permite hoje mas não amanhã
-    return dataSelecionada <= hoje;
-  };
-
-  // Carregar denúncias (simulação)
-  useEffect(() => {
-    if (tipo === "minhas") {
-      setLoading(true);
-      
-      // Simulando chamada à API com timeout
-      setTimeout(() => {
-        setLoading(false);
-      }, 500);
-    }
-  }, [tipo]);
-
-  // Salvar denúncias no localStorage sempre que atualizar
-  useEffect(() => {
-    localStorage.setItem('denunciasSaude', JSON.stringify(denuncias));
-  }, [denuncias]);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: files ? files[0] : value
-    }));
-    
-    // Limpar erro quando o usuário começa a digitar
-    if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
+    let valor = value;
+    if (name === 'nome') valor = value.replace(/[0-9]/g, '');
+    if (name === 'contacto') valor = value.replace(/\D/g, '').slice(0, 9);
+    setFormData(prev => ({ ...prev, [name]: files?.[0] || valor }));
+    const error = validarCampo(name, valor);
+    if (error) setErrors(prev => ({ ...prev, [name]: error }));
+    else { const newErrors = { ...errors }; delete newErrors[name]; setErrors(newErrors); }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    const newErrors = {};
-    
-    // Validações básicas
-    if (!formData.unidade.trim()) newErrors.unidade = 'Selecione a unidade de saúde.';
-    if (!formData.municipio.trim()) newErrors.municipio = 'Selecione o município.';
-    if (!formData.bairro.trim()) newErrors.bairro = 'Selecione o bairro.';
-    
-    // ✅ Validação da Rua (modificada)
-    if (!formData.rua.trim()) {
-      newErrors.rua = 'Informe a rua ou número.';
-    } else if (!validarRua(formData.rua)) {
-      newErrors.rua = 'Informe um nome de rua válido.';
-    }
-    
-    // ✅ Validação da Data (não pode ser futura - CORRIGIDA)
-    if (!formData.data.trim()) {
-      newErrors.data = 'Informe a data.';
-    } else if (!validarData(formData.data)) {
-      newErrors.data = 'A data não pode ser futura (incluindo hoje é permitido).';
-    }
-    
-    if (!formData.subtipo.trim()) newErrors.subtipo = 'Escolha o tipo de problema.';
-    
-    // ✅ Validação do Local da Ocorrência (mensagem atualizada)
-    if (!formData.local.trim()) {
-      newErrors.local = 'Informe o local da ocorrência.';
-    } else if (!validarLocalDescricao(formData.local)) {
-      newErrors.local = 'O local não pode conter apenas caracteres especiais e números.';
-    }
-    
-    // ✅ Validação da Descrição Detalhada (mensagem atualizada)
-    if (!formData.descricao.trim()) {
-      newErrors.descricao = 'Descreva o problema.';
-    } else if (!validarLocalDescricao(formData.descricao)) {
-      newErrors.descricao = 'A descrição não pode conter apenas caracteres especiais e números.';
-    }
-    
-    // Validações do denunciante (se não for anônimo)
-    if (!anonimo) {
-      // ✅ Validação do Nome
-      if (!formData.nome.trim()) {
-        newErrors.nome = 'Informe o nome.';
-      } else if (!validarNome(formData.nome)) {
-        newErrors.nome = 'O nome deve conter apenas letras.';
-      }
-      
-      // ✅ Validação do Contacto
-      if (!formData.contacto.trim()) {
-        newErrors.contacto = 'Informe o contacto.';
-      } else if (!validarContacto(formData.contacto)) {
-        newErrors.contacto = 'Contacto inválido. Use apenas números.';
-      }
-      
-      // ✅ Validação do Email (opcional)
-      if (formData.email.trim() && !validarEmail(formData.email)) {
-        newErrors.email = 'Email inválido.';
-      }
-    }
-    
-    setErrors(newErrors);
-    
-    if (Object.keys(newErrors).length === 0) {
-      // Criar nova denúncia
-      const novaDenuncia = {
-        id: Date.now(), // ID único baseado no timestamp
-        unidade: formData.unidade === 'hospital-publico' ? 'Hospital Público' : 'Centro de Saúde',
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    setTouched(prev => ({ ...prev, [name]: true }));
+    const error = validarCampo(name, value);
+    if (error) setErrors(prev => ({ ...prev, [name]: error }));
+  };
+
+  const uploadArquivo = async (file) => {
+    if (!file) return null;
+    const formDataUpload = new FormData();
+    formDataUpload.append('file', file);
+    const res = await fetch("http://localhost:9090/api/denuncias/upload", { method: "POST", body: formDataUpload });
+    if (res.ok) return await res.text();
+    throw new Error("Falha no upload");
+  };
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    setSubmitErrors([]);
+    try {
+      let nomeArquivo = null;
+      if (formData.anexo) nomeArquivo = await uploadArquivo(formData.anexo);
+
+      const payload = {
+        nome: anonimo ? null : formData.nome.trim(),
+        email: anonimo ? null : formData.email?.trim(),
+        contacto: anonimo ? null : formData.contacto,
+        descricaoDetalhada: formData.descricaoDetalhada.trim(),
+        subtipo: formData.subtipo,
+        anonima: anonimo,
+        dataOcorrecia: formData.dataOcorrecia,
         municipio: formData.municipio,
         bairro: formData.bairro,
-        nomeRua: formData.rua,
-        localEspecifico: formData.local,
-        subtipo: formData.subtipo,
-        descricao: formData.descricao,
-        status: 'Pendente',
-        comentario: 'Aguardando análise',
-        dataRegistro: new Date().toISOString(),
-        dataOcorrencia: formData.data,
-        // Dados do denunciante (se não for anônimo)
-        ...(!anonimo && {
-          nome: formData.nome,
-          contacto: formData.contacto,
-          email: formData.email
-        }),
-        // Se for anônimo, não salva dados pessoais
-        ...(anonimo && {
-          nome: 'Anônimo',
-          contacto: '—',
-          email: '—'
-        })
+        nomeRua: formData.nomeRua.trim(),
+        localEspecificoDaOcorrencia: formData.localEspecificoDaOcorrencia.trim(),
+        anexo: nomeArquivo,
+        categoriaNome: "Saúde"
       };
-      
-      console.log("Denúncia enviada:", novaDenuncia);
-      
-      // ✅ ADICIONAR À LISTA DE DENÚNCIAS
-      setDenuncias(prev => [novaDenuncia, ...prev]);
-      
-      alert("Denúncia registrada com sucesso!");
-      
-      // Limpar o formulário após envio
-      setFormData({
-        unidade: 'centro-de-saude',
-        municipio: 'Cazenga',
-        bairro: 'Hoji-ya-Henda',
-        rua: '',
-        local: '',
-        data: '',
-        subtipo: 'nao-atendido',
-        descricao: '',
-        nome: '',
-        contacto: '',
-        email: '',
-        anexo: null
+
+      const res = await fetch("http://localhost:9090/api/denuncias", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
       });
-      setAnonimo(false);
+
+      if (res.ok) {
+        const nova = await res.json();
+        const dadosCompletos = { ...nova, ...payload, codigo: nova.codigo };
+        setDenunciaFinal(dadosCompletos);
+        setSubmitSuccess(true);
+        setFormData({
+          municipio: 'Cazenga', bairro: 'Hoji-ya-Henda', nomeRua: '', localEspecificoDaOcorrencia: '',
+          dataOcorrecia: '', subtipo: 'nao-atendido', descricaoDetalhada: '', nome: '', contacto: '', email: '', anexo: null
+        });
+        setTimeout(() => setSubmitSuccess(false), 5000);
+      } else {
+        const errorText = await res.text();
+        setSubmitErrors([errorText]);
+      }
+    } catch (err) { 
+      setSubmitErrors([err.message]); 
+    } finally { 
+      setLoading(false); 
     }
   };
 
-  return (
-    <div className="page">
-      <main>
-        <div className="container py-4">
+ const gerarImagem = async () => {
+  try {
+    if (!comprovativoRef.current || !denunciaFinal) {
+      console.error('Referência ou dados não disponíveis');
+      alert('Aguardando dados do comprovativo...');
+      return;
+    }
+    
+    // DIAGNÓSTICO: Verifica o conteúdo do elemento
+    console.log('Conteúdo HTML do elemento:', comprovativoRef.current.innerHTML);
+    console.log('Dimensões:', {
+      width: comprovativoRef.current.offsetWidth,
+      height: comprovativoRef.current.offsetHeight,
+      scrollWidth: comprovativoRef.current.scrollWidth,
+      scrollHeight: comprovativoRef.current.scrollHeight
+    });
+    
+    // Verifica se tem o código
+    console.log('Código da denúncia:', denunciaFinal.codigo);
+    
+    // Aguarda a renderização
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Força o reflow do DOM
+    comprovativoRef.current.offsetHeight;
+    
+    const canvas = await html2canvas(comprovativoRef.current, { 
+      scale: 2, 
+      backgroundColor: '#ffffff'
+    });
+    
+    // Verifica se o canvas tem conteúdo
+    if (canvas.width === 0 || canvas.height === 0) {
+      throw new Error('Canvas gerado com dimensões zero');
+    }
+    
+    const link = document.createElement("a");
+    link.href = canvas.toDataURL("image/png");
+    link.download = `comprovativo_${denunciaFinal.codigo}.png`;
+    link.click();
+    
+  } catch (error) {
+    console.error('ERRO AO GERAR IMAGEM:', error);
+    alert('Erro ao gerar o comprovativo: ' + error.message + '\n\nVerifique o console para mais detalhes.');
+  }
+};
 
-          {/* Registrar Denúncia */}
-          {tipo === "registrar" && (
-            <form className="container mt-5" onSubmit={handleSubmit} style={{ maxWidth: "800px" }}>
-              <h2 className="mb-4 text-center text-primary">
-                <FaHeartbeat className="me-2" /> Registrar Ocorrência - Setor de Saúde
-              </h2>
-              <div className="row g-3">
-                {/* Unidade de Saúde */}
-                <div className="col-md-6">
-                  <label htmlFor="unidade" className="form-label">
-                    <FaHospital className="me-2" /> Unidade de Saúde
-                  </label>
-                  <select
-                    id="unidade"
-                    name="unidade"
-                    value={formData.unidade}
-                    onChange={handleChange}
-                    className={`form-select ${errors.unidade ? 'is-invalid' : ''}`}
-                  >
-                    <option value="hospital-publico">Hospital Público</option>
-                    <option value="centro-de-saude">Centro de Saúde</option>
-                  </select>
-                  {errors.unidade && <div className="invalid-feedback">{errors.unidade}</div>}
-                </div>
+  const getTipoLabel = (subtipo) => tiposProblema.find(t => t.value === subtipo)?.label || subtipo;
 
-                {/* Município */}
-                <div className="col-md-6">
-                  <label htmlFor="municipio" className="form-label">
-                    <FaMapMarkerAlt className="me-2" /> Município
-                  </label>
-                  <select
-                    id="municipio"
-                    name="municipio"
-                    value={formData.municipio}
-                    onChange={handleChange}
-                    className={`form-select ${errors.municipio ? 'is-invalid' : ''}`}
-                  >
-                    <option value="">Selecione...</option>
-                    {municipios.map((m) => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
-                  {errors.municipio && <div className="invalid-feedback">{errors.municipio}</div>}
-                </div>
+  useEffect(() => {
+    fetch("http://localhost:9090/api/denuncias")
+      .then(res => res.json())
+      .then(data => setDenuncias(data.filter(d => d.categoriaNome === "Saúde") || []))
+      .catch(console.error);
+  }, []);
 
-                {/* Bairro */}
-                <div className="col-md-6">
-                  <label htmlFor="bairro" className="form-label">
-                    <FaMapMarkerAlt className="me-2" /> Bairro
-                  </label>
-                  <select
-                    id="bairro"
-                    name="bairro"
-                    value={formData.bairro}
-                    onChange={handleChange}
-                    className={`form-select ${errors.bairro ? 'is-invalid' : ''}`}
-                    disabled={!formData.municipio}
-                  >
-                    <option value="">Selecione...</option>
-                    {formData.municipio &&
-                      bairrosPorMunicipio[formData.municipio]?.map((b) => (
-                        <option key={b} value={b}>{b}</option>
-                      ))}
-                  </select>
-                  {errors.bairro && <div className="invalid-feedback">{errors.bairro}</div>}
-                </div>
+  if (tipo === "registrar") {
+    return (
+      <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: "'Inter', sans-serif" }}>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
-                {/* Rua */}
-                <div className="col-md-6">
-                  <label htmlFor="rua" className="form-label">
-                    <FaMapMarkerAlt className="me-2" /> Nome da Rua / Nº
-                  </label>
-                  <input
-                    type="text"
-                    id="rua"
-                    name="rua"
-                    value={formData.rua}
-                    onChange={handleChange}
-                    className={`form-control ${errors.rua ? 'is-invalid' : ''}`}
-                    placeholder="Ex: Rua 12, nº 45"
-                  />
-                  {errors.rua && <div className="invalid-feedback">{errors.rua}</div>}
-                </div>
+        {/* Hero Section */}
+        <div style={{ background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)', padding: '3rem 1rem', textAlign: 'center' }}>
+          <div style={{ display: 'inline-flex', padding: '1rem', borderRadius: '50%', background: 'rgba(212,175,55,0.15)', marginBottom: '1rem' }}>
+            <FaHeartbeat style={{ fontSize: '2rem', color: '#D4AF37' }} />
+          </div>
+          <h1 style={{ color: '#D4AF37', fontSize: '2rem', fontWeight: 'bold', margin: 0 }}>Registrar Denúncia - Saúde</h1>
+          <p style={{ color: '#aaa', marginTop: '0.5rem' }}>Preencha os dados abaixo para registrar sua denúncia</p>
+        </div>
 
-                {/* Local da Ocorrência */}
-                <div className="col-md-12">
-                  <label htmlFor="local" className="form-label">
-                    <FaMapMarkerAlt className="me-2" /> Local da Ocorrência
-                  </label>
-                  <input
-                    type="text"
-                    id="local"
-                    name="local"
-                    value={formData.local}
-                    onChange={handleChange}
-                    className={`form-control ${errors.local ? 'is-invalid' : ''}`}
-                    placeholder="Ex: Urgência, consultório, triagem..."
-                  />
-                  {errors.local && <div className="invalid-feedback">{errors.local}</div>}
-                  <small className="text-muted">Não pode conter apenas caracteres especiais e números.</small>
-                </div>
-              </div>
+        {/* Formulário */}
+        <div style={{ maxWidth: '800px', margin: '-40px auto 0', padding: '2rem', background: 'white', borderRadius: '20px', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
+          {submitSuccess && <div style={{ background: '#10b981', color: 'white', padding: '1rem', borderRadius: '12px', marginBottom: '1rem' }}>✅ Denúncia registrada com sucesso!</div>}
+          {submitErrors.map((e, i) => <div key={i} style={{ background: '#ef4444', color: 'white', padding: '0.5rem 1rem', borderRadius: '8px', marginBottom: '0.5rem' }}>❌ {e}</div>)}
 
-              <hr className="my-4" />
+          {/* Formulário - todos os campos */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}><FaListAlt style={{ color: '#D4AF37' }} /> Tipo de Problema *</label>
+            <select name="subtipo" value={formData.subtipo} onChange={handleChange} onBlur={handleBlur} style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${errors.subtipo ? '#ef4444' : '#e5e7eb'}` }}>
+              {tiposProblema.map(t => <option key={t.value} value={t.value}>{t.icon} {t.label}</option>)}
+            </select>
+            {errors.subtipo && <small style={{ color: '#ef4444' }}>{errors.subtipo}</small>}
+          </div>
 
-              {/* Data e Tipo */}
-              <div className="row g-3">
-                <div className="col-md-6">
-                  <label htmlFor="data" className="form-label">
-                    <FaCalendarAlt className="me-2" /> Data da Ocorrência
-                  </label>
-                  <input
-                    type="date"
-                    id="data"
-                    name="data"
-                    value={formData.data}
-                    onChange={handleChange}
-                    className={`form-control ${errors.data ? 'is-invalid' : ''}`}
-                    max={new Date().toISOString().split('T')[0]} // ✅ Impede seleção de datas futuras
-                  />
-                  {errors.data && <div className="invalid-feedback">{errors.data}</div>}
-                  <small className="text-muted">Não é permitido selecionar datas futuras.</small>
-                </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div>
+              <label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}><FaMapMarkerAlt style={{ color: '#D4AF37' }} /> Município *</label>
+              <select name="municipio" value={formData.municipio} onChange={handleChange} onBlur={handleBlur} style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${errors.municipio ? '#ef4444' : '#e5e7eb'}` }}>
+                {municipios.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+              {errors.municipio && <small style={{ color: '#ef4444' }}>{errors.municipio}</small>}
+            </div>
+            <div>
+              <label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}><FaMapMarkerAlt style={{ color: '#D4AF37' }} /> Bairro *</label>
+              <select name="bairro" value={formData.bairro} onChange={handleChange} onBlur={handleBlur} style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${errors.bairro ? '#ef4444' : '#e5e7eb'}` }}>
+                {(bairrosPorMunicipio[formData.municipio] || []).map(b => <option key={b} value={b}>{b}</option>)}
+              </select>
+              {errors.bairro && <small style={{ color: '#ef4444' }}>{errors.bairro}</small>}
+            </div>
+          </div>
 
-                <div className="col-md-6">
-                  <label htmlFor="subtipo" className="form-label">
-                    <FaListAlt className="me-2" /> Tipo de Problema
-                  </label>
-                  <select
-                    id="subtipo"
-                    name="subtipo"
-                    value={formData.subtipo}
-                    onChange={handleChange}
-                    className={`form-select ${errors.subtipo ? 'is-invalid' : ''}`}
-                  >
-                    <option value="">Selecione...</option>
-                    <option value="nao-atendido">Paciente não foi atendido</option>
-                    <option value="diagnostico-errado">Diagnóstico incorreto</option>
-                    <option value="espera">Tempo de Espera Excessivo</option>
-                    <option value="pagamento">Corrupção ou Pagamento Indevido</option>
-                    <option value="sem-medicamentos">Medicamentos em Falta</option>
-                    <option value="negligencia">Negligência Médica</option>
-                    <option value="sem-enfermeiros">Falta de Enfermeiros</option>
-                    <option value="sem-medicos">Falta de Médicos</option>
-                    <option value="abandono">Abandono durante o atendimento</option>
-                  </select>
-                  {errors.subtipo && <div className="invalid-feedback">{errors.subtipo}</div>}
-                </div>
-              </div>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}><FaMapMarkerAlt style={{ color: '#D4AF37' }} /> Nome da Rua / Número *</label>
+            <input type="text" name="nomeRua" value={formData.nomeRua} onChange={handleChange} onBlur={handleBlur} placeholder="Ex: Rua 12 de Julho, nº 45" style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${errors.nomeRua ? '#ef4444' : '#e5e7eb'}` }} />
+            {errors.nomeRua && <small style={{ color: '#ef4444' }}>{errors.nomeRua}</small>}
+          </div>
 
-              {/* Descrição Detalhada */}
-              <div className="mt-3">
-                <label htmlFor="descricao" className="form-label">
-                  <FaFileAlt className="me-2" /> Descrição Detalhada
-                </label>
-                <textarea
-                  id="descricao"
-                  name="descricao"
-                  rows="4"
-                  value={formData.descricao}
-                  onChange={handleChange}
-                  className={`form-control ${errors.descricao ? 'is-invalid' : ''}`}
-                  placeholder="Descreva com detalhes o que aconteceu..."
-                />
-                {errors.descricao && <div className="invalid-feedback">{errors.descricao}</div>}
-                <small className="text-muted">Não pode conter apenas caracteres especiais e números.</small>
-              </div>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}><FaMapMarkerAlt style={{ color: '#D4AF37' }} />  Local Específico / Unidade de Saúde *</label>
+            <input type="text" name="localEspecificoDaOcorrencia" value={formData.localEspecificoDaOcorrencia} onChange={handleChange} onBlur={handleBlur} placeholder="Ex: Urgência  / Hospital, Centro Médico..." style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${errors.localEspecificoDaOcorrencia ? '#ef4444' : '#e5e7eb'}` }} />
+            {errors.localEspecificoDaOcorrencia && <small style={{ color: '#ef4444' }}>{errors.localEspecificoDaOcorrencia}</small>}
+          </div>
 
-              {/* Nome, Contacto e Email */}
-              {!anonimo && (
-                <div className="row g-3 mt-3">
-                  <div className="col-md-6">
-                    <label htmlFor="nome" className="form-label">
-                      <FaUser className="me-2" /> Nome do Denunciante
-                    </label>
-                    <input
-                      type="text"
-                      id="nome"
-                      name="nome"
-                      value={formData.nome}
-                      onChange={handleChange}
-                      className={`form-control ${errors.nome ? 'is-invalid' : ''}`}
-                      placeholder="Digite seu nome completo"
-                    />
-                    {errors.nome && <div className="invalid-feedback">{errors.nome}</div>}
-                    <small className="text-muted">Apenas letras e espaços.</small>
-                  </div>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}><FaCalendarAlt style={{ color: '#D4AF37' }} /> Data da Ocorrência *</label>
+            <input type="date" name="dataOcorrecia" value={formData.dataOcorrecia} onChange={handleChange} onBlur={handleBlur} max={new Date().toISOString().split('T')[0]} style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${errors.dataOcorrecia ? '#ef4444' : '#e5e7eb'}` }} />
+            {errors.dataOcorrecia && <small style={{ color: '#ef4444' }}>{errors.dataOcorrecia}</small>}
+          </div>
 
-                  <div className="col-md-6">
-                    <label htmlFor="contacto" className="form-label">
-                      <FaPhoneAlt className="me-2" /> Contacto
-                    </label>
-                    <input
-                      type="text"
-                      id="contacto"
-                      name="contacto"
-                      value={formData.contacto}
-                      onChange={handleChange}
-                      className={`form-control ${errors.contacto ? 'is-invalid' : ''}`}
-                      placeholder="Ex: +244 123 456 789"
-                    />
-                    {errors.contacto && <div className="invalid-feedback">{errors.contacto}</div>}
-                    <small className="text-muted">Apenas números e caracteres de telefone.</small>
-                  </div>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}><FaFileAlt style={{ color: '#D4AF37' }} /> Descrição Detalhada *</label>
+            <textarea name="descricaoDetalhada" value={formData.descricaoDetalhada} onChange={handleChange} onBlur={handleBlur} rows="4" placeholder="Descreva detalhadamente o problema..." style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${errors.descricaoDetalhada ? '#ef4444' : '#e5e7eb'}`, resize: 'vertical' }} />
+            {errors.descricaoDetalhada && <small style={{ color: '#ef4444' }}>{errors.descricaoDetalhada}</small>}
+          </div>
 
-                  {/* Campo Email */}
-                  <div className="col-md-6">
-                    <label htmlFor="email" className="form-label">
-                      <FaEnvelope className="me-2" /> Email (opcional)
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      className={`form-control ${errors.email ? 'is-invalid' : ''}`}
-                      placeholder="seu.email@exemplo.com"
-                    />
-                    {errors.email && <div className="invalid-feedback">{errors.email}</div>}
-                  </div>
-                </div>
-              )}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}><FaPaperclip style={{ color: '#D4AF37' }} /> Anexo (opcional)</label>
+            <input type="file" name="anexo" onChange={(e) => setFormData(prev => ({ ...prev, anexo: e.target.files[0] }))} accept=".pdf,.jpg,.jpeg,.png" style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '2px solid #e5e7eb' }} />
+            {formData.anexo && <small style={{ color: '#10b981', display: 'block', marginTop: '0.5rem' }}>✅ Arquivo selecionado: {formData.anexo.name}</small>}
+          </div>
 
-              {/* Anexo */}
-              <div className="mb-3 mt-3">
-                <label htmlFor="anexo" className="form-label">
-                  <FaPaperclip className="me-2" /> Anexo (opcional)
-                </label>
-                <input 
-                  type="file" 
-                  id="anexo" 
-                  name="anexo" 
-                  onChange={handleChange} 
-                  className="form-control" 
-                />
-              </div>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+              <input type="checkbox" checked={anonimo} onChange={(e) => setAnonimo(e.target.checked)} />
+              <span>Deseja permanecer anônimo?</span>
+            </label>
+          </div>
 
-              {/* Anônimo */}
-              <div className="form-check mb-4">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  id="anonimo"
-                  checked={anonimo}
-                  onChange={(e) => {
-                    setAnonimo(e.target.checked);
-                    if (e.target.checked) {
-                      // Limpar erros relacionados ao denunciante
-                      setErrors((prev) => ({
-                        ...prev,
-                        nome: '',
-                        contacto: '',
-                        email: ''
-                      }));
-                    }
-                  }}
-                />
-                <label className="form-check-label" htmlFor="anonimo">
-                  Deseja permanecer anônimo?
-                </label>
-              </div>
-
-              <button type="submit" className="btn btn-primary w-100">Cadastrar Denúncia</button>
-            </form>
+          {!anonimo && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div><input type="text" name="nome" value={formData.nome} onChange={handleChange} onBlur={handleBlur} placeholder="Nome completo" style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${errors.nome ? '#ef4444' : '#e5e7eb'}` }} /><small style={{ color: '#ef4444' }}>{errors.nome}</small></div>
+              <div><input type="tel" name="contacto" value={formData.contacto} onChange={handleChange} onBlur={handleBlur} placeholder="Contacto (9XXXXXXXX)" style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${errors.contacto ? '#ef4444' : '#e5e7eb'}` }} /><small style={{ color: '#ef4444' }}>{errors.contacto}</small></div>
+              <div style={{ gridColumn: 'span 2' }}><input type="email" name="email" value={formData.email} onChange={handleChange} onBlur={handleBlur} placeholder="Email (opcional)" style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: `2px solid ${errors.email ? '#ef4444' : '#e5e7eb'}` }} /><small style={{ color: '#ef4444' }}>{errors.email}</small></div>
+            </div>
           )}
 
-          {/* Minhas Denúncias */}
-          {tipo === "minhas" && (
-            <div className="container mt-5">
-              <h2 className="mb-4 text-success">
-                <FaListAlt className="me-2" /> Minhas Denúncias - Setor de Saúde
-              </h2>
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+            <button onClick={() => window.history.back()} style={{ padding: '0.75rem 1.5rem', borderRadius: '50px', border: '2px solid #D4AF37', background: 'transparent', color: '#D4AF37', fontWeight: 'bold', cursor: 'pointer' }}><FaArrowLeft /> Voltar</button>
+            <button onClick={() => { const newErrors = {}; Object.keys(formData).forEach(k => { const err = validarCampo(k, formData[k]); if (err) newErrors[k] = err; }); setErrors(newErrors); if (Object.keys(newErrors).length === 0) setShowPreview(true); }} style={{ flex: 1, padding: '0.75rem', borderRadius: '50px', border: 'none', background: 'linear-gradient(135deg, #D4AF37, #FFE55C)', color: '#000', fontWeight: 'bold', cursor: 'pointer' }}>Enviar Denúncia</button>
+          </div>
+        </div>
 
-              {loading ? (
-                <div className="text-center">
-                  <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Carregando...</span>
-                  </div>
-                  <p className="mt-2">Carregando denúncias...</p>
-                </div>
-              ) : denuncias.length === 0 ? (
-                <div className="alert alert-info">
-                  <FaExclamationCircle className="me-2" />
-                  Ainda não existem denúncias registadas para o setor de saúde.
-                </div>
-              ) : (
-                <div className="table-responsive">
-                  <table className="table table-bordered table-striped table-hover">
-                    <thead className="table-light">
-                      <tr>
-                        <th><FaExclamationCircle className="me-2 text-danger" /> Problema</th>
-                        <th><FaFileAlt className="me-2 text-primary" /> Descrição</th>
-                        <th><FaMapMarkerAlt className="me-2" /> Localização</th>
-                        <th><FaCalendarAlt className="me-2" /> Data e hora da Ocorrência</th>
-                        <th><FaCheckCircle className="me-2 text-success" /> Status</th>
-                        <th><FaComments className="me-2 text-info" /> Comentário / Resposta</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {denuncias.map((d) => (
-                        <tr key={d.id}>
-                          <td>
-                            <strong>
-                              {d.subtipo === 'nao-atendido' ? 'Paciente não foi atendido' :
-                                d.subtipo === 'diagnostico-errado' ? 'Diagnóstico incorreto' :
-                                  d.subtipo === 'espera' ? 'Tempo de Espera Excessivo' :
-                                    d.subtipo === 'pagamento' ? 'Corrupção ou Pagamento Indevido' :
-                                      d.subtipo === 'sem-medicamentos' ? 'Medicamentos em Falta' :
-                                        d.subtipo === 'negligencia' ? 'Negligência Médica' :
-                                          d.subtipo === 'sem-enfermeiros' ? 'Falta de Enfermeiros' :
-                                            d.subtipo === 'sem-medicos' ? 'Falta de Médicos' :
-                                              d.subtipo === 'abandono' ? 'Abandono durante o atendimento' :
-                                                d.subtipo || 'Não especificado'}
-                            </strong>
-                          </td>
+        {/* Modal Preview */}
+        {showPreview && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+            <div style={{ background: 'white', borderRadius: '20px', maxWidth: '500px', width: '90%', maxHeight: '80vh', overflow: 'auto', padding: '2rem' }}>
+              <h3 style={{ color: '#D4AF37' }}>Revisar Denúncia</h3>
+              <hr />
+              <p><strong>Tipo:</strong> {tiposProblema.find(t => t.value === formData.subtipo)?.label}</p>
+              <p><strong>Local:</strong> {formData.municipio}, {formData.bairro}, {formData.nomeRua}</p>
+              <p><strong>Data:</strong> {formData.dataOcorrecia}</p>
+              <p><strong>Descrição:</strong> {formData.descricaoDetalhada}</p>
+              {!anonimo && <><p><strong>Nome:</strong> {formData.nome}</p><p><strong>Contacto:</strong> {formData.contacto}</p><p><strong>Email:</strong> {formData.email}</p></>}
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                <button onClick={() => setShowPreview(false)} style={{ padding: '0.75rem 1.5rem', borderRadius: '50px', border: '2px solid #ccc', background: 'white', cursor: 'pointer' }}>Editar</button>
+                <button onClick={async () => { setShowPreview(false); await handleSubmit(); }} style={{ flex: 1, padding: '0.75rem', borderRadius: '50px', border: 'none', background: 'linear-gradient(135deg, #D4AF37, #FFE55C)', fontWeight: 'bold', cursor: 'pointer' }}>{loading ? 'Enviando...' : 'Confirmar'}</button>
+              </div>
+            </div>
+          </div>
+        )}
 
-                          <td style={{ maxWidth: 300 }}>
-                            <div className="text-truncate" title={d.descricao}>
-                              {d.descricao}
-                            </div>
-                          </td>
+        {/* Modal Comprovativo */}
+        {denunciaFinal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+            <div style={{ background: 'white', borderRadius: '20px', maxWidth: '600px', width: '90%', padding: '2rem' }}>
+              <h3 style={{ color: '#10b981' }}>✅ Denúncia Registada!</h3>
+              <p><strong>Código:</strong> <span style={{ fontFamily: 'monospace', fontSize: '1.2rem' }}>{denunciaFinal.codigo}</span></p>
+              <hr />
+              <p><strong>Tipo:</strong> {getTipoLabel(denunciaFinal.subtipo)}</p>
+              <p><strong>Local:</strong> {denunciaFinal.municipio}, {denunciaFinal.bairro}</p>
+              <p><strong>Data:</strong> {new Date(denunciaFinal.dataOcorrecia).toLocaleDateString('pt-AO')}</p>
+              <p><strong>Descrição:</strong> {denunciaFinal.descricaoDetalhada}</p>
+              <p><strong>Nome:</strong> {denunciaFinal.nome || 'Anónimo'}</p>
+              <p><strong>Contacto:</strong> {denunciaFinal.contacto || 'Não informado'}</p>
+              <p><strong>Email:</strong> {denunciaFinal.email || 'Não informado'}</p>
+              <p><strong>Anexo:</strong> {denunciaFinal.anexo || 'Nenhum anexo'}</p>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                <button onClick={() => setDenunciaFinal(null)} style={{ padding: '0.75rem 1.5rem', borderRadius: '50px', border: '2px solid #ccc', background: 'white', cursor: 'pointer' }}>Fechar</button>
+                <button onClick={gerarImagem} style={{ flex: 1, padding: '0.75rem', borderRadius: '50px', border: 'none', background: 'linear-gradient(135deg, #D4AF37, #FFE55C)', fontWeight: 'bold', cursor: 'pointer' }}>📥 Baixar Comprovativo</button>
+              </div>
+            </div>
+          </div>
+        )}
 
-                          <td>
-                            <div className="location-info">
-                              <div className="mb-2">
-                                <span className="fw-semibold">Unidade:</span> {d.unidade || '—'}
-                              </div>
-                              <div className="mb-2">
-                                <span className="fw-semibold">Município:</span> {d.municipio || '—'}
-                              </div>
-                              <div className="mb-2">
-                                <span className="fw-semibold">Bairro:</span> {d.bairro || '—'}
-                              </div>
-                              <div className="mb-2">
-                                <span className="fw-semibold">Rua:</span> {d.nomeRua || '—'}
-                              </div>
-                              <div className="mb-3">
-                                <span className="fw-semibold">Local:</span> {d.localEspecifico || '—'}
-                              </div>
+        {/* Comprovativo para impressão */}
+        
+        <div ref={comprovativoRef} style={{ position: 'fixed', top: '-9999px', left: 0,  width: '800px', padding: '20px', background: 'white' }}>
+          {denunciaFinal && (
+            <div style={{ padding: '20px', border: '1px solid #D4AF37', borderRadius: '10px' }}>
+              <h2 style={{ textAlign: 'center', color: '#D4AF37' }}>REPÚBLICA DE ANGOLA</h2>
+              <h4 style={{ textAlign: 'center' }}>COMPROVATIVO DE DENÚNCIA - SAÚDE</h4>
+              <hr />
+              <p><strong>Código:</strong> {denunciaFinal.codigo}</p>
+              <p><strong>Tipo:</strong> {getTipoLabel(denunciaFinal.subtipo)}</p>
+              <p><strong>Local:</strong> {denunciaFinal.municipio}, {denunciaFinal.bairro}</p>
+              <p><strong>Data da ocorrência:</strong> {new Date(denunciaFinal.dataOcorrecia).toLocaleDateString('pt-AO')}</p>
+              <p><strong>Descrição:</strong> {denunciaFinal.descricaoDetalhada}</p>
+              <p><strong>Nome:</strong> {denunciaFinal.nome || 'Anónimo'}</p>
+              <p><strong>Contacto:</strong> {denunciaFinal.contacto || 'Anónimo'}</p>
+              <p><strong>Email:</strong> {denunciaFinal.email || 'Anónimo'}</p>
+              <p><strong>Anexo:</strong> {denunciaFinal.anexo}</p>
 
-                              {d.email && d.email !== '—' && (
-                                <div className="mb-2 text-muted">
-                                  <FaEnvelope className="me-1" />
-                                  email: {d.email}
-                                </div>
-                              )}
-
-                              {d.contacto && d.contacto !== '—' && (
-                                <div className="mb-2 text-muted">
-                                  <FaPhoneAlt className="me-1" />
-                                  contacto: {formatarContacto(d.contacto)}
-                                </div>
-                              )}
-
-                              {d.nome && d.nome !== 'Anônimo' && (
-                                <div className="mb-2 text-muted">
-                                  <FaUser className="me-1" />
-                                  denunciante: {d.nome}
-                                </div>
-                              )}
-                            </div>
-                          </td>
-
-                               
-                          {/* Data do Registro */}
-                          <td>
-                            <div className="datetime-info">
-                              {d.dataRegistro ? (
-                                <>
-                                  <div>
-                                    {new Date(d.dataRegistro).toLocaleDateString('pt-AO', {
-                                      day: '2-digit',
-                                      month: '2-digit',
-                                      year: 'numeric'
-                                    })}
-                                  </div>
-                                  <div className="small text-muted">
-                                    <FaClock className="me-1" />
-                                    {new Date(d.dataRegistro).toLocaleTimeString('pt-AO', {
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                      hour12: false
-                                    })}
-                                  </div>
-                                </>
-                              ) : (
-                                '—'
-                              )}
-                            </div>
-                          </td>
-
-                          {/* COLUNA STATUS */}
-                          <td>{renderStatusBadge(d)}</td>
-
-                          <td>
-                            <em>{d.comentario || 'Aguardando resposta...'}</em>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              <hr />
+              <p style={{ textAlign: 'center', fontSize: '12px' }}>Guarde este código para acompanhar sua denúncia</p>
             </div>
           )}
         </div>
-      </main>
+      </div>
+    );
+  }
+
+  // ==================== LISTAGEM CORRIGIDA ====================
+  return (
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem 1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+        <FaHeartbeat style={{ color: '#D4AF37', fontSize: '2rem' }} />
+        <h2 style={{ color: '#D4AF37', margin: 0, fontWeight: 'bold' }}>Denúncias - Saúde</h2>
+      </div>
+
+      {denuncias.length === 0 ? (
+        <div style={{ background: '#f0fdf4', color: '#166534', padding: '1rem', borderRadius: '12px', textAlign: 'center' }}>
+          Ainda não existem denúncias registadas para o setor de saúde.
+        </div>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', background: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+            <thead>
+              <tr style={{ background: '#1a1a1a', color: '#D4AF37' }}>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Problema</th>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Descrição</th>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Localização</th>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Data</th>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Denunciante</th>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Contacto</th>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Status</th>
+                <th style={{ padding: '1rem', textAlign: 'left' }}>Comentário</th>
+              </tr>
+            </thead>
+            <tbody>
+              {denuncias.map(d => (
+                <tr key={d.pkDenuncia} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: '1rem' }}><strong>{getTipoLabel(d.subtipo)}</strong></td>
+                  <td style={{ padding: '1rem' }}>{d.descricaoDetalhada?.substring(0, 60)}...</td>
+                  <td style={{ padding: '1rem' }}>{d.municipio}, {d.bairro}</td>
+                  <td style={{ padding: '1rem' }}>{new Date(d.dataOcorrecia).toLocaleDateString('pt-AO')}</td>
+                  <td style={{ padding: '1rem' }}>{d.nome || 'Anónimo'}</td>
+                  <td style={{ padding: '1rem' }}>{d.contacto || '—'}</td>
+                  <td style={{ padding: '1rem' }}>
+                    <span style={{
+                      background: d.status === 'Resolvido' ? '#10b981' : '#f59e0b',
+                      color: 'white',
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '50px',
+                      fontSize: '0.75rem'
+                    }}>
+                      {d.status || 'Pendente'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '1rem' }}>
+                    <em>{d.comentario || 'Aguardando resposta...'}</em>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      
+      <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+        <button onClick={() => window.history.back()} style={{ padding: '0.75rem 2rem', borderRadius: '50px', border: '2px solid #D4AF37', background: 'transparent', color: '#D4AF37', fontWeight: 'bold', cursor: 'pointer' }}>
+          <FaArrowLeft /> Voltar
+        </button>
+      </div>
     </div>
   );
 }

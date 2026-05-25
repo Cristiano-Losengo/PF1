@@ -7,13 +7,13 @@ import org.apache.poi.ss.usermodel.DateUtil;
 public class FuncionsHelper {
     
     public static String getCellAsString(Cell cell) {
+
         if (cell == null) {
             return "";
         }
         
         CellType cellType = cell.getCellType();
-        
-    
+
         if (cellType == CellType.FORMULA) {
             cellType = cell.getCachedFormulaResultType();
         }
@@ -40,8 +40,7 @@ public class FuncionsHelper {
                 return cell.toString().trim();
         }
     }
-    
- 
+
     public static Double getCellAsDouble(Cell cell) {
         if (cell == null) {
             return null;

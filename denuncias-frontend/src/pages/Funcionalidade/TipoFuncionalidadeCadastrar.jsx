@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function TipoFuncionalidadeCadastrar() {
   const [file, setFile] = useState(null);
@@ -16,6 +17,8 @@ export default function TipoFuncionalidadeCadastrar() {
   const [showMessages, setShowMessages] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorDetails, setErrorDetails] = useState("");
+  const [ultimaImportacao, setUltimaImportacao] = useState(null);
+  
   const fileInputRef = useRef(null);
   const progressRef = useRef(null);
   const messagesRef = useRef(null);
@@ -27,7 +30,7 @@ export default function TipoFuncionalidadeCadastrar() {
     return () => clearInterval(interval);
   }, []);
 
-  // Scroll para mensagens quando aparecerem
+  // Scroll para mensagens 
   useEffect(() => {
     if ((mensagem || erros.length > 0 || warnings.length > 0) && messagesRef.current) {
       messagesRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -58,21 +61,15 @@ export default function TipoFuncionalidadeCadastrar() {
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
+    setDragActive(e.type === "dragenter" || e.type === "dragover");
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-
-    const files = e.dataTransfer.files;
-    if (files && files[0]) {
-      handleFileSelect(files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileSelect(e.dataTransfer.files[0]);
     }
   };
 
@@ -104,32 +101,23 @@ export default function TipoFuncionalidadeCadastrar() {
 
   const simulateProgress = () => {
     if (!progressRef.current) return;
-
     let progress = 0;
     const interval = setInterval(() => {
       progress += 5;
       if (progressRef.current) {
         progressRef.current.style.width = `${progress}%`;
       }
-      if (progress >= 95) {
-        clearInterval(interval);
-      }
+      if (progress >= 95) clearInterval(interval);
     }, 50);
-
     return interval;
   };
 
-  // FUNÇÃO ATUALIZADA: formatarErroParaModal
   const formatarErroParaModal = (errosArray) => {
     if (!errosArray) return "";
-    
     if (Array.isArray(errosArray)) {
-      // Verificar se é a estrutura antiga (array de strings)
       if (errosArray.length > 0 && typeof errosArray[0] === 'string') {
         return errosArray.join('\n');
       }
-      
-      // É a nova estrutura de detalhes de erro (array de objetos)
       return errosArray.map(erro => {
         if (typeof erro === 'object') {
           return `Linha: ${erro.linha || erro.tipo_erro || 'N/A'}\n` +
@@ -141,12 +129,9 @@ export default function TipoFuncionalidadeCadastrar() {
         return erro;
       }).join('\n\n');
     }
-    
-    // Se não for array, retornar como string
     return errosArray || "";
   };
 
-  // FUNÇÃO ATUALIZADA: handleFileUpload
   const handleFileUpload = async (e) => {
     e.preventDefault();
     if (!file) {
@@ -188,6 +173,7 @@ export default function TipoFuncionalidadeCadastrar() {
         if (resultado.sucesso) {
           setMensagem(resultado.mensagem || "✅ Importação realizada com sucesso!");
           setSucesso(true);
+          setUltimaImportacao(new Date().toLocaleString('pt-PT'));
           setFile(null);
           if (fileInputRef.current) fileInputRef.current.value = '';
 
@@ -201,21 +187,17 @@ export default function TipoFuncionalidadeCadastrar() {
             }
           }, 5000);
         } else {
-          // TRATAMENTO ESPECÍFICO PARA ERROS DO BACKEND
           if (resultado.erros && Array.isArray(resultado.erros)) {
             console.log("Erros recebidos do backend:", resultado.erros);
             
             const primeiroErro = resultado.erros[0] || "";
             
-            // Verificar se é erro de data/hora (estrutura de objeto)
             if (typeof primeiroErro === 'object') {
-              // É a nova estrutura de erros detalhados
               if (primeiroErro.campo && 
                   (primeiroErro.campo.includes('data') || 
                    primeiroErro.campo.includes('hora') || 
                    primeiroErro.campo.includes('data_hora'))) {
                 
-                // Mensagem principal simplificada
                 let mensagemErro = primeiroErro.motivo || "Erro na data/hora do arquivo";
                 const linhasMotivo = mensagemErro.split('\n');
                 const primeiraLinha = linhasMotivo[0] || "Erro de validação";
@@ -223,19 +205,16 @@ export default function TipoFuncionalidadeCadastrar() {
                 setMensagem(`❌ ${primeiraLinha}`);
                 setErros([primeiraLinha]);
                 
-                // Exibir detalhes completos no modal
                 if (linhasMotivo.length > 1) {
                   setErrorDetails(mensagemErro);
                   setShowErrorModal(true);
                 }
               } else {
-                // Outros tipos de erros detalhados
                 setErrorDetails(formatarErroParaModal(resultado.erros));
                 setShowErrorModal(true);
                 setErros([]);
               }
             } 
-            // Se for a estrutura antiga (texto)
             else if (typeof primeiroErro === 'string' && 
                     (primeiroErro.includes("# Detalhes") || 
                      primeiroErro.includes("erro(s) de validação encontrado(s)"))) {
@@ -243,8 +222,8 @@ export default function TipoFuncionalidadeCadastrar() {
               setShowErrorModal(true);
               setErros([]);
             } else {
-              // Erro simples (array de strings)
               setErros(resultado.erros);
+              setMensagem(`❌ Foram encontrados ${resultado.erros.length} erro(s) na importação`);
             }
           } else if (resultado.erro) {
             setErros([resultado.erro]);
@@ -264,7 +243,6 @@ export default function TipoFuncionalidadeCadastrar() {
         }
       }
 
-      // Capturar warnings do backend
       if (resultado.warnings && Array.isArray(resultado.warnings)) {
         setWarnings(resultado.warnings);
       }
@@ -282,7 +260,6 @@ export default function TipoFuncionalidadeCadastrar() {
     }
   };
 
-  // Função para fechar o modal e limpar as mensagens
   const fecharModalLimparMensagens = () => {
     setShowErrorModal(false);
     setMensagem("");
@@ -313,654 +290,548 @@ export default function TipoFuncionalidadeCadastrar() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Função para formatar os detalhes do erro com base na imagem
+  // Função formatarDetalhesErro 
   const formatarDetalhesErro = (texto) => {
     if (!texto) return null;
-
     const linhas = texto.split('\n');
     let emDetalhesErros = false;
     let emProximosPassos = false;
-
-    return linhas.map((linha, index) => {
-      // Título principal
-      if (linha.startsWith('# ')) {
-        return (
-          <h5 key={index} style={{ color: '#333', marginBottom: '16px', fontSize: '18px' }}>
-            {linha.substring(2)}
-          </h5>
-        );
-      }
-
-      // Checkbox de contagem de erros
-      if (linha.includes('erro(s) de validação encontrado(s)')) {
-        return (
-          <div key={index} className="d-flex align-items-start mb-3">
-            <input
-              type="checkbox"
-              disabled
-              className="me-2 mt-1"
-              style={{ transform: 'scale(1.2)' }}
-            />
-            <span style={{ color: '#d32f2f', fontWeight: '500' }}>{linha.trim()}</span>
-          </div>
-        );
-      }
-
-      // Código e Status
-      if (linha.includes('Código:') || linha.includes('Status:')) {
-        return (
-          <div key={index} className="mb-2" style={{ color: '#666', fontSize: '14px' }}>
-            {linha}
-          </div>
-        );
-      }
-
-      // Seção de mensagem do servidor
-      if (linha.includes('Mensagem do servidor:')) {
-        return (
-          <div key={index} className="mb-3">
-            <div style={{ color: '#1976d2', fontWeight: '500', marginBottom: '4px' }}>
-              {linha.replace('**', '').replace('**', '')}
-            </div>
-          </div>
-        );
-      }
-
-      // Seção de detalhes dos erros
-      if (linha.includes('Detalhes dos erros encontrados:')) {
-        emDetalhesErros = true;
-        return (
-          <div key={index} className="mb-3 mt-4">
-            <div style={{ color: '#d32f2f', fontWeight: '500', marginBottom: '12px' }}>
-              {linha.replace('**', '').replace('**', '')}
-            </div>
-          </div>
-        );
-      }
-
-      // Linhas de erro específicas
-      if (linha.startsWith('**Linha') || linha.startsWith('**Motivo do erro:')) {
-        return (
-          <div key={index} className="mb-2" style={{
-            color: emDetalhesErros ? '#333' : '#1976d2',
-            fontWeight: linha.startsWith('**') ? '500' : 'normal',
-            marginLeft: linha.startsWith('**Motivo') ? '20px' : '0'
-          }}>
-            {linha.replace(/\*\*/g, '')}
-          </div>
-        );
-      }
-
-      // Seção de próximos passos
-      if (linha.includes('Próximos passos:')) {
-        emDetalhesErros = false;
-        emProximosPassos = true;
-        return (
-          <div key={index} className="mb-3 mt-4">
-            <div style={{ color: '#388e3c', fontWeight: '500', marginBottom: '12px' }}>
-              {linha.replace('**', '').replace('**', '')}
-            </div>
-          </div>
-        );
-      }
-
-      // Itens de lista nos próximos passos
-      if (linha.startsWith('- ') && emProximosPassos) {
-        return (
-          <div key={index} className="d-flex align-items-start mb-2" style={{ marginLeft: '20px' }}>
-            <span style={{ marginRight: '8px', color: '#388e3c' }}>•</span>
-            <span style={{ color: '#555' }}>{linha.substring(2)}</span>
-          </div>
-        );
-      }
-
-      // Linha de requisição realizada com sucesso
-      if (linha.includes('Requisição realizada com sucesso!')) {
-        return (
-          <div key={index} className="mb-3" style={{
-            padding: '8px 12px',
-            backgroundColor: '#e8f5e9',
-            borderRadius: '4px',
-            color: '#2e7d32',
-            borderLeft: '4px solid #4caf50'
-          }}>
-            {linha}
-          </div>
-        );
-      }
-
-      // Descrições de erro específicas
-      if (linha.includes('repetida nas linhas:')) {
-        return (
-          <div key={index} className="mb-3" style={{
-            padding: '8px 12px',
-            backgroundColor: '#ffebee',
-            borderRadius: '4px',
-            color: '#c62828',
-            borderLeft: '4px solid #f44336',
-            marginLeft: '40px'
-          }}>
-            {linha}
-          </div>
-        );
-      }
-
-      // Linha vazia
-      if (linha.trim() === '') {
-        return <div key={index} className="mb-2"></div>;
-      }
-
-      // Linha normal
-      return (
-        <div key={index} className="mb-1" style={{ color: '#666' }}>
-          {linha}
-        </div>
-      );
+    let erroCount = 0;
+    
+    linhas.forEach(linha => {
+      if (linha.includes('Linha:') || linha.includes('Motivo do erro:')) erroCount++;
     });
+    
+    return (
+      <div>
+        {erroCount > 0 && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            padding: '12px 16px',
+            background: 'linear-gradient(135deg, rgba(212,175,55,0.1), rgba(212,175,55,0.05))',
+            borderRadius: '12px',
+            marginBottom: '20px',
+            borderLeft: '4px solid #D4AF37'
+          }}>
+            <div style={{
+              background: '#D4AF37',
+              color: '#000',
+              borderRadius: '50%',
+              width: '28px',
+              height: '28px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 'bold',
+              fontSize: '14px'
+            }}>
+              {erroCount}
+            </div>
+            <span style={{ fontWeight: '600', color: '#333' }}>erro(s) de validação encontrado(s)</span>
+          </div>
+        )}
+        
+        {linhas.map((linha, index) => {
+          if (linha.startsWith('# ')) {
+            return (
+              <h5 key={index} style={{ 
+                color: '#D4AF37', 
+                marginBottom: '20px', 
+                fontSize: '18px',
+                fontWeight: '700',
+                borderLeft: '3px solid #D4AF37',
+                paddingLeft: '12px'
+              }}>
+                {linha.substring(2)}
+              </h5>
+            );
+          }
+          
+          if (linha.includes('erro(s) de validação encontrado(s)')) {
+            return null;
+          }
+          
+          if (linha.includes('Código:') || linha.includes('Status:')) {
+            return (
+              <div key={index} style={{ 
+                color: '#666', 
+                fontSize: '13px', 
+                marginBottom: '8px',
+                fontFamily: 'monospace',
+                background: '#f5f5f5',
+                padding: '4px 8px',
+                borderRadius: '6px',
+                display: 'inline-block'
+              }}>
+                {linha}
+              </div>
+            );
+          }
+          
+          if (linha.includes('Mensagem do servidor:')) {
+            return (
+              <div key={index} style={{ 
+                marginBottom: '16px',
+                padding: '12px 16px',
+                background: 'linear-gradient(135deg, #667eea10, #764ba210)',
+                borderRadius: '10px',
+                borderLeft: '3px solid #667eea'
+              }}>
+                <div style={{ color: '#667eea', fontWeight: '600', marginBottom: '4px' }}>
+                  📡 {linha.replace(/\*\*/g, '')}
+                </div>
+              </div>
+            );
+          }
+          
+          if (linha.includes('Detalhes dos erros encontrados:')) {
+            emDetalhesErros = true;
+            return (
+              <div key={index} style={{ marginTop: '24px', marginBottom: '16px' }}>
+                <div style={{ 
+                  color: '#D4AF37', 
+                  fontWeight: '700', 
+                  marginBottom: '12px',
+                  fontSize: '15px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <span style={{ fontSize: '18px' }}>📋</span> {linha.replace(/\*\*/g, '')}
+                </div>
+              </div>
+            );
+          }
+          
+          if (linha.startsWith('**Linha') || linha.startsWith('**Motivo do erro:')) {
+            const isMotivo = linha.startsWith('**Motivo');
+            return (
+              <div key={index} style={{ 
+                marginBottom: '8px',
+                marginLeft: isMotivo ? '24px' : '0',
+                padding: isMotivo ? '8px 12px' : '4px 0',
+                background: isMotivo ? '#fff8e1' : 'transparent',
+                borderRadius: isMotivo ? '8px' : '0',
+                borderLeft: isMotivo ? '3px solid #D4AF37' : 'none',
+                fontSize: '13px'
+              }}>
+                <span style={{ 
+                  fontWeight: '600',
+                  color: emDetalhesErros ? '#D4AF37' : '#1976d2'
+                }}>
+                  {linha.replace(/\*\*/g, '').split(':')[0]}:
+                </span>
+                <span style={{ color: '#555', marginLeft: '8px' }}>
+                  {linha.replace(/\*\*/g, '').split(':').slice(1).join(':')}
+                </span>
+              </div>
+            );
+          }
+          
+          if (linha.includes('Próximos passos:')) {
+            emDetalhesErros = false;
+            emProximosPassos = true;
+            return (
+              <div key={index} style={{ marginTop: '24px', marginBottom: '16px' }}>
+                <div style={{ 
+                  color: '#2e7d32', 
+                  fontWeight: '700', 
+                  marginBottom: '12px',
+                  fontSize: '15px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <span style={{ fontSize: '18px' }}>✅</span> {linha.replace(/\*\*/g, '')}
+                </div>
+              </div>
+            );
+          }
+          
+          if (linha.startsWith('- ') && emProximosPassos) {
+            return (
+              <div key={index} style={{ 
+                marginLeft: '20px', 
+                marginBottom: '8px', 
+                display: 'flex', 
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <div style={{ width: '6px', height: '6px', background: '#D4AF37', borderRadius: '50%' }} />
+                <span style={{ color: '#555', fontSize: '13px' }}>{linha.substring(2)}</span>
+              </div>
+            );
+          }
+          
+          if (linha.includes('Requisição realizada com sucesso!')) {
+            return (
+              <div key={index} style={{ 
+                padding: '12px 16px', 
+                backgroundColor: '#e8f5e9', 
+                borderRadius: '10px',
+                color: '#2e7d32',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <span style={{ fontSize: '18px' }}>✅</span>
+                <span style={{ fontWeight: '500' }}>{linha}</span>
+              </div>
+            );
+          }
+          
+          if (linha.includes('repetida nas linhas:')) {
+            return (
+              <div key={index} style={{ 
+                padding: '10px 14px', 
+                backgroundColor: '#ffebee', 
+                borderRadius: '10px',
+                color: '#c62828',
+                marginLeft: '24px',
+                marginBottom: '12px',
+                fontSize: '13px',
+                borderLeft: '3px solid #f44336'
+              }}>
+                ⚠️ {linha}
+              </div>
+            );
+          }
+          
+          if (linha.trim() === '') {
+            return <div key={index} style={{ height: '8px' }}></div>;
+          }
+          
+          return (
+            <div key={index} style={{ 
+              color: '#666', 
+              marginBottom: '6px',
+              fontSize: '13px',
+              lineHeight: '1.5'
+            }}>
+              {linha}
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
-    <div className="container-fluid py-4">
-      {/* Modal de Erros Detalhados - DESIGN MELHORADO */}
+    <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: "'Inter', sans-serif" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+
+      {/* Modal de Erros Detalhados - Design Elegante */}
       {showErrorModal && (
-        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-lg modal-dialog-centered">
-            <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '12px', overflow: 'hidden' }}>
-              <div className="modal-header" style={{
-                backgroundColor: '#f44336',
-                color: 'white',
-                borderBottom: 'none',
-                padding: '20px 24px'
-              }}>
-                <div className="d-flex align-items-center w-100">
-                  <div style={{
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    borderRadius: '50%',
-                    width: '40px',
-                    height: '40px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: '12px'
-                  }}>
-                    <i className="bi bi-exclamation-triangle-fill" style={{ fontSize: '20px' }}></i>
-                  </div>
-                  <div>
-                    <h5 className="modal-title mb-0" style={{ fontSize: '18px', fontWeight: '600' }}>
-                      Detalhes do Erro
-                    </h5>
-                    <small style={{ opacity: 0.9 }}>Verifique os problemas identificados</small>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="btn-close btn-close-white"
-                  onClick={fecharModalLimparMensagens}
-                  style={{ opacity: 0.8 }}
-                ></button>
-              </div>
-
-              <div className="modal-body p-0">
-                <div className="p-4" style={{
-                  backgroundColor: '#f8f9fa',
-                  maxHeight: '70vh',
-                  overflowY: 'auto'
+        <div style={{ 
+          position: 'fixed', 
+          top: 0, 
+          left: 0, 
+          right: 0, 
+          bottom: 0, 
+          backgroundColor: 'rgba(0,0,0,0.7)', 
+          backdropFilter: 'blur(4px)',
+          zIndex: 1050, 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          fontFamily: "'Inter', sans-serif"
+        }}>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            style={{ 
+              backgroundColor: 'white', 
+              borderRadius: '24px', 
+              maxWidth: '650px', 
+              width: '90%', 
+              maxHeight: '85vh', 
+              overflow: 'hidden', 
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
+            }}
+          >
+            {/* Header  */}
+            <div style={{ 
+              background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)', 
+              color: '#D4AF37', 
+              padding: '24px 28px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              borderBottom: '1px solid rgba(212,175,55,0.2)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ 
+                  backgroundColor: 'rgba(212,175,55,0.15)', 
+                  borderRadius: '50%', 
+                  width: '48px', 
+                  height: '48px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  boxShadow: '0 0 20px rgba(212,175,55,0.3)'
                 }}>
-                  <div style={{
-                    backgroundColor: 'white',
-                    padding: '24px',
-                    borderRadius: '8px',
-                    border: '1px solid #e0e0e0',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                  }}>
-                    <div style={{
-                      fontFamily: "'Segoe UI', 'Roboto', sans-serif",
-                      fontSize: '14px',
-                      lineHeight: '1.6',
-                      color: '#333'
-                    }}>
-                      {formatarDetalhesErro(errorDetails)}
-                    </div>
-
-                    {/* Resumo do Erro */}
-                    <div className="mt-4 pt-3 border-top">
-                      <div className="d-flex align-items-center justify-content-between">
-
-                      </div>
-                    </div>
-                  </div>
+                  <i className="bi bi-exclamation-triangle-fill" style={{ fontSize: '24px', color: '#D4AF37' }}></i>
+                </div>
+                <div>
+                  <h5 style={{ margin: 0, fontSize: '20px', fontWeight: '700', color: '#D4AF37' }}>Detalhes do Erro</h5>
+                  <p style={{ margin: '4px 0 0', fontSize: '13px', opacity: 0.7, color: '#aaa' }}>Verifique os problemas identificados</p>
                 </div>
               </div>
-
-              <div className="modal-footer" style={{
-                backgroundColor: '#f8f9fa',
-                borderTop: '1px solid #e0e0e0',
-                padding: '16px 24px'
+              <button 
+                onClick={fecharModalLimparMensagens} 
+                style={{ 
+                  background: 'rgba(255,255,255,0.1)', 
+                  border: 'none', 
+                  color: '#D4AF37', 
+                  fontSize: '20px', 
+                  cursor: 'pointer',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(212,175,55,0.2)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+              >
+                ×
+              </button>
+            </div>
+            
+            {/* Modal */}
+            <div style={{ 
+              padding: '28px', 
+              maxHeight: '55vh', 
+              overflowY: 'auto',
+              background: '#f8f9fa'
+            }}>
+              <div style={{ 
+                background: 'white', 
+                padding: '24px', 
+                borderRadius: '16px', 
+                border: '1px solid #e8e8e8',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
               }}>
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  onClick={fecharModalLimparMensagens}
-                  style={{ padding: '8px 20px' }}
-                >
-                  <i className="bi bi-eye-slash me-2"></i>
-                  Fechar Detalhes
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => {
-                    fecharModalLimparMensagens();
-                    if (fileInputRef.current) fileInputRef.current.click();
-                  }}
-                  style={{ padding: '8px 20px' }}
-                >
-                  <i className="bi bi-arrow-clockwise me-2"></i>
-                  Corrigir e Tentar Novamente
-                </button>
+                {formatarDetalhesErro(errorDetails)}
               </div>
             </div>
-          </div>
+            
+            {/* Footer c */}
+            <div style={{ 
+              padding: '20px 28px', 
+              borderTop: '1px solid #e8e8e8', 
+              display: 'flex', 
+              gap: '12px', 
+              justifyContent: 'flex-end', 
+              background: 'white'
+            }}>
+              <motion.button 
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={fecharModalLimparMensagens} 
+                style={{ 
+                  padding: '10px 24px', 
+                  borderRadius: '50px', 
+                  border: '2px solid #D4AF37', 
+                  background: 'transparent', 
+                  color: '#D4AF37',
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212,175,55,0.1)' }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+              >
+                <i className="bi bi-eye-slash me-2"></i>
+                Fechar Detalhes
+              </motion.button>
+              <motion.button 
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => { fecharModalLimparMensagens(); fileInputRef.current?.click(); }} 
+                style={{ 
+                  padding: '10px 24px', 
+                  borderRadius: '50px', 
+                  border: 'none', 
+                  background: 'linear-gradient(135deg, #D4AF37, #FFE55C)',
+                  color: '#000',
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(212,175,55,0.3)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <i className="bi bi-arrow-clockwise me-2"></i>
+                Corrigir e Tentar Novamente
+              </motion.button>
+            </div>
+          </motion.div>
         </div>
       )}
 
-      {/* Header */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h1 className="h3 mb-0 text-primary">📊 Importar Tipo Funcionalidade</h1>
-          <p className="text-muted mb-0">Importe Tipo funcionalidade através de ficheiros Excel</p>
-        </div>
+    
+      <div style={{ background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)', padding: '3rem 2rem', textAlign: 'center' }}>
+        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📋</div>
+        <h1 style={{ color: '#D4AF37', fontSize: '2rem', fontWeight: 'bold', margin: 0 }}>Importar Tipo Funcionalidade</h1>
+        <p style={{ color: '#aaa', marginTop: '0.5rem' }}>Importe Tipo funcionalidade através de ficheiros Excel</p>
       </div>
 
-      {/* Messages Section */}
-      {(mensagem || erros.length > 0 || warnings.length > 0) && showMessages && (
-        <div className="row mt-4" ref={messagesRef}>
-          <div className="col-12">
-            {/* Success Message */}
-            {mensagem && sucesso && (
-              <div className="alert alert-success border-0 shadow-sm fade show d-flex align-items-center justify-content-between animate__animated animate__fadeInDown">
-                <div className="d-flex align-items-center">
-                  <i className="bi bi-check-circle-fill me-2 fs-5"></i>
-                  <div>
-                    <strong className="d-block">Importação bem-sucedida!</strong>
-                    <small className="text-success">{mensagem}</small>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => {
-                    setMensagem("");
-                    setSucesso(false);
-                    setShowMessages(false);
-                  }}
-                  aria-label="Close"
-                ></button>
-              </div>
-            )}
-
-            {/* Error Messages (formato atualizado com tratamento especial para erros de data/hora) */}
-            {erros.length > 0 && !sucesso && !showErrorModal && (
-              <div className="alert alert-danger border-0 shadow-sm fade show animate__animated animate__shakeX">
-                <div className="d-flex align-items-center justify-content-between mb-2">
-                  <div className="d-flex align-items-center">
-                    <i className="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
-                    <strong>Erros encontrados ({erros.length})</strong>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn-close btn-close-white"
-                    onClick={() => {
-                      setErros([]);
-                      setMensagem("");
-                      setShowMessages(false);
-                    }}
-                    aria-label="Close"
-                  ></button>
-                </div>
-                <div className="mt-2">
-                  {erros.map((erro, index) => {
-                    // Verificar se é erro de data/hora
-                    const isErroDataHora = typeof erro === 'string' && 
-                      (erro.toLowerCase().includes('data') || 
-                       erro.toLowerCase().includes('hora') ||
-                       erro.includes('📅') ||
-                       erro.includes('🕒'));
-                    
-                    return (
-                      <div key={index} className="alert alert-light py-2 mb-2 border-0">
-                        {isErroDataHora ? (
-                          <div>
-                            <div className="d-flex align-items-start mb-2">
-                              <i className="bi bi-calendar-x text-danger me-2"></i>
-                              <div>
-                                <strong className="text-danger d-block">Erro de Data/Hora</strong>
-                                <small className="text-danger">{erro.split('\n')[0]}</small>
-                              </div>
-                            </div>
-                            <button 
-                              className="btn btn-sm btn-outline-danger mt-2"
-                              onClick={() => {
-                                setErrorDetails(erro);
-                                setShowErrorModal(true);
-                              }}
-                            >
-                              <i className="bi bi-info-circle me-1"></i>
-                              Ver detalhes do erro
-                            </button>
-                          </div>
-                        ) : (
-                          <small className="text-danger">{erro}</small>
-                        )}
+      <div style={{ maxWidth: '1200px', margin: '-40px auto 0', padding: '2rem' }}>
+        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+          
+          {/* Coluna Esquerda - Upload */}
+          <div style={{ flex: 2, minWidth: '300px' }}>
+            <div ref={messagesRef}>
+              <AnimatePresence>
+                {(mensagem || erros.length > 0 || warnings.length > 0) && showMessages && (
+                  <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={{ marginBottom: '1.5rem' }}>
+                    {sucesso && (
+                      <div style={{ background: '#10b981', color: 'white', padding: '1rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><i className="bi bi-check-circle-fill"></i> <strong>Sucesso!</strong> {mensagem}</div>
+                        <button onClick={() => { setMensagem(""); setSucesso(false); setShowMessages(false); }} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '20px' }}>×</button>
                       </div>
-                    );
-                  })}
-                  {erros.length > 10 && (
-                    <div className="alert alert-light py-2 mb-0 border-0">
-                      <small className="text-muted">
-                        ... e mais {erros.length - 10} erro(s)
-                      </small>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+                    )}
+                    
+                    {erros.length > 0 && !sucesso && !showErrorModal && (
+                      <div style={{ background: '#ef4444', color: 'white', padding: '1rem', borderRadius: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                          <strong><i className="bi bi-exclamation-triangle-fill"></i> Erros encontrados ({erros.length})</strong>
+                          <button onClick={() => { setErros([]); setMensagem(""); setShowMessages(false); }} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '20px' }}>×</button>
+                        </div>
+                        <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                          {erros.map((erro, idx) => (
+                            <div key={idx} style={{ padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.2)', fontSize: '13px' }}>
+                              <i className="bi bi-x-circle-fill" style={{ marginRight: '8px' }}></i> {erro}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {warnings.length > 0 && (
+                      <div style={{ background: '#f59e0b', color: 'white', padding: '1rem', borderRadius: '12px', marginTop: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><i className="bi bi-exclamation-triangle-fill"></i> Avisos ({warnings.length})</div>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
-            {/* Warnings Section */}
-            {warnings.length > 0 && (
-              <div className="alert alert-warning border-0 shadow-sm fade show animate__animated animate__fadeIn">
-                <div className="d-flex align-items-center justify-content-between mb-2">
-                  <div className="d-flex align-items-center">
-                    <i className="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
-                    <strong>Avisos ({warnings.length})</strong>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    onClick={() => setWarnings([])}
-                    aria-label="Close"
-                  ></button>
-                </div>
-                <div className="mt-2">
-                  {warnings.slice(0, 10).map((warning, index) => (
-                    <div key={index} className="alert alert-light py-2 mb-2 border-0">
-                      <small className="text-warning">{warning}</small>
-                    </div>
-                  ))}
-                  {warnings.length > 10 && (
-                    <div className="alert alert-light py-2 mb-0 border-0">
-                      <small className="text-muted">
-                        ... e mais {warnings.length - 10} aviso(s)
-                      </small>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Generic Message */}
-            {mensagem && !sucesso && erros.length === 0 && warnings.length === 0 && !showErrorModal && (
-              <div className="alert alert-warning border-0 shadow-sm fade show animate__animated animate__fadeIn">
-                <div className="d-flex align-items-center justify-content-between">
-                  <div className="d-flex align-items-center">
-                    <i className="bi bi-info-circle-fill me-2 fs-5"></i>
-                    <div>
-                      <strong className="d-block">Atenção</strong>
-                      <small>{mensagem}</small>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    onClick={() => {
-                      setMensagem("");
-                      setShowMessages(false);
-                    }}
-                    aria-label="Close"
-                  ></button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Grid Layout */}
-      <div className="row">
-        <div className="col-lg-8">
-          <div className="card border-0 shadow-sm mb-4">
-            <div className="card-body p-4">
-              <div
-                className={`drop-zone p-5 text-center border-2 border-dashed rounded-3 mb-4 ${dragActive ? 'drag-active bg-primary bg-opacity-10' : 'bg-light'
-                  } ${file ? 'border-success' : ''}`}
+            {/* Cardapio Principal */}
+            <div style={{ background: 'white', borderRadius: '20px', padding: '2rem', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
+               <div
+                onClick={() => fileInputRef.current?.click()}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                style={{ cursor: 'pointer' }}
+                style={{
+                  border: `2px dashed ${dragActive ? '#D4AF37' : file ? '#10b981' : '#ccc'}`,
+                  borderRadius: '16px',
+                  padding: '3rem 2rem',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  background: dragActive ? 'rgba(212,175,55,0.05)' : file ? 'rgba(16,185,129,0.05)' : '#fafafa',
+                  marginBottom: '1.5rem'
+                }}
               >
-                <div className="py-4">
-                  <i className={`bi ${file ? 'bi-file-earmark-check text-success' : 'bi-cloud-upload'} display-4 mb-3`}></i>
-                  <h5 className="mb-2">
-                    {file ? file.name : "Arraste e solte seu arquivo aqui"}
-                  </h5>
-                  <p className="text-muted mb-3">
-                    {file
-                      ? `${formatFileSize(file.size)} • Clique para alterar`
-                      : "ou clique para selecionar o arquivo, com o seguinte formato:  .xlsx .xls .csv"
-                    }
-                  </p>
-
-                  <button className="btn btn-primary">
-                    <i className="bi bi-folder2-open me-2"></i>
-                    Selecionar Arquivo
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    className="d-none"
-                    accept=".csv, .xlsx, .xls"
-                    onChange={handleFileChange}
-                  />
-                </div>
+                <i className={`bi ${file ? 'bi-file-earmark-excel' : 'bi-cloud-upload'}`} style={{ fontSize: '3rem', color: file ? '#10b981' : '#D4AF37', marginBottom: '1rem', display: 'block' }}></i>
+                <h3 style={{ marginBottom: '0.5rem', fontSize: '1.25rem' }}>{file ? file.name : "Arraste e solte seu arquivo aqui"}</h3>
+                <p style={{ color: '#666' }}>{file ? `${formatFileSize(file.size)} • Clique para alterar` : "ou clique para selecionar o arquivo ( .xlsx .xls .csv )"}</p>
+                <button style={{ padding: '10px 24px', backgroundColor: '#D4AF37', color: '#000', border: 'none', borderRadius: '50px', cursor: 'pointer', fontWeight: 'bold' }}><i className="bi bi-folder2-open"></i> Selecionar Arquivo</button>
+                <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" onChange={handleFileChange} style={{ display: 'none' }} />
               </div>
 
+              {/* Barra de Progresso */}
               {loading && (
-                <div className="mb-4">
-                  <div className="d-flex justify-content-between mb-1">
-                    <small className="text-muted">Processando arquivo...</small>
-                    <small className="text-muted">Aguarde</small>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <small>Processando arquivo...</small>
+                    <small>Aguarde</small>
                   </div>
-                  <div className="progress" style={{ height: '8px' }}>
-                    <div
-                      ref={progressRef}
-                      className="progress-bar progress-bar-striped progress-bar-animated"
-                      role="progressbar"
-                      style={{ width: '0%', transition: 'width 0.3s ease' }}
-                    ></div>
+                  <div style={{ height: '8px', backgroundColor: '#e0e0e0', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div ref={progressRef} style={{ width: '0%', height: '100%', backgroundColor: '#D4AF37', transition: 'width 0.3s ease' }}></div>
                   </div>
                 </div>
               )}
 
-              {/* File Info */}
+              {/* Info do ficheiro */}
               {file && !loading && (
-                <div className="alert alert-light border mb-4 py-3">
-                  <div className="d-flex align-items-center justify-content-between">
-                    <div className="d-flex align-items-center">
-                      <i className="bi bi-file-earmark-excel text-success me-3 fs-4"></i>
-                      <div>
-                        <h6 className="mb-0">{file.name}</h6>
-                        <small className="text-muted">
-                          {formatFileSize(file.size)} • {file.type || "Arquivo Excel"}
-                        </small>
-                      </div>
-                    </div>
-                    <button
-                      className="btn btn-sm btn-outline-danger"
-                      onClick={() => setFile(null)}
-                    >
-                      <i className="bi bi-trash"></i>
-                    </button>
+                <div style={{ background: '#f0fdf4', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <i className="bi bi-file-earmark-excel" style={{ color: '#10b981', fontSize: '1.5rem' }}></i>
+                    <div><strong>{file.name}</strong><br /><small>{formatFileSize(file.size)}</small></div>
                   </div>
+                  <button onClick={() => setFile(null)} style={{ padding: '8px', backgroundColor: '#fee2e2', border: 'none', borderRadius: '8px', cursor: 'pointer' }}><i className="bi bi-trash" style={{ color: '#ef4444' }}></i></button>
                 </div>
               )}
 
-              {/* Action Buttons */}
-              <div className="d-flex gap-2">
-                <button
-                  type="button"
-                  className="btn btn-primary flex-fill"
-                  onClick={handleFileUpload}
-                  disabled={loading || !file}
-                >
-                  {loading ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2"></span>
-                      Processando...
-                    </>
-                  ) : (
-                    <>
-                      <i className="bi bi-play-circle me-2"></i>
-                      Iniciar Importação
-                    </>
-                  )}
+              {/* Ações dos Buttons */}
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button onClick={() => window.history.back()} style={{ padding: '12px 24px', borderRadius: '50px', border: '2px solid #D4AF37', background: 'transparent', color: '#D4AF37', fontWeight: 'bold', cursor: 'pointer' }}><i className="bi bi-arrow-left"></i> Voltar</button>
+                <button onClick={handleFileUpload} disabled={loading || !file} style={{ flex: 1, padding: '12px', borderRadius: '50px', border: 'none', background: 'linear-gradient(135deg, #D4AF37, #FFE55C)', color: '#000', fontWeight: 'bold', cursor: loading || !file ? 'not-allowed' : 'pointer', opacity: loading || !file ? 0.6 : 1 }}>
+                  {loading ? <><i className="bi bi-hourglass-split"></i> Processando...</> : <><i className="bi bi-play-circle"></i> Iniciar Importação</>}
                 </button>
-
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  onClick={clearAll}
-                  disabled={loading}
-                >
-                  <i className="bi bi-x-circle me-1"></i>
-                  Limpar Tudo
-                </button>
+                <button onClick={clearAll} disabled={loading} style={{ padding: '12px 24px', borderRadius: '50px', border: '2px solid #ccc', background: 'white', cursor: 'pointer' }}><i className="bi bi-x-circle"></i> Limpar</button>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Right Column - Info & Status */}
-        <div className="col-lg-4">
-          {/* Versions Card */}
-          <div className="card border-0 shadow-sm mb-4">
-            <div className="card-body p-4">
-              <h6 className="card-title mb-3 d-flex align-items-center">
-                <i className="bi bi-clock-history me-2 text-info"></i>
-                Versões Atual
+          {/*  Status */}
+          <div style={{ flex: 1, minWidth: '280px' }}>
+            <div style={{ background: 'white', borderRadius: '20px', padding: '1.5rem', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', marginBottom: '1.5rem' }}>
+              <h6 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <i className="bi bi-clock-history" style={{ color: '#D4AF37' }}></i> Última Importação
               </h6>
+              
+              {ultimaImportacao && (
+                <div style={{ background: 'rgba(212,175,55,0.1)', padding: '10px', borderRadius: '8px', marginBottom: '1rem', fontSize: '14px', borderLeft: '3px solid #D4AF37' }}>
+                  <i className="bi bi-calendar-event me-2"></i>
+                  <strong>{ultimaImportacao}</strong>
+                </div>
+              )}
+              
 
-              <div className="d-flex align-items-center mb-3">
-                <div className="me-3">
-                  <div className="icon-circle bg-info bg-opacity-10 text-info">
-                    <i className="bi bi-tags"></i>
+              
+              <hr />
+              
+              <div style={{ marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(212,175,55,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <i className="bi bi-tags" style={{ color: '#D4AF37', fontSize: '18px' }}></i>
+                  </div>
+                  <div>
+                    <small style={{ color: '#666' }}>Versão Tipo de Funcionalidades</small>
+                    <div><strong>{versoes.tipos_funcionalidade}</strong> {versaoCarregando && <i className="bi bi-arrow-repeat" style={{ animation: 'spin 1s linear infinite', marginLeft: '8px' }}></i>}</div>
                   </div>
                 </div>
-                <div className="flex-grow-1">
-                  <small className="text-muted">Tipo de Funcionalidade</small>
-                  <div className="d-flex align-items-center">
-                    <span className="fw-semibold">{versoes.tipos_funcionalidade}</span>
-                    {versaoCarregando && (
-                      <span className="spinner-border spinner-border-sm ms-2 text-info"></span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="d-flex align-items-center">
-                <div className="me-3">
-                  <div className="icon-circle bg-success bg-opacity-10 text-success">
-                    <i className="bi bi-list-check"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Info Card */}
-          <div className="card border-0 shadow-sm">
-            <div className="card-body p-4">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
 
 
-              <div className="accordion accordion-flush" id="infoAccordion">
-                <div className="accordion-item border-0">
-                  <div id="validationInfo" className="accordion-collapse collapse">
-                    <div className="accordion-body pt-2 px-0">
-                      <ul className="small mb-0">
-                        <li>Formato da data (yyyy-MM-dd-HH-mm)</li>
-                        <li>PKs devem ser numéricos</li>
-                        <li>Verificação de duplicados</li>
-                        <li>Campos obrigatórios</li>
-                      </ul>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>
 
-      {/* CSS Styles */}
-      <style jsx>{`
-        .drop-zone {
-          transition: all 0.3s ease;
-          border-color: #dee2e6;
-        }
-        .drop-zone:hover {
-          border-color: #0d6efd;
-          background-color: rgba(13, 110, 253, 0.05);
-        }
-        .drag-active {
-          border-color: #0d6efd !important;
-          background-color: rgba(13, 110, 253, 0.1) !important;
-        }
-        .border-dashed {
-          border-style: dashed !important;
-        }
-        .icon-circle {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.1rem;
-        }
-        .accordion-button:not(.collapsed) {
-          color: #6c757d;
-          background-color: transparent;
-        }
-        .accordion-button:focus {
-          box-shadow: none;
-        }
-        .progress-bar {
-          transition: width 0.3s ease;
-        }
-        .card {
-          border-radius: 12px;
-        }
-        .alert-success {
-          background-color: rgba(25, 135, 84, 0.1);
-          border: none;
-        }
-        .alert-danger {
-          background-color: rgba(220, 53, 69, 0.1);
-          border: none;
-        }
-        .alert-warning {
-          background-color: rgba(255, 193, 7, 0.1);
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate__fadeInDown {
-          animation: fadeIn 0.5s ease-out;
-        }
-        .modal-backdrop {
-          opacity: 0.5 !important;
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </div>

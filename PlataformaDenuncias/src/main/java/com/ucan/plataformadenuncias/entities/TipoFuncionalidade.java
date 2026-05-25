@@ -26,6 +26,9 @@ public class TipoFuncionalidade {
 
     @Column(name = "designacao", length = 100)
     private String designacao;
+    
+        @Column(columnDefinition = "TEXT")
+    private String descricao;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -42,4 +45,8 @@ public class TipoFuncionalidade {
     public TipoFuncionalidade(String designacao) {
         this.designacao = designacao;
     }
+    
+     @ManyToOne
+    @JoinColumn(name = "fk_tipo_funcionalidade_pai")
+    private TipoFuncionalidade fkTipoFuncionalidadePai;
 }

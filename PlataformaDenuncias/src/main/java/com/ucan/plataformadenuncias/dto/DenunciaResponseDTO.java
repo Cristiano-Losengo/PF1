@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class DenunciaResponseDTO {
     private Integer pkDenuncia;
+    private String codigo;
     private String nome;
     private String descricaoDetalhada;
     private String tipoEspecifico;

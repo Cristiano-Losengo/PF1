@@ -33,34 +33,90 @@ export default function Login({ setLoggedIn }) {
                 throw new Error(data.mensagem || 'Credenciais inválidas');
             }
 
-            // Guarda token
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('email', data.email);
-            localStorage.setItem('perfil', data.perfil);
-
-            setLoggedIn(true);
-            navigate('/');
+            // ✅ CORRETO: Salvar dados completos do usuário com menus e acessoTotal
+            const userSession = {
+                token: data.token || "no-jwt",
+                email: data.email,
+                perfil: data.perfil,
+                nome: data.nome || username,
+                username: username,
+                menus: data.menus || [],        // ← LISTA COMPLETA de funcionalidades
+                acessoTotal: data.acessoTotal || false,  // ← FLAG de acesso total (se tem ID=1)
+                pkPerfil: data.pkPerfil,
+                isLoggedIn: true
+            };
+            
+            // ✅ REMOVER: Esta parte usa 'data.menu' que não existe mais no backend corrigido
+            // const menuSession = {
+            //     pkFuncionalidade: data.menu?.pkFuncionalidade,
+            //     name: data.menu?.name,
+            //     path: data.menu?.path
+            // };
+            // localStorage.setItem('menu', JSON.stringify(data.menu));
+            
+            // ✅ Apenas guardar o userSession (contém tudo que precisamos)
+            sessionStorage.setItem('user', JSON.stringify(userSession));
+            
+            // Debug: Verificar o que foi guardado
+            console.log('✅ Login realizado com sucesso!');
+            console.log('Perfil:', data.perfil);
+            console.log('Acesso Total:', data.acessoTotal);
+            console.log('Quantidade de Menus:', data.menus?.length || 0);
+            
+            if (setLoggedIn) {
+                setLoggedIn(true);
+            }
+            
+            navigate('/home');
 
         } catch (err) {
             setError(err.message);
+            console.error('❌ Erro no login:', err);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
-            <div className="card shadow p-4" style={{ maxWidth: 400, width: '100%' }}>
-                <h3 className="text-center mb-4">
+        <div
+            className="d-flex justify-content-center align-items-center vh-100"
+            style={{
+                backgroundColor: "#0B0B0B"
+            }}
+        >
+            <div
+                className="card shadow-lg p-4"
+                style={{
+                    maxWidth: 420,
+                    width: "100%",
+                    backgroundColor: "#111111",
+                    border: "1px solid #D4AF37",
+                    borderRadius: "12px"
+                }}
+            >
+                <h3
+                    className="text-center mb-4"
+                    style={{
+                        color: "#D4AF37",
+                        fontWeight: "bold"
+                    }}
+                >
                     <FaSignInAlt className="me-2" />
                     Login
                 </h3>
 
-                {error && <div className="alert alert-danger">{error}</div>}
+                {error && (
+                    <div className="alert alert-danger text-center">
+                        {error}
+                    </div>
+                )}
 
                 <form onSubmit={handleLogin}>
                     <div className="mb-3">
-                        <label className="form-label">
+                        <label
+                            className="form-label"
+                            style={{ color: "#F5F5F5" }}
+                        >
                             <FaUser className="me-2" /> Usuário
                         </label>
                         <input
@@ -69,11 +125,19 @@ export default function Login({ setLoggedIn }) {
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             required
+                            style={{
+                                backgroundColor: "#1a1a1a",
+                                color: "#fff",
+                                border: "1px solid #D4AF37"
+                            }}
                         />
                     </div>
 
                     <div className="mb-4">
-                        <label className="form-label">
+                        <label
+                            className="form-label"
+                            style={{ color: "#F5F5F5" }}
+                        >
                             <FaLock className="me-2" /> Senha
                         </label>
                         <input
@@ -82,15 +146,26 @@ export default function Login({ setLoggedIn }) {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
+                            style={{
+                                backgroundColor: "#1a1a1a",
+                                color: "#fff",
+                                border: "1px solid #D4AF37"
+                            }}
                         />
                     </div>
 
                     <button
                         type="submit"
-                        className="btn btn-primary w-100"
                         disabled={loading}
+                        className="btn w-100"
+                        style={{
+                            backgroundColor: "#D4AF37",
+                            color: "#000",
+                            fontWeight: "bold",
+                            border: "none"
+                        }}
                     >
-                        {loading ? 'Entrando...' : 'Entrar'}
+                        {loading ? "Entrando..." : "Entrar"}
                     </button>
                 </form>
             </div>

@@ -20,4 +20,11 @@ public interface FuncionalidadePerfilRepository extends JpaRepository<Funcionali
 Optional<FuncionalidadePerfil> 
 findByFkPerfilPkPerfilAndFkFuncionalidadePkFuncionalidade(Integer fkPerfil, Integer fkFuncionalidade);
 
+    List<FuncionalidadePerfil> findByFkPerfil_PkPerfil(Integer pkPerfil);
+    
+        boolean existsByFkPerfil_PkPerfilAndFkFuncionalidade_PkFuncionalidade(Integer perfilId, Integer funcionalidadeId);
+
+
 }
+
+

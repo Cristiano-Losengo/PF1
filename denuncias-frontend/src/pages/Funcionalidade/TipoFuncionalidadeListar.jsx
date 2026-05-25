@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import 'bootstrap/dist/css/bootstrap.min.css';
 import { 
   FaList, 
   FaChevronRight, 
@@ -10,8 +9,13 @@ import {
   FaSpinner,
   FaSyncAlt,
   FaSearch,
-  FaExclamationTriangle
+  FaExclamationTriangle,
+  FaArrowLeft,
+  FaDatabase,
+  FaTags,
+  FaLayerGroup
 } from "react-icons/fa";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function FuncionalidadeListar() {
     const [data, setData] = useState([]);
@@ -34,7 +38,7 @@ export default function FuncionalidadeListar() {
         try {
             setLoading(true);
             setError(null);
-const resp = await fetch("http://localhost:9090/api/seguranca/tipo_funcionalidade_listar");            
+            const resp = await fetch("http://localhost:9090/api/seguranca/tipos_funcionalidade_listar");            
             if (!resp.ok) {
                 throw new Error(`Erro ao carregar: ${resp.status} ${resp.statusText}`);
             }
@@ -86,25 +90,17 @@ const resp = await fetch("http://localhost:9090/api/seguranca/tipo_funcionalidad
         loadData();
     }, []);
 
-    // Adicione este useEffect para verificar a estrutura dos dados
     useEffect(() => {
         if (data.length > 0) {
             console.log("Primeiro item dos dados:", data[0]);
             console.log("Campos disponíveis:", Object.keys(data[0]));
-            console.log("Tem fkFuncionalidadePai?", 'fkFuncionalidadePai' in data[0]);
-            console.log("Tem fkFuncionalidade?", 'fkFuncionalidade' in data[0]);
-            console.log("Valor de fkFuncionalidadePai:", data[0].fkFuncionalidadePai);
-            console.log("Valor de fkFuncionalidade:", data[0].fkFuncionalidade);
         }
     }, [data]);
 
-    // CORREÇÃO: Estruturar dados em árvore usando fkFuncionalidadePai
     const construirArvore = () => {
-        // Criar mapa de funcionalidades
         const map = new Map();
         const raiz = [];
         
-        // Primeiro: criar mapa
         data.forEach(item => {
             map.set(item.pkFuncionalidade, {
                 ...item,
@@ -114,14 +110,11 @@ const resp = await fetch("http://localhost:9090/api/seguranca/tipo_funcionalidad
             });
         });
         
-        // Segundo: construir hierarquia usando fkFuncionalidadePai
         data.forEach(item => {
             const node = map.get(item.pkFuncionalidade);
-            
-            // USANDO fkFuncionalidadePai (campo atualizado)
             const paiId = item.fkFuncionalidadePai !== null && item.fkFuncionalidadePai !== undefined 
                 ? item.fkFuncionalidadePai 
-                : item.fkFuncionalidade; // Fallback para compatibilidade
+                : item.fkFuncionalidade;
             
             if (paiId !== null && paiId !== undefined && paiId !== 0) {
                 const pai = map.get(paiId);
@@ -130,16 +123,13 @@ const resp = await fetch("http://localhost:9090/api/seguranca/tipo_funcionalidad
                     pai.temFilhos = true;
                     node.nivel = (pai.nivel || 0) + 1;
                 } else {
-                    // Se pai não existe, adiciona à raiz
                     raiz.push(node);
                 }
             } else {
-                // Se não tem pai, é raiz
                 raiz.push(node);
             }
         });
         
-        // Ordenar recursivamente por pkFuncionalidade
         const ordenarFilhos = (node) => {
             if (node.filhos && node.filhos.length > 0) {
                 node.filhos.sort((a, b) => a.pkFuncionalidade - b.pkFuncionalidade);
@@ -150,15 +140,11 @@ const resp = await fetch("http://localhost:9090/api/seguranca/tipo_funcionalidad
         raiz.sort((a, b) => a.pkFuncionalidade - b.pkFuncionalidade);
         raiz.forEach(ordenarFilhos);
         
-        console.log("Árvore construída:", raiz);
-        console.log("Raiz tem", raiz.length, "elementos");
-        
         return raiz;
     };
 
     const raiz = construirArvore();
 
-    // Função para filtrar funcionalidades com expansão automática
     const filterNodes = (nodes, term) => {
         if (!term) return nodes;
         
@@ -197,7 +183,6 @@ const resp = await fetch("http://localhost:9090/api/seguranca/tipo_funcionalidad
             }
         });
         
-        // Expandir nós pais dos resultados
         if (idsParaExpandir.size > 0) {
             const nova = new Set(abertos);
             idsParaExpandir.forEach(id => nova.add(id));
@@ -209,7 +194,6 @@ const resp = await fetch("http://localhost:9090/api/seguranca/tipo_funcionalidad
 
     const filteredRoot = searchTerm ? filterNodes(raiz, searchTerm) : raiz;
 
-    // Função para renderizar um nó da árvore
     const renderNode = (node, depth = 0) => {
         const temFilhos = node.filhos && node.filhos.length > 0;
         const aberto = abertos.has(node.pkFuncionalidade);
@@ -218,100 +202,128 @@ const resp = await fetch("http://localhost:9090/api/seguranca/tipo_funcionalidad
         const grupo = node.grupo || 0;
 
         return (
-            <div 
+            <motion.div 
                 key={node.pkFuncionalidade} 
-                className="mb-2"
-                style={{ 
-                    marginLeft: `${depth * 24}px`,
-                    transition: 'all 0.3s ease'
-                }}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+                style={{ marginLeft: `${depth * 24}px`, marginBottom: '12px' }}
             >
                 <div 
-                    className="card border-0 shadow-sm rounded-3 mb-2 hover-shadow"
                     style={{
-                        backgroundColor: aberto ? 'rgba(13, 110, 253, 0.03)' : '#ffffff',
-                        borderLeft: `4px solid ${aberto ? '#0d6efd' : '#6c757d'}`,
+                        background: aberto ? 'linear-gradient(135deg, rgba(212,175,55,0.05), rgba(212,175,55,0.02))' : 'white',
+                        borderRadius: '12px',
+                        borderLeft: `3px solid ${aberto ? '#D4AF37' : '#333'}`,
                         cursor: temFilhos ? 'pointer' : 'default',
-                        transition: 'all 0.2s ease'
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
                     }}
                     onClick={temFilhos ? () => toggle(node.pkFuncionalidade) : undefined}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                        e.currentTarget.style.transform = 'translateX(4px)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.04)';
+                        e.currentTarget.style.transform = 'translateX(0)';
+                    }}
                 >
-                    <div className="card-body py-3 px-4">
-                        <div className="d-flex align-items-center justify-content-between">
-                            <div className="d-flex align-items-center flex-grow-1">
-                                {/* Ícone de pasta/expansão */}
-                                <div className="me-3">
+                    <div style={{ padding: '16px 20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', flex: 1 }}>
+                                {/* Ícone de expansão */}
+                                <div style={{ marginRight: '16px', marginTop: '2px' }}>
                                     {temFilhos ? (
-                                        <div className="d-flex align-items-center">
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             {aberto ? (
-                                                <FaChevronDown className="text-primary me-2" size={16} />
+                                                <FaChevronDown style={{ color: '#D4AF37', fontSize: '14px' }} />
                                             ) : (
-                                                <FaChevronRight className="text-secondary me-2" size={16} />
+                                                <FaChevronRight style={{ color: '#999', fontSize: '14px' }} />
                                             )}
-                                            <FaFolderOpen className="text-warning" size={20} />
+                                            {aberto ? (
+                                                <FaFolderOpen style={{ color: '#D4AF37', fontSize: '18px' }} />
+                                            ) : (
+                                                <FaFolder style={{ color: '#D4AF37', fontSize: '18px' }} />
+                                            )}
                                         </div>
                                     ) : (
-                                        <FaFolder className="text-muted" size={20} />
+                                        <FaFolder style={{ color: '#666', fontSize: '18px', marginLeft: '22px' }} />
                                     )}
                                 </div>
 
-                                {/* Conteúdo da funcionalidade */}
-                                <div className="flex-grow-1">
-                                    <div className="d-flex align-items-center mb-1 flex-wrap">
-                                        <h5 
-                                            className="mb-0 text-dark fw-semibold me-2"
-                                            style={{ fontSize: '1.1rem' }}
-                                        >
+                                {/* Conteúdo */}
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '8px' }}>
+                                        <h5 style={{ 
+                                            margin: 0, 
+                                            fontSize: '1rem', 
+                                            fontWeight: '600',
+                                            color: '#1a1a1a'
+                                        }}>
                                             {node.designacao}
                                         </h5>
                                         
-                                        <span className="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 ms-2 px-2 py-1">
+                                        <span style={{
+                                            background: 'linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05))',
+                                            color: '#D4AF37',
+                                            padding: '4px 10px',
+                                            borderRadius: '20px',
+                                            fontSize: '11px',
+                                            fontWeight: '600',
+                                            border: '1px solid rgba(212,175,55,0.3)'
+                                        }}>
                                             {tipo}
                                         </span>
                                         
                                         {temFilhos && (
-                                            <span className="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 ms-2 px-2 py-1">
+                                            <span style={{
+                                                background: 'rgba(0,0,0,0.05)',
+                                                color: '#666',
+                                                padding: '4px 10px',
+                                                borderRadius: '20px',
+                                                fontSize: '11px',
+                                                fontWeight: '600'
+                                            }}>
                                                 {node.filhos.length} {node.filhos.length === 1 ? 'subitem' : 'subitens'}
                                             </span>
                                         )}
                                         
                                         {grupo !== 0 && (
-                                            <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 ms-2 px-2 py-1">
+                                            <span style={{
+                                                background: 'rgba(0,0,0,0.05)',
+                                                color: '#666',
+                                                padding: '4px 10px',
+                                                borderRadius: '20px',
+                                                fontSize: '11px'
+                                            }}>
                                                 Grupo: {grupo}
                                             </span>
                                         )}
                                     </div>
                                     
                                     {hasDescription && (
-                                        <div className="d-flex align-items-start mt-2">
-                                            <FaInfoCircle className="text-info me-2 mt-1" size={14} />
-                                            <p 
-                                                className="mb-0 text-muted"
-                                                style={{ 
-                                                    fontSize: '0.9rem',
-                                                    lineHeight: '1.4'
-                                                }}
-                                            >
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '8px' }}>
+                                            <FaInfoCircle style={{ color: '#D4AF37', fontSize: '12px', marginTop: '2px' }} />
+                                            <p style={{ margin: 0, color: '#666', fontSize: '13px', lineHeight: '1.5' }}>
                                                 {node.descricao}
                                             </p>
                                         </div>
                                     )}
                                     
                                     {node.url && (
-                                        <div className="mt-2">
-                                            <small className="text-primary">
-                                                <i className="bi bi-link me-1"></i>
-                                                {node.url}
+                                        <div style={{ marginTop: '8px' }}>
+                                            <small style={{ color: '#D4AF37' }}>
+                                                🔗 {node.url}
                                             </small>
                                         </div>
                                     )}
                                     
-                                    <div className="mt-2 d-flex gap-2">
-                                        <small className="text-muted">
+                                    <div style={{ marginTop: '8px', display: 'flex', gap: '16px' }}>
+                                        <small style={{ color: '#999', fontSize: '11px' }}>
                                             ID: {node.pkFuncionalidade}
                                         </small>
                                         {node.fkFuncionalidadePai && node.fkFuncionalidadePai !== 0 && (
-                                            <small className="text-muted">
+                                            <small style={{ color: '#999', fontSize: '11px' }}>
                                                 Pai ID: {node.fkFuncionalidadePai}
                                             </small>
                                         )}
@@ -319,11 +331,16 @@ const resp = await fetch("http://localhost:9090/api/seguranca/tipo_funcionalidad
                                 </div>
                             </div>
 
-                            <div className="ms-3">
-                                <span 
-                                    className="badge bg-dark bg-opacity-10 text-dark border border-dark border-opacity-25 px-3 py-2"
-                                    style={{ fontSize: '0.8rem', fontWeight: '600' }}
-                                >
+                            <div style={{ marginLeft: '16px' }}>
+                                <span style={{
+                                    background: 'linear-gradient(135deg, #0a0a0a, #1a1a1a)',
+                                    color: '#D4AF37',
+                                    padding: '6px 12px',
+                                    borderRadius: '20px',
+                                    fontSize: '11px',
+                                    fontWeight: '600',
+                                    fontFamily: 'monospace'
+                                }}>
                                     #{node.pkFuncionalidade}
                                 </span>
                             </div>
@@ -331,30 +348,48 @@ const resp = await fetch("http://localhost:9090/api/seguranca/tipo_funcionalidad
                     </div>
                 </div>
 
-                {/* Renderizar filhos se aberto */}
                 {temFilhos && aberto && (
-                    <div className="mt-2">
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        style={{ marginTop: '8px' }}
+                    >
                         {node.filhos.map(child => renderNode(child, depth + 1))}
-                    </div>
+                    </motion.div>
                 )}
-            </div>
+            </motion.div>
         );
     };
 
-    // Função para renderizar a árvore completa
     const renderArvore = () => {
         if (filteredRoot.length === 0) {
             return (
-                <div className="text-center py-5">
-                    <div className="bg-light rounded-3 p-5 mb-4">
-                        <FaSearch className="text-muted mb-3" size={48} />
-                        <h4 className="text-dark mb-2">Nenhum resultado encontrado</h4>
-                        <p className="text-muted">
+                <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                    <div style={{ 
+                        background: 'linear-gradient(135deg, rgba(212,175,55,0.05), rgba(212,175,55,0.02))',
+                        borderRadius: '20px',
+                        padding: '48px',
+                        maxWidth: '500px',
+                        margin: '0 auto'
+                    }}>
+                        <FaSearch style={{ color: '#D4AF37', fontSize: '48px', marginBottom: '20px' }} />
+                        <h4 style={{ color: '#333', marginBottom: '10px' }}>Nenhum resultado encontrado</h4>
+                        <p style={{ color: '#666', marginBottom: '20px' }}>
                             Não foram encontradas funcionalidades correspondentes a "{searchTerm}"
                         </p>
                         <button 
-                            className="btn btn-outline-secondary mt-2"
                             onClick={() => setSearchTerm("")}
+                            style={{
+                                padding: '10px 24px',
+                                background: 'linear-gradient(135deg, #D4AF37, #FFE55C)',
+                                border: 'none',
+                                borderRadius: '50px',
+                                color: '#000',
+                                fontWeight: '600',
+                                cursor: 'pointer'
+                            }}
                         >
                             Limpar pesquisa
                         </button>
@@ -363,22 +398,16 @@ const resp = await fetch("http://localhost:9090/api/seguranca/tipo_funcionalidad
             );
         }
 
-        return (
-            <div className="position-relative">
-                {filteredRoot.map(node => renderNode(node))}
-            </div>
-        );
+        return <div>{filteredRoot.map(node => renderNode(node))}</div>;
     };
 
     if (loading) {
         return (
-            <div className="container mt-4 d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
-                <div className="text-center">
-                    <div className="spinner-grow text-primary mb-3" style={{ width: '3rem', height: '3rem' }} role="status">
-                        <span className="visually-hidden">Carregando...</span>
-                    </div>
-                    <h5 className="text-dark mb-2">A carregar funcionalidades...</h5>
-                    <p className="text-muted">Por favor, aguarde um momento.</p>
+            <div style={{ minHeight: '100vh', background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ textAlign: 'center' }}>
+                    <FaSpinner style={{ fontSize: '48px', color: '#D4AF37', animation: 'spin 1s linear infinite', marginBottom: '20px' }} />
+                    <h5 style={{ color: '#333' }}>A carregar funcionalidades...</h5>
+                    <p style={{ color: '#666' }}>Por favor, aguarde um momento.</p>
                 </div>
             </div>
         );
@@ -386,18 +415,35 @@ const resp = await fetch("http://localhost:9090/api/seguranca/tipo_funcionalidad
 
     if (error) {
         return (
-            <div className="container mt-4">
-                <div className="alert alert-danger d-flex align-items-center" role="alert">
-                    <FaExclamationTriangle className="me-3 flex-shrink-0" size={24} />
-                    <div className="flex-grow-1">
-                        <h5 className="alert-heading mb-2">Erro ao carregar</h5>
-                        <p className="mb-0">{error}</p>
-                    </div>
+            <div style={{ minHeight: '100vh', background: '#f5f5f5', padding: '40px' }}>
+                <div style={{ 
+                    maxWidth: '600px', 
+                    margin: '0 auto', 
+                    background: 'white', 
+                    borderRadius: '16px', 
+                    padding: '32px',
+                    textAlign: 'center',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
+                }}>
+                    <FaExclamationTriangle style={{ fontSize: '48px', color: '#ef4444', marginBottom: '20px' }} />
+                    <h5 style={{ color: '#333', marginBottom: '10px' }}>Erro ao carregar</h5>
+                    <p style={{ color: '#666', marginBottom: '24px' }}>{error}</p>
                     <button 
-                        className="btn btn-outline-danger btn-sm"
                         onClick={loadData}
+                        style={{
+                            padding: '10px 24px',
+                            background: 'linear-gradient(135deg, #D4AF37, #FFE55C)',
+                            border: 'none',
+                            borderRadius: '50px',
+                            color: '#000',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                        }}
                     >
-                        <FaSyncAlt className="me-1" /> Tentar novamente
+                        <FaSyncAlt /> Tentar novamente
                     </button>
                 </div>
             </div>
@@ -405,100 +451,146 @@ const resp = await fetch("http://localhost:9090/api/seguranca/tipo_funcionalidad
     }
 
     return (
-        <div className="container mt-4">
-            {/* Header com estatísticas */}
-            <div className="row mb-4">
-                <div className="col-md-8">
-                    <div className="d-flex align-items-center mb-3">
-                        <div className="bg-primary bg-opacity-10 rounded-3 p-3 me-3">
-                            <FaList className="text-primary" size={28} />
+        <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: "'Inter', sans-serif" }}>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+            {/* Hero Section */}
+            <div style={{ background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)', padding: '3rem 2rem', textAlign: 'center' }}>
+                <div style={{ display: 'inline-flex', padding: '1rem', borderRadius: '50%', background: 'rgba(212,175,55,0.15)', marginBottom: '1rem' }}>
+                    <FaList style={{ fontSize: '2rem', color: '#D4AF37' }} />
+                </div>
+                <h1 style={{ color: '#D4AF37', fontSize: '2rem', fontWeight: 'bold', margin: 0 }}>Estrutura de Tipo Funcionalidade</h1>
+                <p style={{ color: '#aaa', marginTop: '0.5rem' }}>Visualize hierarquicamente o tipo funcionalidade do sistema</p>
+            </div>
+
+            {/* Conteúdo Principal */}
+            <div style={{ maxWidth: '1200px', margin: '-40px auto 0', padding: '2rem' }}>
+                
+
+
+                {/* Card Principal da Lista */}
+                <div style={{
+                    background: 'white',
+                    borderRadius: '20px',
+                    overflow: 'hidden',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
+                }}>
+                    <div style={{
+                        padding: '20px 24px',
+                        borderBottom: '1px solid #e8e8e8',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '12px'
+                    }}>
+                        <div>
+                            <button
+                                onClick={() => window.history.back()}
+                                style={{
+                                    padding: '8px 20px',
+                                    background: 'transparent',
+                                    border: '2px solid #D4AF37',
+                                    borderRadius: '50px',
+                                    color: '#D4AF37',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}
+                            >
+                                <FaArrowLeft /> Voltar
+                            </button>
                         </div>
                         <div>
-                            <h1 className="text-dark mb-1" style={{ fontWeight: '600' }}>
-                                Estrutura de Tipo Funcionalidade
-                            </h1>
-                            <p className="text-muted mb-0">
-                                Visualize hierarquicamente o tipo funcionalidade do sistema
-                            </p>
+                            <button
+                                onClick={loadData}
+                                style={{
+                                    padding: '8px 20px',
+                                    background: 'linear-gradient(135deg, #D4AF37, #FFE55C)',
+                                    border: 'none',
+                                    borderRadius: '50px',
+                                    color: '#000',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}
+                            >
+                                <FaSyncAlt /> Atualizar
+                            </button>
                         </div>
                     </div>
-                </div>
-                
-             
-            </div>
-        
-            {/* Lista de funcionalidades */}
-            <div className="card border-0 shadow-lg rounded-3 overflow-hidden">
-                {/* Card header */}
-                <div className="card-header bg-white border-0 py-3">
-                    <div className="row align-items-center">
-                        <div className="col-md-6">
-                           
-                        </div>
-                   
-                    </div>
-                </div>
-                
-                <div className="card-body p-4">
-                    {data.length === 0 ? (
-                        <div className="text-center py-5">
-                            <div className="bg-light rounded-3 p-5 mb-4">
-                                <FaList className="text-muted mb-3" size={48} />
-                                <h4 className="text-dark mb-2">Nenhuma funcionalidade encontrada</h4>
-                                <p className="text-muted">Não há funcionalidades cadastradas no sistema.</p>
-                                <button 
-                                    className="btn btn-primary mt-2"
-                                    onClick={loadData}
-                                >
-                                    <FaSyncAlt className="me-1" /> Tentar novamente
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        renderArvore()
-                    )}
-                </div>
 
-                {/* Rodapé com estatísticas */}
-                {data.length > 0 && (
-                    <div className="card-footer bg-white border-0 border-top py-3">
-                        <div className="row align-items-center">
-                            <div className="col-md-6">
-                                <div className="text-muted small">
-                                    <span className="d-inline-flex align-items-center me-3">
-                                        <div className="bg-primary rounded-circle me-2" style={{ width: '8px', height: '8px' }}></div>
-                                        <span>Itens expandidos: {abertos.size}</span>
-                                    </span>
-                                    <span className="d-inline-flex align-items-center me-3">
-                                        <div className="bg-success rounded-circle me-2" style={{ width: '8px', height: '8px' }}></div>
-                                        <span>Total de Funcionalidade: {stats.total}</span>
-                                    </span>
-                                    <span className="d-inline-flex align-items-center">
-                                        <div className="bg-info rounded-circle me-2" style={{ width: '8px', height: '8px' }}></div>
-                                        <span>Tipos: {stats.tipos.size}</span>
-                                    </span>
+                    <div style={{ padding: '24px' }}>
+                        {data.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                                <div style={{
+                                    background: 'linear-gradient(135deg, rgba(212,175,55,0.05), rgba(212,175,55,0.02))',
+                                    borderRadius: '20px',
+                                    padding: '48px',
+                                    maxWidth: '500px',
+                                    margin: '0 auto'
+                                }}>
+                                    <FaList style={{ color: '#D4AF37', fontSize: '48px', marginBottom: '20px' }} />
+                                    <h4 style={{ color: '#333', marginBottom: '10px' }}>Nenhuma funcionalidade encontrada</h4>
+                                    <p style={{ color: '#666', marginBottom: '20px' }}>Não há funcionalidades cadastradas no sistema.</p>
+                                    <button 
+                                        onClick={loadData}
+                                        style={{
+                                            padding: '10px 24px',
+                                            background: 'linear-gradient(135deg, #D4AF37, #FFE55C)',
+                                            border: 'none',
+                                            borderRadius: '50px',
+                                            color: '#000',
+                                            fontWeight: '600',
+                                            cursor: 'pointer',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '8px'
+                                        }}
+                                    >
+                                        <FaSyncAlt /> Tentar novamente
+                                    </button>
                                 </div>
                             </div>
-                            
-                        </div>
+                        ) : (
+                            renderArvore()
+                        )}
                     </div>
-                )}
+
+                    {/* Rodapé */}
+                    {data.length > 0 && (
+                        <div style={{
+                            padding: '16px 24px',
+                            borderTop: '1px solid #e8e8e8',
+                            background: '#fafafa'
+                        }}>
+                            <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#666' }}>
+                                    <div style={{ width: '8px', height: '8px', background: '#D4AF37', borderRadius: '50%' }} />
+                                    Itens expandidos: {abertos.size}
+                                </span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#666' }}>
+                                    <div style={{ width: '8px', height: '8px', background: '#D4AF37', borderRadius: '50%' }} />
+                                    Total de Funcionalidades: {stats.total}
+                                </span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#666' }}>
+                                    <div style={{ width: '8px', height: '8px', background: '#D4AF37', borderRadius: '50%' }} />
+                                    Tipos: {stats.tipos.size}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
-            
-            <style jsx>{`
-                .hover-shadow:hover {
-                    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-                }
-                .badge {
-                    font-size: 0.75em;
-                }
-                .card {
-                    transition: all 0.3s ease;
-                }
-                .spinner-border {
-                    width: 1rem;
-                    height: 1rem;
+            <style>{`
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
                 }
             `}</style>
         </div>
